@@ -29,7 +29,6 @@ end
 
 function Game:newObj(args)
 	local cl = args.class
-	args.game = self
 	local obj = cl(args)
 	self.objs:insert(obj)
 	return obj

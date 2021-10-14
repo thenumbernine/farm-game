@@ -1,8 +1,9 @@
-local class = require 'ext.class'
-local anim = require 'anim'
 local gl = require 'gl'
+local class = require 'ext.class'
 local vec2f = require 'vec-ffi.vec2f'
 local vec3f = require 'vec-ffi.vec3f'
+local anim = require 'zelda.anim'
+local Tile = require 'zelda.tile'
 
 local Obj = class()
 
@@ -11,6 +12,8 @@ Obj.seq = 'stand'
 Obj.frame = 1
 
 function Obj:init(args)
+	assert(args)
+
 	self.angle = 1.5 * math.pi
 	
 	if not self.drawSize then
@@ -23,14 +26,13 @@ function Obj:init(args)
 	end
 
 	self.pos = vec3f(0,0,0)
+	if args.pos then
+		self.pos:set(args.pos:unpack())
+	end
+	
 	self.vel = vec3f(0,0,0)
-	if args then
-		if args.pos then
-			self.pos:set(args.pos:unpack())
-		end
-		if args.vel then
-			self.vel:set(args.vel:unpack())
-		end
+	if args.vel then
+		self.vel:set(args.vel:unpack())
 	end
 end
 
@@ -44,12 +46,26 @@ local quad = {
 -- ccw start at 0' (with 45' spread)
 local dirSeqSuffixes = {'_r', '_u', '_l', '_d'}
 
+Obj.gravity = 9.8
+
 function Obj:update(dt)
 -- [[
 	self.pos.x = self.pos.x + self.vel.x * dt
 	self.pos.y = self.pos.y + self.vel.y * dt
 	self.pos.z = self.pos.z + self.vel.z * dt
 --]]
+	self.vel.z = self.vel.z + self.gravity * dt
+
+	-- find floor
+	local i0 = math.floor(self.pos.x)
+	local j0 = math.floor(self.pos.y)
+	local k0 = math.floor(self.pos.z)
+	for k=k0,math.max(0,k0-1),-1 do
+		if app.game.map:get(i0,j0,k0) == Tile.typeValues.SOLID then
+			self.pos.z = k0 + 1
+			self.vel.z = 0
+		end
+	end
 end
 
 function Obj:draw()
@@ -107,7 +123,25 @@ function Player:update(dt)
 	end
 	dx = dx * l
 	dy = dy * l
-	self.vel:set(dx, dy, 0)
+
+	local zDir = app.view.angle:zAxis()	-- down dir
+	local xDir = app.view.angle:xAxis()	-- right dir
+		
+	local x2Dir = vec2f(1,0)--vec2f(xDir.x, xDir.y)
+	x2Dir = x2Dir:normalize() 
+	
+	local y2Dir = vec2f(0,1)	--vec2f(-zDir.x, -zDir.y)
+	y2Dir = y2Dir:normalize() 
+	
+	self.vel.x = (
+		x2Dir.x * dx
+		+ y2Dir.x * dy
+	)
+	self.vel.y = (
+		x2Dir.y * dx
+		+ y2Dir.y * dy
+	)
+	self.vel.z = 0
 
 	Player.super.update(self, dt)
 end

@@ -3,22 +3,22 @@
 local class = require 'ext.class'
 local bit = require 'bit'
 local gl = require 'gl'
-local anim = require 'anim'
 local ImGuiApp = require 'imguiapp'
+local anim = require 'zelda.anim'
 local Game = require 'zelda.game'
 local gettimeofday = require 'zelda.gettimeofday'
 
 local App = class(require 'glapp.orbit'(ImGuiApp))
 App.title = 'Zelda 4D'
 
-App.viewDist = 7
+App.viewDist = 4
 
 function App:initGL()
 	app = self	-- global
 
 	App.super.initGL(self)
 
-	self.view.angle:fromAngleAxis(1,0,0,20)
+	self.view.fovY = 120
 
 	-- [[ load tex2ds for anim
 	local GLTex2D = require 'gl.tex2d'
@@ -34,10 +34,10 @@ function App:initGL()
 		end
 	end
 	--]]
+	
+	self.view.angle:fromAngleAxis(1,0,0,20)
 
 	self.game = Game()
-	
-	self.view.pos:set((self.view.angle:zAxis() * self.viewDist):unpack())
 	
 	self.lastTime = gettimeofday()
 	self.updateTime = 0
@@ -73,6 +73,11 @@ function App:update()
 		self.game:update(self.updateDelta)
 	end
 
+	-- before calling super.update and redoing the gl matrices, update view...	
+	--self.view.angle:fromAngleAxis(1,0,0,20)
+	self.view.pos:set((self.game.player.pos + self.view.angle:zAxis() * self.viewDist):unpack())
+	--app.orbit.pos:set((app.view.angle:zAxis() * app.viewDist):unpack())
+	
 	App.super.update(self)
 end
 
