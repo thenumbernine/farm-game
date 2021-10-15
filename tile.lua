@@ -35,7 +35,6 @@ local function makeSimplexVtxs(n)
 		for j=0,n-1 do
 			v[j+1] = bit.band(bit.rshift(i, j), 1)
 		end
-		print(i, require 'ext.tolua'(v))
 		vtxs:insert(v)
 	end
 	return vtxs

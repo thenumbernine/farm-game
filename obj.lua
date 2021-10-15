@@ -30,10 +30,10 @@ function Obj:init(args)
 	self.vel = vec3f(0,0,0)
 	if args.vel then self.vel:set(args.vel:unpack()) end
 
-	self.min = vec3f(-.5,-.5,0)
+	self.min = vec3f(-.4, -.4, 0)
 	if args.min then self.min:set(args.min:unpack()) end
 	
-	self.max = vec3f(.5,.5,1)
+	self.max = vec3f(.4, .4, .8)
 	if args.max then self.max:set(args.max:unpack()) end
 end
 
@@ -42,38 +42,96 @@ end
 -- find intersection and then redo collision over remaining timestep?
 -- or just push? how about just push
 local epsilon = 1e-5
-local function push(pos, min, max, omin, omax)
-	local bestside	-- 0 = x, 1 = y, 2 = z
-	local bestpm	-- 1 for pos+max side, -1 for pos+min side
-	local bestdepth = math.huge
--- [[
-	local dxp = (pos.x + max.x) - omin.x
-	if dxp < bestdepth then bestdepth = dxp bestside = 0 bestpm = 1 end
-	local dxm = omax.x - (pos.x + min.x)
-	if dxm < bestdepth then bestdepth = dxm bestside = 0 bestpm = -1 end
-	local dyp = (pos.y + max.y) - omin.y
-	if dyp < bestdepth then bestdepth = dyp bestside = 1 bestpm = 1 end
-	local dym = omax.y - (pos.y + min.y)
-	if dym < bestdepth then bestdepth = dym bestside = 1 bestpm = -1 end
---]]
-	local dzp = (pos.z + max.z) - omin.z
-	if dzp < bestdepth then bestdepth = dzp bestside = 2 bestpm = 1 end
-	local dzm = omax.z - (pos.z + min.z)
-	if dzm < bestdepth then bestdepth = dzm bestside = 2 bestpm = -1 end
-	if bestdepth > 0 then
-		--pos.s[bestside] = pos.s[bestside] + bestpm * bestdepth
-		if bestpm == 1 then
-			pos.s[bestside] = omin.s[bestside] - max.s[bestside] - epsilon
+local function push(pos, min, max, bmin, bmax, vel)
+	-- TODO cache these as 'worldmin'/max? 
+	local amin = pos + min
+	local amax = pos + max
+	--[[
+	how to detect convex simplex collison?
+	check all sides, find closest vtx on obj A to side on B
+	if it separates (plane dist > 0) then we have no collision
+	if no planes separate (all dists are positive) then we have collision somewhere
+	and in that case, use the *most shallow* (greatest negative #) penetration to push back ... not the deepest?  because deepest plane dist could be out the other side?  hmm ...
+	but what about rects resting on one another? edge/edge collision?
+	
+	what's an aabb way to do collision?
+	for each side, for each +-,
+		find the subset rect of each side
+		if it is non-null ...
+		look at the side of obj A's pos along the axis, whether it is in bounds of obj B
+		if so
+			then we have a collision
+	--]]
+	-- do the boxes intersect on the plane of axis j & k ?
+	if amin.x <= bmax.x
+	and amax.x >= bmin.x
+	and amin.y <= bmax.y
+	and amax.y >= bmin.y
+	and amin.z <= bmax.z
+	and amax.z >= bmin.z
+	then
+		-- find the center of the intersecting region
+		-- find the largest axis of the center
+		-- use that as the collision axis
+		local iminx = math.max(amin.x, bmin.x)
+		local iminy = math.max(amin.y, bmin.y)
+		local iminz = math.max(amin.z, bmin.z)
+		
+		local imaxx = math.min(amax.x, bmax.x)
+		local imaxy = math.min(amax.y, bmax.y)
+		local imaxz = math.min(amax.z, bmax.z)
+		
+		local midx = (iminx + imaxx) * .5
+		local midy = (iminy + imaxy) * .5
+		local midz = (iminz + imaxz) * .5
+				
+		local dx = imaxx - iminx
+		local dy = imaxy - iminy
+		local dz = imaxz - iminz
+		
+		local side, pm
+		if dx < dy then
+			if dx < dz then
+				side, pm = 0, .5 * (amin.x + amax.x) < midx and 1 or -1
+			else
+				side, pm = 2, .5 * (amin.z + amax.z) < midz and 1 or -1
+			end
 		else
-			pos.s[bestside] = omax.s[bestside] - min.s[bestside] + epsilon
+			if dy < dz then
+				side, pm = 1, .5 * (amin.y + amax.y) < midy and 1 or -1
+			else
+				side, pm = 2, .5 * (amin.z + amax.z) < midz and 1 or -1
+			end
 		end
-		return bestside, bestpm
+		
+		if side == 0 then 
+			vel.x = 0
+			if pm == 1 then
+				pos.x = bmin.x - max.x - epsilon
+			else
+				pos.x = bmax.x - min.x + epsilon
+			end
+		elseif side == 1 then 
+			vel.y = 0 
+			if pm == 1 then
+				pos.y = bmin.y - max.y - epsilon
+			else
+				pos.y = bmax.y - min.y + epsilon
+			end
+		elseif side == 2 then 
+			vel.z = 0
+			if pm == 1 then
+				pos.z = bmin.z - max.z - epsilon
+			else
+				pos.z = bmax.z - min.z + epsilon
+			end
+		end
 	end
 end
 
 Obj.gravity = -9.8
 Obj.hitsides = 0
-
+local epsilon = 1e-5
 function Obj:update(dt)
 	self.oldpos:set(self.pos:unpack())
 -- [[
@@ -83,39 +141,17 @@ function Obj:update(dt)
 --]]
 	self.vel.z = self.vel.z + self.gravity * dt
 
-	self.hitsides = 0
-	local rep
-	repeat
-		rep = nil
-		-- find floor
-		for i=math.floor(math.min(self.pos.x, self.oldpos.x) + self.min.x - 1.5),math.floor(math.max(self.pos.x, self.oldpos.x) + self.max.x + .5) do
-			for j=math.floor(math.min(self.pos.y, self.oldpos.y) + self.min.y - 1.5),math.floor(math.max(self.pos.y, self.oldpos.y) + self.max.y + .5) do
-				for k=math.floor(math.min(self.pos.z, self.oldpos.z) + self.min.z - 1.5),math.floor(math.max(self.pos.z, self.oldpos.z) + self.max.z + .5) do
-					if app.game.map:get(i,j,k) == Tile.typeValues.SOLID then
-						local side, pm = push(self.pos, self.min, self.max, vec3f(i,j,k), vec3f(i+1,j+1,k+1), self.vel)
-						if side then
---print('pos', self.pos, 'vel', self.vel, 'colliding', i,j,k, 'side', side, 'pm', pm)
-							if side == 0 then 
-								self.vel.x = 0
-								self.pos.x = self.oldpos.x
-							elseif side == 1 then 
-								self.vel.y = 0 
-								self.pos.y = self.oldpos.y
-							elseif side == 2 then 
-								self.vel.z = 0 
-								self.pos.z = self.oldpos.z
-							end
-							self.hitsides = bit.bor(self.hitsides, bit.lshift(1, side + 3 * (pm + 1) * .5))
-							rep = true
-							break
-						end
-					end
+	for i=math.floor(math.min(self.pos.x, self.oldpos.x) + self.min.x - 1.5),math.floor(math.max(self.pos.x, self.oldpos.x) + self.max.x + .5) do
+		for j=math.floor(math.min(self.pos.y, self.oldpos.y) + self.min.y - 1.5),math.floor(math.max(self.pos.y, self.oldpos.y) + self.max.y + .5) do
+			for k=math.floor(math.min(self.pos.z, self.oldpos.z) + self.min.z - 1.5),math.floor(math.max(self.pos.z, self.oldpos.z) + self.max.z + .5) do
+				if app.game.map:get(i,j,k) == Tile.typeValues.SOLID then
+					local omin = vec3f(i,j,k)
+					local omax = vec3f(i+1,j+1,k+1)
+					push(self.pos, self.min, self.max, omin, omax, self.vel)
 				end
-				if rep then break end
 			end
-			if rep then break end
 		end
-	until true--not rep
+	end
 end
 
 -- ccw start at 0' (with 45' spread)
@@ -129,6 +165,7 @@ function Obj:draw()
 --print('angle', self.angle, 'index', angleIndex, 'seqname', seqname)
 	end
 
+--[[
 	for faceIndex,faces in ipairs(Tile.cubeFaces) do
 		if bit.band(self.hitsides, bit.lshift(1, faceIndex-1)) ~= 0 then
 			gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_FILL)
@@ -149,6 +186,7 @@ function Obj:draw()
 	end
 	gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_FILL)
 	gl.glColor3f(1,1,1)
+--]]
 
 	if self.sprite then
 		local sprite = anim[self.sprite]

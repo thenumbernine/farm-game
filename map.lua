@@ -14,19 +14,32 @@ function Map:init(size)	-- vec3i
 	self.size = vec3i(size:unpack())
 	self.map = ffi.new('maptype_t[?]', self.size:volume())
 	ffi.fill(self.map, 0, self.size:volume())	-- 0 = empty
-	for k=0,self.size.z-1,5 do
+	for k=0,self.size.z-1 do
 		for j=0,self.size.y-1 do
 			for i=0,self.size.x-1 do
-				self.map[i + self.size.x * (j + self.size.y * k)] = Tile.typeValues.SOLID
+				local value = Tile.typeValues.EMPTY
+				if k % 5 == 0 then
+					value = Tile.typeValues.SOLID
+				elseif k % 5 == 1 then
+					if (i % 8 == 3 or i % 8 == 4)
+					and (j % 8 == 3 or j % 8 == 4)
+					then
+						value = Tile.typeValues.SOLID
+					end
+				end
+				self.map[i + self.size.x * (j + self.size.y * k)] = value
 			end
 		end
 	end
 
+	-- stairway
 	for k=0,self.size.z-1 do
 		local i = 3 + math.floor(math.sqrt(.5) * math.cos(.5 * math.pi * (k + .5)))
 		local j = 3 + math.floor(math.sqrt(.5) * math.sin(.5 * math.pi * (k + .5)))
 		self.map[i + self.size.x * (j + self.size.y * k)] = Tile.typeValues.SOLID
 	end
+
+	
 end
 
 function Map:draw()
