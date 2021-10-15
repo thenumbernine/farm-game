@@ -54,7 +54,8 @@ function Map:get(i,j,k)
 	or j < 0 or j >= self.size.y
 	or k < 0 or k >= self.size.z
 	then
-		return Tile.typeValues.EMPTY
+		--return Tile.typeValues.EMPTY
+		return Tile.typeValues.SOLID
 	end
 	return self.map[i + self.size.x * (j + self.size.y * k)]
 end
