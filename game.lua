@@ -23,7 +23,7 @@ function Game:init()
 	self.objs = table()
 	self.player = self:newObj{
 		class = Obj.classes.Player,
-		pos = vec3f(.5, .5, 1),
+		pos = vec3f(.5, .5, 1.5),
 	}
 end
 

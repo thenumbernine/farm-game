@@ -11,14 +11,14 @@ local gettimeofday = require 'zelda.gettimeofday'
 local App = class(require 'glapp.orbit'(ImGuiApp))
 App.title = 'Zelda 4D'
 
-App.viewDist = 4
+App.viewDist = 7
 
 function App:initGL()
 	app = self	-- global
 
 	App.super.initGL(self)
 
-	self.view.fovY = 120
+	self.view.fovY = 90
 
 	-- [[ load tex2ds for anim
 	local GLTex2D = require 'gl.tex2d'
@@ -35,7 +35,7 @@ function App:initGL()
 	end
 	--]]
 	
-	self.view.angle:fromAngleAxis(1,0,0,20)
+	self.view.angle:fromAngleAxis(1,0,0,30)
 
 	self.game = Game()
 	

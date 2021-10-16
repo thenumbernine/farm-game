@@ -30,10 +30,10 @@ function Obj:init(args)
 	self.vel = vec3f(0,0,0)
 	if args.vel then self.vel:set(args.vel:unpack()) end
 
-	self.min = vec3f(-.4, -.4, 0)
+	self.min = vec3f(-.4, -.4, -.4)
 	if args.min then self.min:set(args.min:unpack()) end
 	
-	self.max = vec3f(.4, .4, .8)
+	self.max = vec3f(.4, .4, .4)
 	if args.max then self.max:set(args.max:unpack()) end
 end
 
@@ -144,7 +144,7 @@ function Obj:update(dt)
 	for i=math.floor(math.min(self.pos.x, self.oldpos.x) + self.min.x - 1.5),math.floor(math.max(self.pos.x, self.oldpos.x) + self.max.x + .5) do
 		for j=math.floor(math.min(self.pos.y, self.oldpos.y) + self.min.y - 1.5),math.floor(math.max(self.pos.y, self.oldpos.y) + self.max.y + .5) do
 			for k=math.floor(math.min(self.pos.z, self.oldpos.z) + self.min.z - 1.5),math.floor(math.max(self.pos.z, self.oldpos.z) + self.max.z + .5) do
-				if app.game.map:get(i,j,k) == Tile.typeValues.SOLID then
+				if app.game.map:get(i,j,k) == Tile.typeValues.Solid then
 					local omin = vec3f(i,j,k)
 					local omax = vec3f(i+1,j+1,k+1)
 					push(self.pos, self.min, self.max, omin, omax, self.vel)
@@ -203,7 +203,7 @@ function Obj:draw()
 					gl.glTexCoord2f(uv[1], uv[2])
 					gl.glVertex3f((
 						app.view.angle:xAxis() * (.5 - uv[1]) * self.drawSize.x
-						+ app.view.angle:yAxis() * (1 - uv[2]) * self.drawSize.y
+						+ app.view.angle:yAxis() * (.5 - uv[2]) * self.drawSize.y
 						+ self.pos
 					):unpack())
 				end
@@ -220,7 +220,7 @@ local Player = class(Obj)
 Player.sprite = 'link'
 Player.drawSize = vec2f(1,1.5)
 Player.seqUsesDir = true
-Player.walkSpeed = 5
+Player.walkSpeed = 6
 
 function Player:update(dt)
 	local dx = 0

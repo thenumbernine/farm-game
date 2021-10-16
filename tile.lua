@@ -2,12 +2,6 @@ local class = require 'ext.class'
 local table = require 'ext.table'
 local gl = require 'gl'
 
-local Tile = class()
-
-local EmptyTile = class(Tile)
-
-local SolidTile = class(Tile)
-
 local cubeFaces = table()
 for pm=0,1 do	-- plus/minus
 	for i=0,2 do	-- x,y,z
@@ -43,8 +37,17 @@ end
 -- bit 0 = x+, 1 = y+, 2 = z+
 local cubeVtxs = makeSimplexVtxs(3)
 
---baking makeSimplexVtxs(2) with xor'ing bits 0 and 1 for simplex traversal
+--baking makeSimplexVtxs(2) with xor'ing bits 0 and 1 for 2D simplex traversal
 local unitquad = {{0,0}, {1,0}, {1,1}, {0,1}}
+
+
+local Tile = class()
+
+local EmptyTile = class(Tile)
+EmptyTile.name = 'Empty'	-- excluding 'Tile' suffix of all Tile classes ...
+
+local SolidTile = class(Tile)
+SolidTile.name = 'Solid'
 
 function SolidTile:render(i,j,k)
 	gl.glBegin(gl.GL_QUADS)
@@ -58,15 +61,12 @@ function SolidTile:render(i,j,k)
 	gl.glEnd()
 end
 
-
-Tile.typeValues = {
-	EMPTY = 0,
-	SOLID = 1,
-}
-
 Tile.types = {
+	[0] = EmptyTile(),
 	SolidTile(),
 }
+
+Tile.typeValues = table.map(Tile.types, function(obj,index) return index, obj.name end):setmetatable(nil)
 
 Tile.cubeVtxs = cubeVtxs 
 Tile.cubeFaces = cubeFaces 
