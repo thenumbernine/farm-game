@@ -25,6 +25,10 @@ function Map:init(size)	-- vec3i
 					and (j % 8 == 3 or j % 8 == 4)
 					then
 						value = Tile.typeValues.Solid
+					elseif i % 8 >= 2 and i % 8 <= 5
+					and j % 8 >= 2 and j % 8 <= 5
+					then
+						value = Tile.typeValues.SolidBottomHalf
 					end
 				end
 				self.map[i + self.size.x * (j + self.size.y * k)] = value

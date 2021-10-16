@@ -144,10 +144,14 @@ function Obj:update(dt)
 	for i=math.floor(math.min(self.pos.x, self.oldpos.x) + self.min.x - 1.5),math.floor(math.max(self.pos.x, self.oldpos.x) + self.max.x + .5) do
 		for j=math.floor(math.min(self.pos.y, self.oldpos.y) + self.min.y - 1.5),math.floor(math.max(self.pos.y, self.oldpos.y) + self.max.y + .5) do
 			for k=math.floor(math.min(self.pos.z, self.oldpos.z) + self.min.z - 1.5),math.floor(math.max(self.pos.z, self.oldpos.z) + self.max.z + .5) do
-				if app.game.map:get(i,j,k) == Tile.typeValues.Solid then
-					local omin = vec3f(i,j,k)
-					local omax = vec3f(i+1,j+1,k+1)
-					push(self.pos, self.min, self.max, omin, omax, self.vel)
+				local tiletype = app.game.map:get(i,j,k)
+				if tiletype > 0 then
+					local tile = Tile.types[tiletype]
+					if tile.solid then
+						local omin = vec3f(i,j,k)
+						local omax = vec3f(i+1,j+1,k+1)
+						push(self.pos, self.min, self.max, omin, omax, self.vel)
+					end
 				end
 			end
 		end
@@ -221,6 +225,7 @@ Player.sprite = 'link'
 Player.drawSize = vec2f(1,1.5)
 Player.seqUsesDir = true
 Player.walkSpeed = 6
+Player.gravity = 0
 
 function Player:update(dt)
 	local dx = 0

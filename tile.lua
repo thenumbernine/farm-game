@@ -1,6 +1,7 @@
 local class = require 'ext.class'
 local table = require 'ext.table'
 local gl = require 'gl'
+local vec3f = require 'vec-ffi.vec3f'
 
 local cubeFaces = table()
 for pm=0,1 do	-- plus/minus
@@ -43,27 +44,55 @@ local unitquad = {{0,0}, {1,0}, {1,1}, {0,1}}
 
 local Tile = class()
 
-local EmptyTile = class(Tile)
-EmptyTile.name = 'Empty'	-- excluding 'Tile' suffix of all Tile classes ...
+Tile.min = vec3f(0,0,0)
+Tile.max = vec3f(1,1,1)
 
-local SolidTile = class(Tile)
-SolidTile.name = 'Solid'
-
-function SolidTile:render(i,j,k)
+function Tile:render(i,j,k)
 	gl.glBegin(gl.GL_QUADS)
 	for _,faces in ipairs(cubeFaces) do
 		for f,face in ipairs(faces) do
 			gl.glTexCoord2f(unitquad[f][1], unitquad[f][2])
 			local v = cubeVtxs[face+1]
-			gl.glVertex3f(v[1]+i, v[2]+j, v[3]+k)
+			gl.glVertex3f(
+				i + (1 - v[1]) * self.min.x + v[1] * self.max.x, 
+				j + (1 - v[2]) * self.min.y + v[2] * self.max.y, 
+				k + (1 - v[3]) * self.min.z + v[3] * self.max.z) 
 		end
 	end
 	gl.glEnd()
 end
 
+
+
+local EmptyTile = class(Tile)
+EmptyTile.name = 'Empty'	-- excluding 'Tile' suffix of all Tile classes ...
+-- TODO give each Tile an obj, and give Empty none
+EmptyTile.render = nil
+
+
+local SolidTile = class(Tile)
+SolidTile.name = 'Solid'
+SolidTile.solid = true
+
+local SolidBottomHalfTile = class(Tile)
+SolidBottomHalfTile.name = 'SolidBottomHalf'
+SolidBottomHalfTile.solid = true
+SolidBottomHalfTile.min = vec3f(0,0,0)
+SolidBottomHalfTile.max = vec3f(1,1,.5)
+
+
+local SolidTopHalfTile = class(Tile)
+SolidTopHalfTile.name = 'SolidTopHalf'
+SolidTopHalfTile.solid = true
+SolidTopHalfTile.min = vec3f(0,0,.5)
+SolidTopHalfTile.max = vec3f(1,1,1)
+
+
 Tile.types = {
 	[0] = EmptyTile(),
 	SolidTile(),
+	SolidBottomHalfTile(),
+	SolidTopHalfTile(),
 }
 
 Tile.typeValues = table.map(Tile.types, function(obj,index) return index, obj.name end):setmetatable(nil)
