@@ -225,7 +225,6 @@ Player.sprite = 'link'
 Player.drawSize = vec2f(1,1.5)
 Player.seqUsesDir = true
 Player.walkSpeed = 6
-Player.gravity = 0
 
 function Player:update(dt)
 	local dx = 0
