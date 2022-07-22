@@ -8,7 +8,11 @@ local anim = require 'zelda.anim'
 local Game = require 'zelda.game'
 local gettimeofday = require 'zelda.gettimeofday'
 
-local App = class(require 'glapp.orbit'(ImGuiApp))
+local App = class(
+	--require 'glapp.orbit'(
+		require 'glapp.view'.apply(ImGuiApp)
+	--)
+)
 App.title = 'Zelda 4D'
 
 App.viewDist = 7
@@ -55,6 +59,8 @@ function App:update()
 	
 	gl.glClear(bit.bor(gl.GL_COLOR_BUFFER_BIT, gl.GL_DEPTH_BUFFER_BIT))
 
+	gl.glEnable(gl.GL_ALPHA_TEST)
+	gl.glAlphaFunc(gl.GL_GEQUAL, .1)
 	gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 	gl.glEnable(gl.GL_BLEND)
 	gl.glEnable(gl.GL_TEXTURE_2D)

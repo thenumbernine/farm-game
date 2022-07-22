@@ -13,6 +13,7 @@ Obj.frame = 1
 
 function Obj:init(args)
 	assert(args)
+	self.game = assert(args.game)
 
 	self.angle = 1.5 * math.pi
 	
@@ -141,6 +142,8 @@ function Obj:update(dt)
 --]]
 	self.vel.z = self.vel.z + self.gravity * dt
 
+	local omin = vec3f()
+	local omax = vec3f()
 	for i=math.floor(math.min(self.pos.x, self.oldpos.x) + self.min.x - 1.5),math.floor(math.max(self.pos.x, self.oldpos.x) + self.max.x + .5) do
 		for j=math.floor(math.min(self.pos.y, self.oldpos.y) + self.min.y - 1.5),math.floor(math.max(self.pos.y, self.oldpos.y) + self.max.y + .5) do
 			for k=math.floor(math.min(self.pos.z, self.oldpos.z) + self.min.z - 1.5),math.floor(math.max(self.pos.z, self.oldpos.z) + self.max.z + .5) do
@@ -148,8 +151,12 @@ function Obj:update(dt)
 				if tiletype > 0 then
 					local tile = Tile.types[tiletype]
 					if tile.solid then
-						local omin = vec3f(i,j,k)
-						local omax = vec3f(i+1,j+1,k+1)
+						omin:set(i,j,k)
+						omax:set(i+1,j+1,k+1)
+						
+						-- TODO trace gravity fall downward separately
+						-- then move horizontall
+						-- if push fails then raise up, move, and go back down, to try and do steps
 						push(self.pos, self.min, self.max, omin, omax, self.vel)
 					end
 				end
@@ -159,6 +166,7 @@ function Obj:update(dt)
 end
 
 -- ccw start at 0' (with 45' spread)
+-- TODO use 8 points as well?
 local dirSeqSuffixes = {'_r', '_u', '_l', '_d'}
 
 function Obj:draw()
@@ -199,12 +207,14 @@ function Obj:draw()
 --print('seqname', seqname, 'seq', seq)
 			if seq and self.frame then
 				local frame = seq[self.frame]
-				local uscale = 1
+				local uscale = -1
 				if frame.hflip then uscale = uscale * -1 end
 				frame.tex:bind()
 				gl.glBegin(gl.GL_QUADS)
 				for _,uv in ipairs(Tile.unitquad) do
-					gl.glTexCoord2f(uv[1], uv[2])
+					gl.glTexCoord2f(
+						(uv[1] - .5) * uscale + .5,
+						uv[2])
 					gl.glVertex3f((
 						app.view.angle:xAxis() * (.5 - uv[1]) * self.drawSize.x
 						+ app.view.angle:yAxis() * (.5 - uv[2]) * self.drawSize.y
@@ -217,55 +227,5 @@ function Obj:draw()
 		end
 	end
 end
-
-
-local Player = class(Obj)
-
-Player.sprite = 'link'
-Player.drawSize = vec2f(1,1.5)
-Player.seqUsesDir = true
-Player.walkSpeed = 6
-
-function Player:update(dt)
-	local dx = 0
-	local dy = 0
-	if self.buttonRight then dx = dx + 1 end
-	if self.buttonLeft then dx = dx - 1 end
-	if self.buttonUp then dy = dy + 1 end
-	if self.buttonDown then dy = dy - 1 end
-	local l = dx*dx + dy*dy
-	if l > 0 then
-		l = self.walkSpeed / math.sqrt(l)
-	end
-	dx = dx * l
-	dy = dy * l
-
-	local zDir = app.view.angle:zAxis()	-- down dir
-	local xDir = app.view.angle:xAxis()	-- right dir
-		
-	local x2Dir = vec2f(1,0)--vec2f(xDir.x, xDir.y)
-	x2Dir = x2Dir:normalize() 
-	
-	local y2Dir = vec2f(0,1)	--vec2f(-zDir.x, -zDir.y)
-	y2Dir = y2Dir:normalize() 
-	
-	self.vel.x = (
-		x2Dir.x * dx
-		+ y2Dir.x * dy
-	)
-	self.vel.y = (
-		x2Dir.y * dx
-		+ y2Dir.y * dy
-	)
-
-	Player.super.update(self, dt)
-end
-
-
-assert(not Obj.classes)
-Obj.classes = {
-	Player = Player,
-}
-
 
 return Obj
