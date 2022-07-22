@@ -76,7 +76,8 @@ function Player:attack()
 	-- see if we hit anyone
 	for _,obj in ipairs(game.objs) do
 		if obj ~= self 
-		and require 'zelda.obj.goomba':isa(obj)
+		and obj.takesDamage
+		and not obj.dead
 		then
 			local attackDist = 2	-- should match rFar in the draw code.  TODO as well consider object bbox / bounding radius.
 			if (self.pos - obj.pos):lenSq() < attackDist*attackDist then

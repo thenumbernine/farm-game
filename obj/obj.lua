@@ -2,6 +2,7 @@ local gl = require 'gl'
 local class = require 'ext.class'
 local vec2f = require 'vec-ffi.vec2f'
 local vec3f = require 'vec-ffi.vec3f'
+local vec4f = require 'vec-ffi.vec4f'
 local anim = require 'zelda.anim'
 local Tile = require 'zelda.tile'
 
@@ -31,11 +32,16 @@ function Obj:init(args)
 	self.vel = vec3f(0,0,0)
 	if args.vel then self.vel:set(args.vel:unpack()) end
 
+	-- [[[ bbox
 	self.min = vec3f(-.4, -.4, -.4)
 	if args.min then self.min:set(args.min:unpack()) end
 	
 	self.max = vec3f(.4, .4, .4)
 	if args.max then self.max:set(args.max:unpack()) end
+	--]]
+
+	self.color = vec4f(1,1,1,1)
+	if args.color then self.color:set(args.color:unpack()) end
 end
 
 -- how to handle collision?
@@ -132,6 +138,9 @@ end
 
 Obj.gravity = -9.8
 Obj.hitsides = 0
+Obj.useGravity = true	-- or TODO just change the gravity value to zero?
+Obj.collidesWithTiles = true
+
 local epsilon = 1e-5
 function Obj:update(dt)
 	self.oldpos:set(self.pos:unpack())
@@ -140,24 +149,28 @@ function Obj:update(dt)
 	self.pos.y = self.pos.y + self.vel.y * dt
 	self.pos.z = self.pos.z + self.vel.z * dt
 --]]
-	self.vel.z = self.vel.z + self.gravity * dt
+	if self.useGravity then
+		self.vel.z = self.vel.z + self.gravity * dt
+	end
 
-	local omin = vec3f()
-	local omax = vec3f()
-	for i=math.floor(math.min(self.pos.x, self.oldpos.x) + self.min.x - 1.5),math.floor(math.max(self.pos.x, self.oldpos.x) + self.max.x + .5) do
-		for j=math.floor(math.min(self.pos.y, self.oldpos.y) + self.min.y - 1.5),math.floor(math.max(self.pos.y, self.oldpos.y) + self.max.y + .5) do
-			for k=math.floor(math.min(self.pos.z, self.oldpos.z) + self.min.z - 1.5),math.floor(math.max(self.pos.z, self.oldpos.z) + self.max.z + .5) do
-				local tiletype = app.game.map:get(i,j,k)
-				if tiletype > 0 then
-					local tile = Tile.types[tiletype]
-					if tile.solid then
-						omin:set(i,j,k)
-						omax:set(i+1,j+1,k+1)
-						
-						-- TODO trace gravity fall downward separately
-						-- then move horizontall
-						-- if push fails then raise up, move, and go back down, to try and do steps
-						push(self.pos, self.min, self.max, omin, omax, self.vel)
+	if self.collidesWithTiles then
+		local omin = vec3f()
+		local omax = vec3f()
+		for i=math.floor(math.min(self.pos.x, self.oldpos.x) + self.min.x - 1.5),math.floor(math.max(self.pos.x, self.oldpos.x) + self.max.x + .5) do
+			for j=math.floor(math.min(self.pos.y, self.oldpos.y) + self.min.y - 1.5),math.floor(math.max(self.pos.y, self.oldpos.y) + self.max.y + .5) do
+				for k=math.floor(math.min(self.pos.z, self.oldpos.z) + self.min.z - 1.5),math.floor(math.max(self.pos.z, self.oldpos.z) + self.max.z + .5) do
+					local tiletype = app.game.map:get(i,j,k)
+					if tiletype > 0 then
+						local tile = Tile.types[tiletype]
+						if tile.solid then
+							omin:set(i,j,k)
+							omax:set(i+1,j+1,k+1)
+							
+							-- TODO trace gravity fall downward separately
+							-- then move horizontall
+							-- if push fails then raise up, move, and go back down, to try and do steps
+							push(self.pos, self.min, self.max, omin, omax, self.vel)
+						end
 					end
 				end
 			end
@@ -208,13 +221,16 @@ function Obj:draw()
 			if seq and self.frame then
 				local frame = seq[self.frame]
 				local uscale = -1
+				local vscale = 1
 				if frame.hflip then uscale = uscale * -1 end
+				if self.vflip then vscale = vscale * -1 end
 				frame.tex:bind()
+				gl.glColor4fv(self.color.s)
 				gl.glBegin(gl.GL_QUADS)
 				for _,uv in ipairs(Tile.unitquad) do
 					gl.glTexCoord2f(
 						(uv[1] - .5) * uscale + .5,
-						uv[2])
+						(uv[2] - .5) * vscale + .5)
 					gl.glVertex3f((
 						app.view.angle:xAxis() * (.5 - uv[1]) * self.drawSize.x
 						+ app.view.angle:yAxis() * (.5 - uv[2]) * self.drawSize.y
@@ -222,6 +238,7 @@ function Obj:draw()
 					):unpack())
 				end
 				gl.glEnd()
+				gl.glColor4f(1,1,1,1)
 				frame.tex:unbind()
 			end
 		end

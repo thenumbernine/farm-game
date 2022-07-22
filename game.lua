@@ -7,7 +7,7 @@ local GLTex2D = require 'gl.tex2d'
 local vec3i = require 'vec-ffi.vec3i'
 local vec3f = require 'vec-ffi.vec3f'
 local Obj = require 'zelda.obj.obj'
-
+local ThreadManager = require 'threadmanager'
 
 -- put this somewhere as to not give it a require loop
 assert(not Obj.classes)
@@ -22,6 +22,7 @@ local Game = class()
 -- 8 x 8 x 8 = 512 tiles
 function Game:init()
 	self.time = 0
+	self.threads = ThreadManager()
 
 	self.texpack = GLTex2D{
 		filename = 'texpack.png',
@@ -60,7 +61,43 @@ function Game:newObj(args)
 	return obj
 end
 
+local function glColorHex(i)
+	gl.glColor3ub(
+		bit.band(0xff, bit.rshift(i,16)),
+		bit.band(0xff, bit.rshift(i,8)),
+		bit.band(0xff, i)
+	)
+end
+
 function Game:draw()
+
+-- [[ sky
+	gl.glMatrixMode(gl.GL_PROJECTION)
+	gl.glPushMatrix()
+	gl.glLoadIdentity()
+	gl.glOrtho(0,1,0,1,-1,1)
+	gl.glMatrixMode(gl.GL_MODELVIEW)
+	gl.glPushMatrix()
+	gl.glLoadIdentity()
+
+	gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
+	gl.glDisable(gl.GL_DEPTH_TEST)
+	gl.glBegin(gl.GL_TRIANGLE_STRIP)
+	glColorHex(0xda9134)	gl.glVertex2f(0,0)
+	glColorHex(0xda9134)	gl.glVertex2f(1,0)
+	glColorHex(0x313453)	gl.glVertex2f(0,1)
+	glColorHex(0x313453)	gl.glVertex2f(1,1)
+	gl.glEnd()
+	gl.glColor3f(1,1,1)
+	gl.glEnable(gl.GL_DEPTH_TEST)
+
+	gl.glMatrixMode(gl.GL_PROJECTION)
+	gl.glPopMatrix()
+	gl.glMatrixMode(gl.GL_MODELVIEW)
+	gl.glPopMatrix()
+--]]
+
+
 	self.map:draw()
 	for _,obj in ipairs(self.objs) do
 		obj:draw()
@@ -71,13 +108,38 @@ function Game:update(dt)
 	for _,obj in ipairs(self.objs) do
 		if obj.update then obj:update(dt) end
 	end
+	
+	-- now threads
+	self.threads:update()
+
 	-- only after update do the removals
 	for i=#self.objs,1,-1 do
 		if self.objs[i].removeFlag then
 			table.remove(self.objs, i)
 		end
 	end
+	
 	self.time = self.time + dt
+end
+
+-- TODO only call this from a 
+function Game:sleep(seconds)
+	assert(coroutine.isyieldable(coroutine.running()))
+	local endTime = self.time + seconds
+	while self.time < endTime do
+		coroutine.yield()
+	end
+end
+
+function Game:fade(seconds, callback)
+	assert(coroutine.isyieldable(coroutine.running()))
+	local startTime = self.time
+	local endTime = startTime + seconds
+	while self.time < endTime do
+		local alpha = (self.time - startTime) / (endTime - startTime)
+		callback(alpha)
+		coroutine.yield()
+	end
 end
 
 function Game:onEvent(event)
