@@ -1,4 +1,4 @@
-require 'ffi.c.time'
+require 'ffi.c.sys.time'
 local ffi = require 'ffi'
 
 local gettimeofday_tv = ffi.new('struct timeval[1]')
