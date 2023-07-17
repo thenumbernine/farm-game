@@ -22,12 +22,12 @@ local anim = {
 	},
 }
 
-local file = require 'ext.file'
+local path = require 'ext.path'
 for _,spritename in ipairs{'goomba'} do
 	local sprite = {}
 	anim[spritename] = sprite
-	for f in file('sprites/'..spritename):dir() do
-		local base, ext = file(f):getext()
+	for f in path('sprites/'..spritename):dir() do
+		local base, ext = path(f):getext()
 		local seqname, frameindex = base:match'^(.-)(%d*)$'
 		frameindex = tonumber(frameindex) or frameindex
 		-- TODO auto group sequences of numbers?
