@@ -1,4 +1,4 @@
-local sdl = require 'ffi.sdl'
+local sdl = require 'ffi.req' 'sdl'
 local class = require 'ext.class'
 local table = require 'ext.table'
 local Map = require 'zelda.map'
