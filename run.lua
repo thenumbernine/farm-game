@@ -6,7 +6,7 @@ local gl = require 'gl'
 local ImGuiApp = require 'imguiapp'
 local anim = require 'zelda.anim'
 local Game = require 'zelda.game'
-local gettimeofday = require 'zelda.gettimeofday'
+local gettimeofday = require 'ext.timer'.getTime
 
 local App = class(
 	--require 'glapp.orbit'(
