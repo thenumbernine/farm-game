@@ -17,7 +17,7 @@ local App = class(
 )
 App.title = 'Zelda 4D'
 
-App.viewDist = 7
+App.viewDist = 4
 
 function App:initGL()
 	app = self	-- global

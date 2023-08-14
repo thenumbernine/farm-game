@@ -33,10 +33,10 @@ function Obj:init(args)
 	if args.vel then self.vel:set(args.vel:unpack()) end
 
 	-- [[[ bbox
-	self.min = vec3f(-.4, -.4, -.4)
+	self.min = vec3f(-.3, -.3, -.3)
 	if args.min then self.min:set(args.min:unpack()) end
 	
-	self.max = vec3f(.4, .4, .4)
+	self.max = vec3f(.3, .3, .3)
 	if args.max then self.max:set(args.max:unpack()) end
 	--]]
 
@@ -242,11 +242,12 @@ function Obj:draw(shader)
 						shader.attrs.texcoord.loc,
 						(uv[1] - .5) * uscale + .5,
 						(uv[2] - .5) * vscale + .5)
-					gl.glVertex3f((
+					local x,y,z = (
 						app.view.angle:xAxis() * (.5 - uv[1]) * self.drawSize.x
 						+ app.view.angle:yAxis() * (.5 - uv[2]) * self.drawSize.y
 						+ self.pos
-					):unpack())
+					):unpack()
+					gl.glVertex3f(x,y,z+.1)
 				end
 				gl.glEnd()
 				frame.tex:unbind()

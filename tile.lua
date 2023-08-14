@@ -51,8 +51,9 @@ function Tile:render(i,j,k, shader)
 	gl.glBegin(gl.GL_QUADS)
 	for _,faces in ipairs(cubeFaces) do
 		for f,face in ipairs(faces) do
-			gl.glVertexAttrib2f(shader.attrs.texcoord.loc, unitquad[f][1], unitquad[f][2])
 			local v = cubeVtxs[face+1]
+			gl.glVertexAttrib1f(shader.attrs.lum.loc, v[3])
+			gl.glVertexAttrib2f(shader.attrs.texcoord.loc, unitquad[f][1], unitquad[f][2])
 			gl.glVertex3f(
 				i + (1 - v[1]) * self.min.x + v[1] * self.max.x, 
 				j + (1 - v[2]) * self.min.y + v[2] * self.max.y, 

@@ -93,13 +93,16 @@ void main() {
 	}
 	self.map = Map{
 		app = self.app,
-		size = vec3i(16, 16, 16),
+		size = vec3i(32, 32, 32),
 	}
 
 	self.objs = table()
 	self.player = self:newObj{
 		class = Obj.classes.Player,
-		pos = vec3f(8.5, 8.5, 1.5),
+		pos = vec3f(
+			self.map.size.x*.5,
+			self.map.size.y*.5,
+			self.map.size.z-.5),
 	}
 
 -- [[	
