@@ -19,8 +19,10 @@ typedef struct {
 local Map = class()
 
 -- voxel-based
-function Map:init(size)	-- vec3i
-	self.size = vec3i(size:unpack())
+function Map:init(args)	-- vec3i
+	self.app = assert(args.app)
+	local app = self.app
+	self.size = vec3i(args.size:unpack())
 	self.map = ffi.new('maptype_t[?]', self.size:volume())
 	ffi.fill(self.map, 0, ffi.sizeof'maptype_t' * self.size:volume())	-- 0 = empty
 	for k=0,self.size.z-1 do
@@ -59,22 +61,32 @@ function Map:init(size)	-- vec3i
 	self.texpackSize = vec2i(2, 2)
 
 	self.shader = GLProgram{
-		vertexCode = [[
-varying vec2 tc;
+		vertexCode = app.glslHeader..[[
+in vec3 vertex;
+in vec2 texcoord;
+
+out vec2 texcoordv;
+
+uniform mat4 mvProjMat;
+
 void main() {
-	tc = gl_MultiTexCoord0.xy;
-	gl_Position = ftransform();
+	texcoordv = texcoord;
+	gl_Position = mvProjMat * vec4(vertex, 1.);
 }
 ]],
-		fragmentCode = template([[
+		fragmentCode = app.glslHeader..template([[
 #define texpackDx 	<?=clnumber(1/tonumber(texpackSize.x))?>
 #define texpackDy	<?=clnumber(1/tonumber(texpackSize.y))?>
 #define texpackDelta	vec2(texpackDx, texpackDy)
+
+in vec2 texcoordv;
+out vec4 fragColor;
+
 uniform vec2 texindex;
 uniform sampler2D tex;
-varying vec2 tc;
+
 void main() {
-	gl_FragColor = texture2D(tex, (texindex + tc) * texpackDelta);
+	fragColor = texture(tex, (texindex + texcoordv) * texpackDelta);
 }
 ]], 	{
 			clnumber = require 'cl.obj.number',
@@ -88,8 +100,14 @@ void main() {
 end
 
 function Map:draw()
+	local app = self.app
+	local view = app.view
+	local shader = self.shader
 	local texpack = app.game.texpack
-	self.shader:use()
+	
+	shader:use()
+	
+	gl.glUniformMatrix4fv(shader.uniforms.mvProjMat.loc, 1, gl.GL_FALSE, view.mvProjMat.ptr)
 	
 	texpack:bind()
 	local index = 0
@@ -104,8 +122,8 @@ function Map:draw()
 						local texindex = tonumber(maptile.tex)
 						local texindexX = texindex % self.texpackSize.x
 						local texindexY = (texindex - texindexX) / self.texpackSize.x
-						gl.glUniform2f(self.shader.uniforms.texindex.loc, texindexX, texindexY)
-						tile:render(i,j,k)
+						gl.glUniform2f(shader.uniforms.texindex.loc, texindexX, texindexY)
+						tile:render(i,j,k, shader)
 					end
 				end
 				index = index + 1
@@ -113,7 +131,7 @@ function Map:draw()
 		end
 	end
 	texpack:unbind()
-	self.shader:useNone()
+	shader:useNone()
 end
 
 -- i,j,k integers

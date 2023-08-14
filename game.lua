@@ -4,6 +4,7 @@ local table = require 'ext.table'
 local Map = require 'zelda.map'
 local gl = require 'gl'
 local GLTex2D = require 'gl.tex2d'
+local GLProgram = require 'gl.program'
 local vec3i = require 'vec-ffi.vec3i'
 local vec3f = require 'vec-ffi.vec3f'
 local Obj = require 'zelda.obj.obj'
@@ -20,16 +21,72 @@ local Game = class()
 
 -- 16 x 16 = 256 tiles in a typical screen
 -- 8 x 8 x 8 = 512 tiles
-function Game:init()
+function Game:init(args)
+	self.app = assert(args.app)
+
 	self.time = 0
 	self.threads = ThreadManager()
+
+	self.skyShader = GLProgram{
+		vertexCode = app.glslHeader..[[
+in vec3 vertex;
+in vec4 color;
+out vec4 colorv;
+uniform mat4 mvProjMat;
+void main() {
+	colorv = color;
+	gl_Position = mvProjMat * vec4(vertex, 1.);
+}
+]],
+		fragmentCode = app.glslHeader..[[
+in vec4 colorv;
+out vec4 fragColor;
+void main() {
+	fragColor = colorv;
+}
+]],
+	}
+
+	self.spriteShader = GLProgram{
+		vertexCode = app.glslHeader..[[
+in vec3 vertex;
+in vec2 texcoord;
+in vec4 color;
+
+out vec2 texcoordv;
+out vec4 colorv;
+
+uniform mat4 mvProjMat;
+
+void main() {
+	texcoordv = texcoord;
+	colorv = color;
+	gl_Position = mvProjMat * vec4(vertex, 1.);
+}
+]],
+		fragmentCode = app.glslHeader..[[
+in vec2 texcoordv;
+in vec4 colorv;
+out vec4 fragColor;
+uniform sampler2D tex;
+void main() {
+	fragColor = colorv * texture(tex, texcoordv);
+}
+]],
+		uniforms = {
+			tex = 0,
+		},
+	}
 
 	self.texpack = GLTex2D{
 		filename = 'texpack.png',
 		magFilter = gl.GL_LINEAR,
 		minFilter = gl.GL_NEAREST,
 	}
-	self.map = Map(vec3i(16, 16, 16))
+	self.map = Map{
+		app = self.app,
+		size = vec3i(16, 16, 16),
+	}
 
 	self.objs = table()
 	self.player = self:newObj{
@@ -61,47 +118,46 @@ function Game:newObj(args)
 	return obj
 end
 
-local function glColorHex(i)
-	gl.glColor3ub(
-		bit.band(0xff, bit.rshift(i,16)),
-		bit.band(0xff, bit.rshift(i,8)),
-		bit.band(0xff, i)
-	)
+local function hexcolor(i)
+	return
+		bit.band(0xff, bit.rshift(i,16))/255,
+		bit.band(0xff, bit.rshift(i,8))/255,
+		bit.band(0xff, i)/255
 end
 
 function Game:draw()
+	local shader = self.skyShader
 
 -- [[ sky
-	gl.glMatrixMode(gl.GL_PROJECTION)
-	gl.glPushMatrix()
-	gl.glLoadIdentity()
-	gl.glOrtho(0,1,0,1,-1,1)
-	gl.glMatrixMode(gl.GL_MODELVIEW)
-	gl.glPushMatrix()
-	gl.glLoadIdentity()
+	shader:use()
+
+	local view = self.app.view
+	view.mvProjMat:setOrtho(0,1,0,1,-1,1)
+	gl.glUniformMatrix4fv(shader.uniforms.mvProjMat.loc, 1, gl.GL_FALSE, view.mvProjMat.ptr)
 
 	gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
 	gl.glDisable(gl.GL_DEPTH_TEST)
 	gl.glBegin(gl.GL_TRIANGLE_STRIP)
-	glColorHex(0xda9134)	gl.glVertex2f(0,0)
-	glColorHex(0xda9134)	gl.glVertex2f(1,0)
-	glColorHex(0x313453)	gl.glVertex2f(0,1)
-	glColorHex(0x313453)	gl.glVertex2f(1,1)
+	gl.glVertexAttrib3f(shader.attrs.color.loc, hexcolor(0xda9134))	gl.glVertex2f(0,0)
+	gl.glVertexAttrib3f(shader.attrs.color.loc, hexcolor(0xda9134))	gl.glVertex2f(1,0)
+	gl.glVertexAttrib3f(shader.attrs.color.loc, hexcolor(0x313453))	gl.glVertex2f(0,1)
+	gl.glVertexAttrib3f(shader.attrs.color.loc, hexcolor(0x313453))	gl.glVertex2f(1,1)
 	gl.glEnd()
-	gl.glColor3f(1,1,1)
 	gl.glEnable(gl.GL_DEPTH_TEST)
-
-	gl.glMatrixMode(gl.GL_PROJECTION)
-	gl.glPopMatrix()
-	gl.glMatrixMode(gl.GL_MODELVIEW)
-	gl.glPopMatrix()
+	
+	shader:useNone()
+	view.mvProjMat:mul4x4(view.projMat, view.mvMat)
 --]]
 
-
 	self.map:draw()
+
+	local shader = self.spriteShader
+	shader:use()
+	gl.glUniformMatrix4fv(shader.uniforms.mvProjMat.loc, 1, gl.GL_FALSE, view.mvProjMat.ptr)
 	for _,obj in ipairs(self.objs) do
-		obj:draw()
+		obj:draw(shader)
 	end
+	shader:useNone()
 end
 
 function Game:update(dt)

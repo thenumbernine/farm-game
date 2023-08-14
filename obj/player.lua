@@ -59,10 +59,15 @@ function Player:update(dt)
 	if self.buttonUse then
 		-- swing?  jump?  block?  anything?
 		-- self.vel.z = self.vel.z - 10
+		if bit.band(self.collideFlags, 32) ~= 0 then
+			self.vel.z = self.vel.z + self.jumpVel
+		end
 	end
 
 	Player.super.update(self, dt)
 end
+
+Player.jumpVel = 4
 
 function Player:attack()
 	local game = self.game

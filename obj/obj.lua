@@ -115,25 +115,32 @@ local function push(pos, min, max, bmin, bmax, vel)
 			vel.x = 0
 			if pm == 1 then
 				pos.x = bmin.x - max.x - epsilon
+				return 1
 			else
 				pos.x = bmax.x - min.x + epsilon
+				return 8
 			end
 		elseif side == 1 then 
 			vel.y = 0 
 			if pm == 1 then
 				pos.y = bmin.y - max.y - epsilon
+				return 2
 			else
 				pos.y = bmax.y - min.y + epsilon
+				return 16
 			end
 		elseif side == 2 then 
 			vel.z = 0
 			if pm == 1 then
 				pos.z = bmin.z - max.z - epsilon
+				return 4
 			else
 				pos.z = bmax.z - min.z + epsilon
+				return 32
 			end
 		end
 	end
+	return 0
 end
 
 Obj.gravity = -9.8
@@ -153,6 +160,8 @@ function Obj:update(dt)
 		self.vel.z = self.vel.z + self.gravity * dt
 	end
 
+	self.collideFlags = 0
+
 	if self.collidesWithTiles then
 		local omin = vec3f()
 		local omax = vec3f()
@@ -169,7 +178,8 @@ function Obj:update(dt)
 							-- TODO trace gravity fall downward separately
 							-- then move horizontall
 							-- if push fails then raise up, move, and go back down, to try and do steps
-							push(self.pos, self.min, self.max, omin, omax, self.vel)
+							local collided = push(self.pos, self.min, self.max, omin, omax, self.vel)
+							self.collideFlags = bit.bor(self.collideFlags, collided)
 						end
 					end
 				end
@@ -182,7 +192,7 @@ end
 -- TODO use 8 points as well?
 local dirSeqSuffixes = {'_r', '_u', '_l', '_d'}
 
-function Obj:draw()
+function Obj:draw(shader)
 	local seqname = self.seq
 	if seqname and self.seqUsesDir then	-- enable this for sequences that use _u _d _l _r etc (TODO search by default?)
 		local angleIndex = math.floor(self.angle / (.5 * math.pi) + .5) % 4 + 1
@@ -225,10 +235,11 @@ function Obj:draw()
 				if frame.hflip then uscale = uscale * -1 end
 				if self.vflip then vscale = vscale * -1 end
 				frame.tex:bind()
-				gl.glColor4fv(self.color.s)
+				gl.glVertexAttrib4fv(shader.attrs.color.loc, self.color.s)
 				gl.glBegin(gl.GL_QUADS)
 				for _,uv in ipairs(Tile.unitquad) do
-					gl.glTexCoord2f(
+					gl.glVertexAttrib2f(
+						shader.attrs.texcoord.loc,
 						(uv[1] - .5) * uscale + .5,
 						(uv[2] - .5) * vscale + .5)
 					gl.glVertex3f((
@@ -238,7 +249,6 @@ function Obj:draw()
 					):unpack())
 				end
 				gl.glEnd()
-				gl.glColor4f(1,1,1,1)
 				frame.tex:unbind()
 			end
 		end

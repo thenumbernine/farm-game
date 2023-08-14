@@ -3,10 +3,12 @@
 local class = require 'ext.class'
 local bit = require 'bit'
 local gl = require 'gl'
-local ImGuiApp = require 'imguiapp'
 local anim = require 'zelda.anim'
 local Game = require 'zelda.game'
-local gettimeofday = require 'ext.timer'.getTime
+local getTime = require 'ext.timer'.getTime
+local ImGuiApp = require 'imguiapp'
+
+require 'glapp.view'.useBuiltinMatrixMath = true
 
 local App = class(
 	--require 'glapp.orbit'(
@@ -24,6 +26,11 @@ function App:initGL()
 
 	self.view.fovY = 90
 
+	self.glslHeader = [[
+#version 300 es
+precision highp float;
+]]
+	
 	-- [[ load tex2ds for anim
 	local GLTex2D = require 'gl.tex2d'
 	for _,sprite in pairs(anim) do
@@ -41,9 +48,9 @@ function App:initGL()
 	
 	self.view.angle:fromAngleAxis(1,0,0,30)
 
-	self.game = Game()
+	self.game = Game{app=self}
 	
-	self.lastTime = gettimeofday()
+	self.lastTime = getTime()
 	self.updateTime = 0
 	
 	gl.glEnable(gl.GL_DEPTH_TEST)
@@ -53,7 +60,7 @@ end
 App.updateDelta = 1/30
 
 function App:update()
-	local thisTime = gettimeofday()
+	local thisTime = getTime()
 	local deltaTime = thisTime - self.lastTime
 	self.lastTime = thisTime
 	

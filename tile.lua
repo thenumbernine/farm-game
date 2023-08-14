@@ -47,11 +47,11 @@ local Tile = class()
 Tile.min = vec3f(0,0,0)
 Tile.max = vec3f(1,1,1)
 
-function Tile:render(i,j,k)
+function Tile:render(i,j,k, shader)
 	gl.glBegin(gl.GL_QUADS)
 	for _,faces in ipairs(cubeFaces) do
 		for f,face in ipairs(faces) do
-			gl.glTexCoord2f(unitquad[f][1], unitquad[f][2])
+			gl.glVertexAttrib2f(shader.attrs.texcoord.loc, unitquad[f][1], unitquad[f][2])
 			local v = cubeVtxs[face+1]
 			gl.glVertex3f(
 				i + (1 - v[1]) * self.min.x + v[1] * self.max.x, 
