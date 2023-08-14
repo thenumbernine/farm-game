@@ -84,9 +84,21 @@ out vec4 fragColor;
 
 uniform vec2 texindex;
 uniform sampler2D tex;
+uniform vec4 viewport;
+uniform bool useSeeThru;
+uniform float playerProjZ;
 
 void main() {
 	fragColor = texture(tex, (texindex + texcoordv) * texpackDelta);
+
+	if (useSeeThru &&
+		length(
+			gl_FragCoord.xy - .5 * viewport.zw
+		) < .35 * viewport.w &&
+		gl_FragCoord.z < playerProjZ
+	) {
+		fragColor.a = .1;
+	}
 }
 ]], 	{
 			clnumber = require 'cl.obj.number',
@@ -101,14 +113,18 @@ end
 
 function Map:draw()
 	local app = self.app
+	local game = app.game
 	local view = app.view
 	local shader = self.shader
-	local texpack = app.game.texpack
+	local texpack = game.texpack
 	
 	shader:use()
 	
 	gl.glUniformMatrix4fv(shader.uniforms.mvProjMat.loc, 1, gl.GL_FALSE, view.mvProjMat.ptr)
-	
+	gl.glUniform4f(shader.uniforms.viewport.loc, 0, 0, app.width, app.height)
+	gl.glUniform1i(shader.uniforms.useSeeThru.loc, 1)
+	gl.glUniform1f(shader.uniforms.playerProjZ.loc, game.playerProjZ)
+
 	texpack:bind()
 	local index = 0
 	for k=0,self.size.z-1 do

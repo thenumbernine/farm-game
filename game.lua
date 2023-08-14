@@ -67,8 +67,16 @@ void main() {
 		fragmentCode = app.glslHeader..[[
 in vec2 texcoordv;
 in vec4 colorv;
+
 out vec4 fragColor;
+
 uniform sampler2D tex;
+
+float lenSq(vec2 v) {
+	return dot(v,v);
+}
+
+// gl_FragCoord is in pixel coordinates with origin at lower-left
 void main() {
 	fragColor = colorv * texture(tex, texcoordv);
 }
@@ -127,11 +135,12 @@ end
 
 function Game:draw()
 	local shader = self.skyShader
+	local app = self.app
 
 -- [[ sky
 	shader:use()
 
-	local view = self.app.view
+	local view = app.view
 	view.mvProjMat:setOrtho(0,1,0,1,-1,1)
 	gl.glUniformMatrix4fv(shader.uniforms.mvProjMat.loc, 1, gl.GL_FALSE, view.mvProjMat.ptr)
 
@@ -148,6 +157,19 @@ function Game:draw()
 	shader:useNone()
 	view.mvProjMat:mul4x4(view.projMat, view.mvMat)
 --]]
+
+	do
+		-- clip pos
+		local x,y,z,w = view.mvProjMat:mul4x4v4(
+			self.player.pos.x,
+			self.player.pos.y,
+			self.player.pos.z + 2)
+		local normalizedDeviceCoordDepth = z / w
+		local dnear = 0
+		local dfar = 1
+		local windowZ = normalizedDeviceCoordDepth * (dfar - dnear)*.5 + (dfar + dnear)*.5
+		self.playerProjZ = windowZ
+	end
 
 	self.map:draw()
 
