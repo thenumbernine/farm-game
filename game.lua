@@ -15,8 +15,6 @@ assert(not Obj.classes)
 Obj.classes = require 'zelda.obj.all'
 
 
-
-
 local Game = class()
 
 -- 16 x 16 = 256 tiles in a typical screen
@@ -173,17 +171,23 @@ function Game:draw()
 --]]
 
 	do
+		-- [[ clip by fragcoord
 		-- clip pos
 		local x,y,z,w = view.mvProjMat:mul4x4v4(
 			viewFollow.pos.x,
 			viewFollow.pos.y,
-			viewFollow.pos.z + 2)
+			viewFollow.pos.z + .1)
 		local normalizedDeviceCoordDepth = z / w
 		local dnear = 0
 		local dfar = 1
 		local windowZ = normalizedDeviceCoordDepth * (dfar - dnear)*.5 + (dfar + dnear)*.5
-		-- used for map shder / hide occluding polys 
-		self.playerProjZ = windowZ
+		-- clip by depth ...
+		self.playerClipZ = windowZ
+		--]]
+		-- [[
+		-- and clip by world z ...
+		self.playerPosZ = viewFollow.pos.z + .1
+		--]]
 	end
 
 	self.map:draw()
@@ -255,6 +259,17 @@ function Game:onEvent(event)
 		-- reset
 		elseif event.key.keysym.sym == sdl.SDLK_r then
 			self:init()
+		
+		elseif event.key.keysym.sym >= ('1'):byte()
+		and event.key.keysym.sym <= ('9'):byte()
+		then
+			self.player.selectedItem = event.key.keysym.sym - ('1'):byte() + 1
+		elseif event.key.keysym.sym == ('0'):byte() then
+			self.player.selectedItem = 10
+		elseif event.key.keysym.sym == ('-'):byte() then
+			self.player.selectedItem = 11
+		elseif event.key.keysym.sym == ('='):byte() then
+			self.player.selectedItem = 12
 		end
 	end
 end
@@ -270,15 +285,40 @@ function Game:updateGUI()
 	ig.igPushStyleVar_Vec2(ig.ImGuiStyleVar_ButtonTextAlign, ig.ImVec2(.5, .5))
 
 	for i=1,maxItems do
+		local selected = self.player.selectedItem == i
+		if selected then
+			local selectColor = ig.ImVec4(0,0,1,.5)
+			ig.igPushStyleColor_Vec4(ig.ImGuiCol_Button, selectColor)
+		end
+
 		ig.igSetNextWindowPos(ig.ImVec2(x,y), 0, ig.ImVec2())
 		ig.igSetNextWindowSize(ig.ImVec2(bw, bh), 0)
 		ig.igBegin('inventory '..i, nil, bit.bor(
-			ig.ImGuiWindowFlags_NoDecoration,
+			ig.ImGuiWindowFlags_NoTitleBar,
+			ig.ImGuiWindowFlags_NoResize,
+			ig.ImGuiWindowFlags_NoScrollbar,
+			ig.ImGuiWindowFlags_NoCollapse,
+
 			ig.ImGuiWindowFlags_NoBackground,
 			ig.ImGuiWindowFlags_Tooltip
 		))
+		--[[
+		if selected then
+			ig.igPushStyleVar_Float(ig.ImGuiStyleVar_FrameBorderSize, 1)
+		end
+		--]]
 		ig.igButton('###'..i, ig.ImVec2(bw,bh))
+		--[[
+		if selected then
+			ig.igPopStyleVar(1)
+		end
+		--]]
 		ig.igEnd()
+		
+		if selected then
+			ig.igPopStyleColor(1)
+		end
+
 		x = x + bw
 	end
 

@@ -22,6 +22,8 @@ App.viewDist = 4
 function App:initGL()
 	app = self	-- global
 
+	-- instead of proj * mv , imma separate into: proj view model 
+	-- that means view.mvMat is really the view matrix
 	App.super.initGL(self)
 
 	self.view.fovY = 90

@@ -61,6 +61,7 @@ in vec3 vertex;
 in vec2 texcoord;
 in vec4 color;
 
+out vec3 posv;
 out vec2 texcoordv;
 out vec4 colorv;
 
@@ -69,10 +70,12 @@ uniform mat4 mvProjMat;
 void main() {
 	texcoordv = texcoord;
 	colorv = color;
+	posv = vertex;
 	gl_Position = mvProjMat * vec4(vertex, 1.);
 }
 ]],
 		fragmentCode = app.glslHeader..[[
+in vec3 posv;
 in vec2 texcoordv;
 in vec4 colorv;
 
@@ -81,7 +84,8 @@ out vec4 fragColor;
 uniform sampler2D tex;
 uniform vec4 viewport;
 uniform bool useSeeThru;
-uniform float playerProjZ;
+uniform float playerPosZ;
+uniform float playerClipZ;
 
 void main() {
 	fragColor = texture(tex, texcoordv);
@@ -89,10 +93,12 @@ void main() {
 	if (useSeeThru &&
 		length(
 			gl_FragCoord.xy - .5 * viewport.zw
-		) < .35 * viewport.w &&
-		gl_FragCoord.z < playerProjZ
+		) < .15 * viewport.w &&
+		gl_FragCoord.z < playerClipZ &&
+		posv.z > playerPosZ
 	) {
 		fragColor.w = .1;
+		discard;
 	}
 }
 ]],
@@ -187,8 +193,13 @@ function Map:draw()
 	
 	gl.glUniformMatrix4fv(shader.uniforms.mvProjMat.loc, 1, gl.GL_FALSE, view.mvProjMat.ptr)
 	gl.glUniform4f(shader.uniforms.viewport.loc, 0, 0, app.width, app.height)
-	gl.glUniform1i(shader.uniforms.useSeeThru.loc, 0)
-	gl.glUniform1f(shader.uniforms.playerProjZ.loc, game.playerProjZ)
+	gl.glUniform1i(shader.uniforms.useSeeThru.loc, 1)
+	if shader.uniforms.playerPosZ then
+		gl.glUniform1f(shader.uniforms.playerPosZ.loc, game.playerPosZ)
+	end
+	if shader.uniforms.playerClipZ then
+		gl.glUniform1f(shader.uniforms.playerClipZ.loc, game.playerClipZ)
+	end
 
 	texpack:bind()
 	
