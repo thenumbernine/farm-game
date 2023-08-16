@@ -16,12 +16,16 @@ local anim = {
 		},
 	},
 	goomba = {
+		dontUseDir = true,
 		stand = {
 			{filename = 'sprites/goomba/stand.png'},
 		},
 	},
 }
 
+-- TODO use the filesystem for the whole thing? and no table?
+-- or TODO use spritesheets?
+--[[
 local path = require 'ext.path'
 for _,spritename in ipairs{'goomba'} do
 	local sprite = {}
@@ -47,5 +51,6 @@ for _,spritename in ipairs{'goomba'} do
 		end
 	end
 end
+--]]
 
 return anim

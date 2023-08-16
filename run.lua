@@ -34,13 +34,15 @@ precision highp float;
 	-- [[ load tex2ds for anim
 	local GLTex2D = require 'gl.tex2d'
 	for _,sprite in pairs(anim) do
-		for _,seq in pairs(sprite) do
-			for _,frame in pairs(seq) do
-				frame.tex = GLTex2D{
-					filename = frame.filename,
-					magFilter = gl.GL_LINEAR,
-					minFilter = gl.GL_NEAREST,
-				}
+		for seqname,seq in pairs(sprite) do
+			if seqname ~= 'dontUseDir' then
+				for _,frame in pairs(seq) do
+					frame.tex = GLTex2D{
+						filename = frame.filename,
+						magFilter = gl.GL_LINEAR,
+						minFilter = gl.GL_NEAREST,
+					}
+				end
 			end
 		end
 	end
@@ -86,12 +88,12 @@ function App:update()
 		self.game:update(self.updateDelta)
 	end
 
-	-- before calling super.update and redoing the gl matrices, update view...	
-	--self.view.angle:fromAngleAxis(1,0,0,20)
-	self.view.pos:set((self.game.player.pos + self.view.angle:zAxis() * self.viewDist):unpack())
-	--app.orbit.pos:set((app.view.angle:zAxis() * app.viewDist):unpack())
-	
 	App.super.update(self)
+end
+
+function App:updateGUI(...)
+	self.game:updateGUI()
+	return App.super.updateGUI(self, ...)
 end
 
 function App:event(event, ...)
@@ -99,4 +101,4 @@ function App:event(event, ...)
 	self.game:onEvent(event)
 end
 
-App():run()
+return App():run()

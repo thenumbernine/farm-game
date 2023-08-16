@@ -1,12 +1,17 @@
 local class = require 'ext.class'
 local ffi = require 'ffi'
 local template = require 'template'
+local vector = require 'ffi.cpp.vector'
 local vec2i = require 'vec-ffi.vec2i'
 local vec3i = require 'vec-ffi.vec3i'
-local Tile = require 'zelda.tile'
+local vec3f = require 'vec-ffi.vec3f'
+local vec2f = require 'vec-ffi.vec2f'
+local vec4ub = require 'vec-ffi.vec4ub'
 local gl = require 'gl'
 local GLProgram = require 'gl.program'
 local simplexnoise = require 'simplexnoise.3d'
+local Tile = require 'zelda.tile'
+local sides = require 'zelda.sides'
 
 -- TODO how about bitflags for orientation ... https://thenumbernine.github.io/symmath/tests/output/Platonic%20Solids/Cube.html
 -- the automorphism rotation group size is 24 ... so 5 bits for rotations.  including reflection is 48, so 6 bits.
@@ -54,38 +59,33 @@ function Map:init(args)	-- vec3i
 		vertexCode = app.glslHeader..[[
 in vec3 vertex;
 in vec2 texcoord;
-in float lum;
+in vec4 color;
 
 out vec2 texcoordv;
-out float lumv;
+out vec4 colorv;
 
 uniform mat4 mvProjMat;
 
 void main() {
 	texcoordv = texcoord;
-	lumv = lum;
+	colorv = color;
 	gl_Position = mvProjMat * vec4(vertex, 1.);
 }
 ]],
-		fragmentCode = app.glslHeader..template([[
-#define texpackDx 	<?=clnumber(1/tonumber(texpackSize.x))?>
-#define texpackDy	<?=clnumber(1/tonumber(texpackSize.y))?>
-#define texpackDelta	vec2(texpackDx, texpackDy)
-
+		fragmentCode = app.glslHeader..[[
 in vec2 texcoordv;
-in float lumv;
+in vec4 colorv;
 
 out vec4 fragColor;
 
-uniform vec2 texindex;
 uniform sampler2D tex;
 uniform vec4 viewport;
 uniform bool useSeeThru;
 uniform float playerProjZ;
 
 void main() {
-	fragColor = texture(tex, (texindex + texcoordv) * texpackDelta);
-	fragColor.xyz *= lumv;
+	fragColor = texture(tex, texcoordv);
+	fragColor.xyz *= colorv.xyz;
 	if (useSeeThru &&
 		length(
 			gl_FragCoord.xy - .5 * viewport.zw
@@ -95,15 +95,85 @@ void main() {
 		fragColor.w = .1;
 	}
 }
-]], 	{
-			clnumber = require 'cl.obj.number',
-			texpackSize = self.texpackSize,
-		}),
+]],
 		uniforms = {
-			texindex = {0, 0},
 			tex = 0,
 		},
 	}
+
+	-- geometry
+	self.vtxs = vector'vec3f_t'
+	self.texcoords = vector'vec2f_t'
+	self.colors = vector'vec4ub_t'
+
+	self:buildDrawArrays()
+end
+
+function Map:buildDrawArrays()
+	local texpackDx = 1/tonumber(self.texpackSize.x)
+	local texpackDy = 1/tonumber(self.texpackSize.y)
+	local index = 0
+	for k=0,self.size.z-1 do
+		for j=0,self.size.y-1 do
+			for i=0,self.size.x-1 do
+				local maptile = self.map[index]
+				local tiletype = maptile.type
+				if tiletype > 0 then	-- skip empty
+					local tile = Tile.types[tiletype]
+					if tile then
+						local texIndex = tonumber(maptile.tex)
+						local texIndexX = texIndex % self.texpackSize.x
+						local texIndexY = (texIndex - texIndexX) / self.texpackSize.x
+						
+						if tile.isUnitCube then
+							assert(tile.cubeFaces)
+							-- faceIndex is 1-based but lines up with sides bitflags
+							for faceIndex,faces in ipairs(tile.cubeFaces) do
+								local ofsx, ofsy, ofsz = sides.dirs[faceIndex]:unpack()
+								local nx = i + ofsx
+								local ny = j + ofsy
+								local nz = k + ofsz
+								local nbhdtileIsUnitCube
+								if nx >= 0 and nx < self.size.x
+								and ny >= 0 and ny < self.size.y
+								and nz >= 0 and nz < self.size.z
+								then
+									local nbhdtiletype = self.map[nx + self.size.x * (ny + self.size.y * nz)].type
+									if nbhdtiletype > 0 then
+										local nbhdtile = Tile.types[nbhdtiletype]
+										if nbhdtile then
+											nbhdtileIsUnitCube = nbhdtile.isUnitCube
+										end
+									end
+								end
+								if not nbhdtileIsUnitCube then
+									for vi,vtx in ipairs(faces) do
+										local v = tile.cubeVtxs[vtx+1]
+										
+										local c = self.colors:emplace_back()
+										local l = 255 * v[3]
+										c:set(l, l, l, 255)
+
+										local tc = self.texcoords:emplace_back()
+										tc:set(
+											(texIndexX + tile.unitquad[vi][1]) * texpackDx,
+											(texIndexY + tile.unitquad[vi][2]) * texpackDy
+										)
+										
+										local vtx = self.vtxs:emplace_back()
+										vtx:set(i + v[1], j + v[2], k + v[3])
+									end
+								end
+							end
+						else
+							print'TODO'
+						end
+					end
+				end
+				index = index + 1
+			end
+		end
+	end
 end
 
 function Map:draw()
@@ -121,26 +191,20 @@ function Map:draw()
 	gl.glUniform1f(shader.uniforms.playerProjZ.loc, game.playerProjZ)
 
 	texpack:bind()
-	local index = 0
-	for k=0,self.size.z-1 do
-		for j=0,self.size.y-1 do
-			for i=0,self.size.x-1 do
-				local maptile = self.map[index]
-				local tiletype = maptile.type
-				if tiletype > 0 then	-- skip empty
-					local tile = Tile.types[tiletype]
-					if tile then
-						local texindex = tonumber(maptile.tex)
-						local texindexX = texindex % self.texpackSize.x
-						local texindexY = (texindex - texindexX) / self.texpackSize.x
-						gl.glUniform2f(shader.uniforms.texindex.loc, texindexX, texindexY)
-						tile:render(i,j,k, shader)
-					end
-				end
-				index = index + 1
-			end
-		end
-	end
+	
+	gl.glVertexAttribPointer(shader.attrs.vertex.loc, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, self.vtxs.v)
+	gl.glVertexAttribPointer(shader.attrs.texcoord.loc, 2, gl.GL_FLOAT, gl.GL_FALSE, 0, self.texcoords.v)
+	gl.glVertexAttribPointer(shader.attrs.color.loc, 4, gl.GL_UNSIGNED_BYTE, gl.GL_TRUE, 0, self.colors.v)
+	gl.glEnableVertexAttribArray(shader.attrs.vertex.loc)
+	gl.glEnableVertexAttribArray(shader.attrs.texcoord.loc)
+	gl.glEnableVertexAttribArray(shader.attrs.color.loc)
+	
+	gl.glDrawArrays(gl.GL_QUADS, 0, self.vtxs.size)
+	
+	gl.glDisableVertexAttribArray(shader.attrs.vertex.loc)
+	gl.glDisableVertexAttribArray(shader.attrs.texcoord.loc)
+	gl.glDisableVertexAttribArray(shader.attrs.color.loc)
+
 	texpack:unbind()
 	shader:useNone()
 end
@@ -151,8 +215,8 @@ function Map:get(i,j,k)
 	or j < 0 or j >= self.size.y
 	or k < 0 or k >= self.size.z
 	then
-		--return Tile.typeValues.Empty
-		return Tile.typeValues.Solid
+		return Tile.typeValues.Empty
+		--return Tile.typeValues.Solid
 	end
 	return self.map[i + self.size.x * (j + self.size.y * k)].type
 end

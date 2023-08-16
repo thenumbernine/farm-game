@@ -5,6 +5,7 @@ local vec3f = require 'vec-ffi.vec3f'
 local vec4f = require 'vec-ffi.vec4f'
 local anim = require 'zelda.anim'
 local Tile = require 'zelda.tile'
+local sides = require 'zelda.sides'
 
 local Obj = class()
 
@@ -115,28 +116,28 @@ local function push(pos, min, max, bmin, bmax, vel)
 			vel.x = 0
 			if pm == 1 then
 				pos.x = bmin.x - max.x - epsilon
-				return 1
+				return sides.flags.xp
 			else
 				pos.x = bmax.x - min.x + epsilon
-				return 8
+				return sides.flags.xm
 			end
 		elseif side == 1 then 
 			vel.y = 0 
 			if pm == 1 then
 				pos.y = bmin.y - max.y - epsilon
-				return 2
+				return sides.flags.yp
 			else
 				pos.y = bmax.y - min.y + epsilon
-				return 16
+				return sides.flags.ym
 			end
 		elseif side == 2 then 
 			vel.z = 0
 			if pm == 1 then
 				pos.z = bmin.z - max.z - epsilon
-				return 4
+				return sides.flags.zp
 			else
 				pos.z = bmax.z - min.z + epsilon
-				return 32
+				return sides.flags.zm
 			end
 		end
 	end
@@ -151,11 +152,14 @@ Obj.collidesWithTiles = true
 local epsilon = 1e-5
 function Obj:update(dt)
 	self.oldpos:set(self.pos:unpack())
+
+
 -- [[
 	self.pos.x = self.pos.x + self.vel.x * dt
 	self.pos.y = self.pos.y + self.vel.y * dt
 	self.pos.z = self.pos.z + self.vel.z * dt
 --]]
+
 	if self.useGravity then
 		self.vel.z = self.vel.z + self.gravity * dt
 	end
@@ -193,13 +197,6 @@ end
 local dirSeqSuffixes = {'_r', '_u', '_l', '_d'}
 
 function Obj:draw(shader)
-	local seqname = self.seq
-	if seqname and self.seqUsesDir then	-- enable this for sequences that use _u _d _l _r etc (TODO search by default?)
-		local angleIndex = math.floor(self.angle / (.5 * math.pi) + .5) % 4 + 1
-		seqname = seqname .. dirSeqSuffixes[angleIndex]
---print('angle', self.angle, 'index', angleIndex, 'seqname', seqname)
-	end
-
 --[[
 	for faceIndex,faces in ipairs(Tile.cubeFaces) do
 		if bit.band(self.hitsides, bit.lshift(1, faceIndex-1)) ~= 0 then
@@ -223,34 +220,43 @@ function Obj:draw(shader)
 	gl.glColor3f(1,1,1)
 --]]
 
+--print('drawing', self.sprite, self.seq, self.frame, self.angle)
 	if self.sprite then
 		local sprite = anim[self.sprite]
-		if sprite and seqname then
-			local seq = sprite[seqname]
---print('seqname', seqname, 'seq', seq)
-			if seq and self.frame then
-				local frame = seq[self.frame]
-				local uscale = -1
-				local vscale = 1
-				if frame.hflip then uscale = uscale * -1 end
-				if self.vflip then vscale = vscale * -1 end
-				frame.tex:bind()
-				gl.glVertexAttrib4fv(shader.attrs.color.loc, self.color.s)
-				gl.glBegin(gl.GL_QUADS)
-				for _,uv in ipairs(Tile.unitquad) do
-					gl.glVertexAttrib2f(
-						shader.attrs.texcoord.loc,
-						(uv[1] - .5) * uscale + .5,
-						(uv[2] - .5) * vscale + .5)
-					local x,y,z = (
-						app.view.angle:xAxis() * (.5 - uv[1]) * self.drawSize.x
-						+ app.view.angle:yAxis() * (.5 - uv[2]) * self.drawSize.y
-						+ self.pos
-					):unpack()
-					gl.glVertex3f(x,y,z+.1)
+		if sprite then
+			local seqname = self.seq
+			if seqname then
+				if not sprite.dontUseDir then	-- enable this for sequences that use _u _d _l _r etc (TODO search by default?)
+					local angleIndex = math.floor(self.angle / (.5 * math.pi) + .5) % 4 + 1
+					seqname = seqname .. dirSeqSuffixes[angleIndex]
+--print('angle', self.angle, 'index', angleIndex, 'seqname', seqname)
 				end
-				gl.glEnd()
-				frame.tex:unbind()
+				local seq = sprite[seqname]
+--print('seqname', seqname, 'seq', seq)
+				if seq and self.frame then
+					local frame = seq[self.frame]
+					local uscale = -1
+					local vscale = 1
+					if frame.hflip then uscale = uscale * -1 end
+					if self.vflip then vscale = vscale * -1 end
+					frame.tex:bind()
+					gl.glVertexAttrib4fv(shader.attrs.color.loc, self.color.s)
+					gl.glBegin(gl.GL_QUADS)
+					for _,uv in ipairs(Tile.unitquad) do
+						gl.glVertexAttrib2f(
+							shader.attrs.texcoord.loc,
+							(uv[1] - .5) * uscale + .5,
+							(uv[2] - .5) * vscale + .5)
+						local x,y,z = (
+							app.view.angle:xAxis() * (.5 - uv[1]) * self.drawSize.x
+							+ app.view.angle:yAxis() * (.5 - uv[2]) * self.drawSize.y
+							+ self.pos
+						):unpack()
+						gl.glVertex3f(x,y,z+.1)
+					end
+					gl.glEnd()
+					frame.tex:unbind()
+				end
 			end
 		end
 	end

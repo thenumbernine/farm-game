@@ -3,12 +3,12 @@ local class = require 'ext.class'
 local vec2f = require 'vec-ffi.vec2f'
 local vec3f = require 'vec-ffi.vec3f'
 local Obj = require 'zelda.obj.obj'
+local sides = require 'zelda.sides'
 
 local Player = class(Obj)
 
 Player.sprite = 'link'
 Player.drawSize = vec2f(1,1.5)
-Player.seqUsesDir = true
 Player.walkSpeed = 6
 
 Player.attackTime = -1
@@ -59,7 +59,7 @@ function Player:update(dt)
 	if self.buttonUse then
 		-- swing?  jump?  block?  anything?
 		-- self.vel.z = self.vel.z - 10
-		if bit.band(self.collideFlags, 32) ~= 0 then
+		if bit.band(self.collideFlags, sides.flags.zm) ~= 0 then
 			self.vel.z = self.vel.z + self.jumpVel
 		end
 	end

@@ -63,43 +63,59 @@ function Tile:render(i,j,k, shader)
 	gl.glEnd()
 end
 
+-- assign here before making subclasses
+Tile.cubeVtxs = cubeVtxs 
+Tile.cubeFaces = cubeFaces 
+Tile.unitquad = unitquad
+
+Tile.types = {}
+Tile.typeValues = {}
 
 
-local EmptyTile = class(Tile)
+
+local EmptyTile = Tile:subclass()
 EmptyTile.name = 'Empty'	-- excluding 'Tile' suffix of all Tile classes ...
 -- TODO give each Tile an obj, and give Empty none
 EmptyTile.render = nil
 
 
-local SolidTile = class(Tile)
+local SolidTile = Tile:subclass()
 SolidTile.name = 'Solid'
 SolidTile.solid = true
+SolidTile.isUnitCube = true	-- render shorthand for side occlusion
+assert(SolidTile.cubeFaces)
 
-local SolidBottomHalfTile = class(Tile)
+local SolidBottomHalfTile = Tile:subclass()
 SolidBottomHalfTile.name = 'SolidBottomHalf'
 SolidBottomHalfTile.solid = true
 SolidBottomHalfTile.min = vec3f(0,0,0)
 SolidBottomHalfTile.max = vec3f(1,1,.5)
 
 
-local SolidTopHalfTile = class(Tile)
+local SolidTopHalfTile = Tile:subclass()
 SolidTopHalfTile.name = 'SolidTopHalf'
 SolidTopHalfTile.solid = true
 SolidTopHalfTile.min = vec3f(0,0,.5)
 SolidTopHalfTile.max = vec3f(1,1,1)
 
+--[[
+what do i want ...
+- empty
+- harvestable ground with flags: 
+	- hoed?
+	- watered?
+	- fertilized? / quality
+	- retention soil'd? / quality
+	- what kind of seed is planted here
+--]]
+Tile.types[0] = EmptyTile()
+table.insert(Tile.types, SolidTile())
+table.insert(Tile.types, SolidBottomHalfTile())
+table.insert(Tile.types, SolidTopHalfTile())
 
-Tile.types = {
-	[0] = EmptyTile(),
-	SolidTile(),
-	SolidBottomHalfTile(),
-	SolidTopHalfTile(),
-}
-
-Tile.typeValues = table.map(Tile.types, function(obj,index) return index, obj.name end):setmetatable(nil)
-
-Tile.cubeVtxs = cubeVtxs 
-Tile.cubeFaces = cubeFaces 
-Tile.unitquad = unitquad
+-- pairs cuz 0 exists
+for index,obj in pairs(Tile.types) do
+	Tile.typeValues[obj.name] = index
+end
 
 return Tile

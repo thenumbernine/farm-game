@@ -109,11 +109,11 @@ void main() {
 	for _,dir in ipairs{{1,0},{0,1},{-1,0},{0,-1}} do
 		local ux, uy = table.unpack(dir)
 		local vx, vy = -uy, ux
-		for i=1,7,2 do
+		for i=5,7,2 do
 			for j=5,7,2 do
-				self:newObj{
+				local g = self:newObj{
 					class = Obj.classes.Goomba,
-					pos = vec3f(ux * i + vx * j + 8.5, uy * i + vy * j + 8.5, 3.5),
+					pos = vec3f(ux * i + vx * j + 8.5, uy * i + vy * j + 8.5, self.map.size.z),
 				}
 			end
 		end
@@ -137,40 +137,52 @@ local function hexcolor(i)
 end
 
 function Game:draw()
-	local shader = self.skyShader
 	local app = self.app
-
--- [[ sky
-	shader:use()
-
 	local view = app.view
-	view.mvProjMat:setOrtho(0,1,0,1,-1,1)
-	gl.glUniformMatrix4fv(shader.uniforms.mvProjMat.loc, 1, gl.GL_FALSE, view.mvProjMat.ptr)
 
-	gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
-	gl.glDisable(gl.GL_DEPTH_TEST)
-	gl.glBegin(gl.GL_TRIANGLE_STRIP)
-	gl.glVertexAttrib3f(shader.attrs.color.loc, hexcolor(0xda9134))	gl.glVertex2f(0,0)
-	gl.glVertexAttrib3f(shader.attrs.color.loc, hexcolor(0xda9134))	gl.glVertex2f(1,0)
-	gl.glVertexAttrib3f(shader.attrs.color.loc, hexcolor(0x313453))	gl.glVertex2f(0,1)
-	gl.glVertexAttrib3f(shader.attrs.color.loc, hexcolor(0x313453))	gl.glVertex2f(1,1)
-	gl.glEnd()
-	gl.glEnable(gl.GL_DEPTH_TEST)
+	local viewFollow = self.player
+	--local viewFollow = self.goomba
 	
-	shader:useNone()
-	view.mvProjMat:mul4x4(view.projMat, view.mvMat)
+	-- before calling super.update and redoing the gl matrices, update view...	
+	--self.view.angle:fromAngleAxis(1,0,0,20)
+	view.pos:set((viewFollow.pos + view.angle:zAxis() * app.viewDist):unpack())
+	view:setup(app.width / app.height)
+	--app.orbit.pos:set((app.view.angle:zAxis() * app.viewDist):unpack())
+	
+-- [[ sky
+	do
+		local shader = self.skyShader
+		shader:use()
+
+		view.mvProjMat:setOrtho(0,1,0,1,-1,1)
+		gl.glUniformMatrix4fv(shader.uniforms.mvProjMat.loc, 1, gl.GL_FALSE, view.mvProjMat.ptr)
+
+		gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
+		gl.glDisable(gl.GL_DEPTH_TEST)
+		gl.glBegin(gl.GL_TRIANGLE_STRIP)
+		gl.glVertexAttrib3f(shader.attrs.color.loc, hexcolor(0xda9134))	gl.glVertex2f(0,0)
+		gl.glVertexAttrib3f(shader.attrs.color.loc, hexcolor(0xda9134))	gl.glVertex2f(1,0)
+		gl.glVertexAttrib3f(shader.attrs.color.loc, hexcolor(0x313453))	gl.glVertex2f(0,1)
+		gl.glVertexAttrib3f(shader.attrs.color.loc, hexcolor(0x313453))	gl.glVertex2f(1,1)
+		gl.glEnd()
+		gl.glEnable(gl.GL_DEPTH_TEST)
+		
+		shader:useNone()
+		view.mvProjMat:mul4x4(view.projMat, view.mvMat)
+	end
 --]]
 
 	do
 		-- clip pos
 		local x,y,z,w = view.mvProjMat:mul4x4v4(
-			self.player.pos.x,
-			self.player.pos.y,
-			self.player.pos.z + 2)
+			viewFollow.pos.x,
+			viewFollow.pos.y,
+			viewFollow.pos.z + 2)
 		local normalizedDeviceCoordDepth = z / w
 		local dnear = 0
 		local dfar = 1
 		local windowZ = normalizedDeviceCoordDepth * (dfar - dnear)*.5 + (dfar + dnear)*.5
+		-- used for map shder / hide occluding polys 
 		self.playerProjZ = windowZ
 	end
 
@@ -245,6 +257,32 @@ function Game:onEvent(event)
 			self:init()
 		end
 	end
+end
+
+local ig = require 'imgui'
+function Game:updateGUI()
+	local app = self.app
+	local maxItems = 12
+	local bw = math.floor(app.width / maxItems)
+	local bh = bw
+	local x = 0
+	local y = app.height - bh - 4
+	ig.igPushStyleVar_Vec2(ig.ImGuiStyleVar_ButtonTextAlign, ig.ImVec2(.5, .5))
+
+	for i=1,maxItems do
+		ig.igSetNextWindowPos(ig.ImVec2(x,y), 0, ig.ImVec2())
+		ig.igSetNextWindowSize(ig.ImVec2(bw, bh), 0)
+		ig.igBegin('inventory '..i, nil, bit.bor(
+			ig.ImGuiWindowFlags_NoDecoration,
+			ig.ImGuiWindowFlags_NoBackground,
+			ig.ImGuiWindowFlags_Tooltip
+		))
+		ig.igButton('###'..i, ig.ImVec2(bw,bh))
+		ig.igEnd()
+		x = x + bw
+	end
+
+	ig.igPopStyleVar(1)
 end
 
 return Game
