@@ -44,7 +44,10 @@ function Map:init(args)	-- vec3i
 				end
 				if c < .5
 				then
-					maptype = Tile.typeValues.Solid
+					maptype = 
+						maptex == 1
+						and Tile.typeValues.Stone
+						or Tile.typeValues.Grass
 				end
 				local index = i + self.size.x * (j + self.size.y * k)
 				self.map[index].type = maptype
@@ -227,7 +230,6 @@ function Map:get(i,j,k)
 	or k < 0 or k >= self.size.z
 	then
 		return Tile.typeValues.Empty
-		--return Tile.typeValues.Solid
 	end
 	return self.map[i + self.size.x * (j + self.size.y * k)].type
 end

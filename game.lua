@@ -84,6 +84,8 @@ void main() {
 		},
 	}
 
+	self.meshShader = require 'mesh':makeShader()
+
 	self.texpack = GLTex2D{
 		filename = 'texpack.png',
 		magFilter = gl.GL_LINEAR,
@@ -192,13 +194,9 @@ function Game:draw()
 
 	self.map:draw()
 
-	local shader = self.spriteShader
-	shader:use()
-	gl.glUniformMatrix4fv(shader.uniforms.mvProjMat.loc, 1, gl.GL_FALSE, view.mvProjMat.ptr)
 	for _,obj in ipairs(self.objs) do
-		obj:draw(shader)
+		obj:draw()
 	end
-	shader:useNone()
 end
 
 function Game:update(dt)
@@ -252,30 +250,34 @@ function Game:onEvent(event)
 			self.player.buttonLeft = down
 		elseif event.key.keysym.sym == sdl.SDLK_RIGHT then
 			self.player.buttonRight = down
-		elseif event.key.keysym.sym == sdl.SDLK_x then
+		elseif event.key.keysym.sym == ('x'):byte() then
+			self.player.buttonJump = down
+		elseif event.key.keysym.sym == ('z'):byte() then
 			self.player.buttonUse = down
-		elseif event.key.keysym.sym == sdl.SDLK_z then
-			self.player.buttonAttack = down
 		-- reset
-		elseif event.key.keysym.sym == sdl.SDLK_r then
+		elseif event.key.keysym.sym == ('r'):byte() then
 			self:init()
-		
-		elseif event.key.keysym.sym >= ('1'):byte()
-		and event.key.keysym.sym <= ('9'):byte()
-		then
-			self.player.selectedItem = event.key.keysym.sym - ('1'):byte() + 1
-		elseif event.key.keysym.sym == ('0'):byte() then
-			self.player.selectedItem = 10
-		elseif event.key.keysym.sym == ('-'):byte() then
-			self.player.selectedItem = 11
-		elseif event.key.keysym.sym == ('='):byte() then
-			self.player.selectedItem = 12
+		end
+
+		if down then
+			if event.key.keysym.sym >= ('1'):byte()
+			and event.key.keysym.sym <= ('9'):byte()
+			then
+				self.player.selectedItem = event.key.keysym.sym - ('1'):byte() + 1
+			elseif event.key.keysym.sym == ('0'):byte() then
+				self.player.selectedItem = 10
+			elseif event.key.keysym.sym == ('-'):byte() then
+				self.player.selectedItem = 11
+			elseif event.key.keysym.sym == ('='):byte() then
+				self.player.selectedItem = 12
+			end
 		end
 	end
 end
 
 local ig = require 'imgui'
 function Game:updateGUI()
+	local player = self.player
 	local app = self.app
 	local maxItems = 12
 	local bw = math.floor(app.width / maxItems)
@@ -285,7 +287,9 @@ function Game:updateGUI()
 	ig.igPushStyleVar_Vec2(ig.ImGuiStyleVar_ButtonTextAlign, ig.ImVec2(.5, .5))
 
 	for i=1,maxItems do
-		local selected = self.player.selectedItem == i
+		local item = player.items[i]
+		
+		local selected = player.selectedItem == i
 		if selected then
 			local selectColor = ig.ImVec4(0,0,1,.5)
 			ig.igPushStyleColor_Vec4(ig.ImGuiCol_Button, selectColor)
@@ -307,7 +311,9 @@ function Game:updateGUI()
 			ig.igPushStyleVar_Float(ig.ImGuiStyleVar_FrameBorderSize, 1)
 		end
 		--]]
-		ig.igButton('###'..i, ig.ImVec2(bw,bh))
+		local name = '###'..i
+		if item then name = item.name..name end
+		ig.igButton(name, ig.ImVec2(bw,bh))
 		--[[
 		if selected then
 			ig.igPopStyleVar(1)

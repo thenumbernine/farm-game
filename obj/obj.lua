@@ -4,6 +4,7 @@ local vec2f = require 'vec-ffi.vec2f'
 local vec3f = require 'vec-ffi.vec3f'
 local vec4f = require 'vec-ffi.vec4f'
 local anim = require 'zelda.anim'
+local GLTex2D = require 'gl.tex2d'
 local Tile = require 'zelda.tile'
 local sides = require 'zelda.sides'
 
@@ -196,7 +197,12 @@ end
 -- TODO use 8 points as well?
 local dirSeqSuffixes = {'_r', '_u', '_l', '_d'}
 
-function Obj:draw(shader)
+local matrix_ffi = require 'matrix.ffi'
+local modelMat = matrix_ffi({4,4},'float'):zeros():setIdent()
+
+function Obj:draw()
+	local game = self.game
+	local view = game.app.view
 --[[
 	for faceIndex,faces in ipairs(Tile.cubeFaces) do
 		if bit.band(self.hitsides, bit.lshift(1, faceIndex-1)) ~= 0 then
@@ -235,27 +241,79 @@ function Obj:draw(shader)
 --print('seqname', seqname, 'seq', seq)
 				if seq and self.frame then
 					local frame = seq[self.frame]
-					local uscale = -1
-					local vscale = 1
-					if frame.hflip then uscale = uscale * -1 end
-					if self.vflip then vscale = vscale * -1 end
-					frame.tex:bind()
-					gl.glVertexAttrib4fv(shader.attrs.color.loc, self.color.s)
-					gl.glBegin(gl.GL_QUADS)
-					for _,uv in ipairs(Tile.unitquad) do
-						gl.glVertexAttrib2f(
-							shader.attrs.texcoord.loc,
-							(uv[1] - .5) * uscale + .5,
-							(uv[2] - .5) * vscale + .5)
-						local x,y,z = (
-							app.view.angle:xAxis() * (.5 - uv[1]) * self.drawSize.x
-							+ app.view.angle:yAxis() * (.5 - uv[2]) * self.drawSize.y
-							+ self.pos
-						):unpack()
-						gl.glVertex3f(x,y,z+.1)
+					if frame.tex then
+						local shader = game.spriteShader
+						shader:use()
+						gl.glUniformMatrix4fv(shader.uniforms.mvProjMat.loc, 1, gl.GL_FALSE, view.mvProjMat.ptr)
+
+						local uscale = -1
+						local vscale = 1
+						if frame.hflip then uscale = uscale * -1 end
+						if self.vflip then vscale = vscale * -1 end
+						frame.tex:bind()
+						gl.glVertexAttrib4fv(shader.attrs.color.loc, self.color.s)
+						gl.glBegin(gl.GL_QUADS)
+						for _,uv in ipairs(Tile.unitquad) do
+							gl.glVertexAttrib2f(
+								shader.attrs.texcoord.loc,
+								(uv[1] - .5) * uscale + .5,
+								(uv[2] - .5) * vscale + .5)
+							local x,y,z = (
+								app.view.angle:xAxis() * (.5 - uv[1]) * self.drawSize.x
+								+ app.view.angle:yAxis() * (.5 - uv[2]) * self.drawSize.y
+								+ self.pos
+							):unpack()
+							gl.glVertex3f(x,y,z+.1)
+						end
+						gl.glEnd()
+						frame.tex:unbind()
+
+						shader:useNone()
+					elseif frame.mesh then
+						modelMat:setTranslate(self.pos:unpack())
+						local shader = assert(game.meshShader)
+						--[[
+						shader
+							:use()
+							:setUniforms{
+								modelMatrix = modelMat.ptr,
+								viewMatrix = view.mvMat.ptr,
+								projectionMatrix = view.projMat.ptr,
+							}
+							:useNone()
+						--]]
+						-- [[
+						shader:use()
+						gl.glUniformMatrix4fv(shader.uniforms.modelMatrix.loc, 1, gl.GL_FALSE, modelMat.ptr)
+						gl.glUniformMatrix4fv(shader.uniforms.viewMatrix.loc, 1, gl.GL_FALSE, view.mvMat.ptr)
+						gl.glUniformMatrix4fv(shader.uniforms.projectionMatrix.loc, 1, gl.GL_FALSE, view.projMat.ptr)
+						--shader:useNone()	-- why does shader need to be :use()'d here?
+						--]]
+						frame.mesh:draw{
+							shader = shader,
+							beginGroup = function(g)
+								if g.tex_Kd then g.tex_Kd:bind() end
+								shader:setUniforms{
+									useFlipTexture = 0,
+									useLighting = 0,
+									useTextures = g.tex_Kd and 1 or 0,
+									Ka = {0,0,0,0},
+									Kd = g.Kd and g.Kd.s or {1,1,1,1},
+									Ks = g.Ks and g.Ks.s or {1,1,1,1},
+									Ns = g.Ns or 10,
+									
+									objCOM = vec3f().s,
+									groupCOM = vec3f().s,
+									groupExplodeDist = 0,
+									triExplodeDist = 0,
+								}
+							end,
+						}
+						shader:useNone()
+						GLTex2D:unbind()
+					else
+						error("hmm error in frame table")
 					end
-					gl.glEnd()
-					frame.tex:unbind()
 				end
 			end
 		end

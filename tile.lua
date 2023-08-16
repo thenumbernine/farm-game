@@ -85,6 +85,10 @@ SolidTile.solid = true
 SolidTile.isUnitCube = true	-- render shorthand for side occlusion
 assert(SolidTile.cubeFaces)
 
+local StoneTile = SolidTile:subclass{name='Stone'}
+
+local GrassTile = SolidTile:subclass{name='Grass'}
+
 local SolidBottomHalfTile = Tile:subclass()
 SolidBottomHalfTile.name = 'SolidBottomHalf'
 SolidBottomHalfTile.solid = true
@@ -109,7 +113,8 @@ what do i want ...
 	- what kind of seed is planted here
 --]]
 Tile.types[0] = EmptyTile()
-table.insert(Tile.types, SolidTile())
+table.insert(Tile.types, StoneTile())
+table.insert(Tile.types, GrassTile())
 table.insert(Tile.types, SolidBottomHalfTile())
 table.insert(Tile.types, SolidTopHalfTile())
 

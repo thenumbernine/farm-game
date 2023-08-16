@@ -21,6 +21,18 @@ local anim = {
 			{filename = 'sprites/goomba/stand.png'},
 		},
 	},
+	hoed = {
+		dontUseDir = true,
+		stand = {
+			{filename = 'sprites/hoed/stand.obj'},
+		},
+	},
+	seededground = {
+		dontUseDir = true,
+		stand = {
+			{filename = 'sprites/seededground/stand.obj'},
+		},
+	},
 }
 
 -- TODO use the filesystem for the whole thing? and no table?

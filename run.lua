@@ -7,6 +7,7 @@ local anim = require 'zelda.anim'
 local Game = require 'zelda.game'
 local getTime = require 'ext.timer'.getTime
 local ImGuiApp = require 'imguiapp'
+local OBJLoader = require 'mesh.objloader'
 
 require 'glapp.view'.useBuiltinMatrixMath = true
 
@@ -39,17 +40,24 @@ precision highp float;
 		for seqname,seq in pairs(sprite) do
 			if seqname ~= 'dontUseDir' then
 				for _,frame in pairs(seq) do
-					frame.tex = GLTex2D{
-						filename = frame.filename,
-						magFilter = gl.GL_LINEAR,
-						minFilter = gl.GL_NEAREST,
-					}
+					local fn = frame.filename
+					if fn:sub(-4) == '.png' then
+						frame.tex = GLTex2D{
+							filename = frame.filename,
+							magFilter = gl.GL_LINEAR,
+							minFilter = gl.GL_NEAREST,
+						}
+					elseif fn:sub(-4) == '.obj' then
+						frame.mesh = OBJLoader():load(fn)
+					else
+						print("idk how to load this file")
+					end
 				end
 			end
 		end
 	end
 	--]]
-	
+
 	self.view.angle:fromAngleAxis(1,0,0,30)
 
 	self.game = Game{app=self}
