@@ -37,10 +37,19 @@ function Map:init(args)	-- vec3i
 	ffi.fill(self.map, 0, ffi.sizeof'maptype_t' * self.size:volume())	-- 0 = empty
 	local blockSize = 8
 	local half = bit.rshift(self.size.z, 1)
+	local step = vec3i(1, self.size.x, self.size.x * self.size.y)
+	local ijk = vec3i()
+	local xyz = vec3f()
 	for k=0,self.size.z-1 do
+		ijk.z = k
+		xyz.z = k / blockSize
 		for j=0,self.size.y-1 do
+			ijk.y = j
+			xyz.y = j / blockSize
 			for i=0,self.size.x-1 do
-				local c = simplexnoise(i/blockSize,j/blockSize,k/blockSize)
+				ijk.x = i
+				xyz.x = i / blockSize
+				local c = simplexnoise(xyz:unpack())
 				local maptype = Tile.typeValues.Empty
 				local maptex = k >= half-1 and 0 or 1
 				if k >= half then
@@ -53,7 +62,7 @@ function Map:init(args)	-- vec3i
 						and Tile.typeValues.Stone
 						or Tile.typeValues.Grass
 				end
-				local index = i + self.size.x * (j + self.size.y * k)
+				local index = ijk:dot(step)
 				self.map[index].type = maptype
 				self.map[index].tex = maptex
 			end
@@ -123,6 +132,15 @@ void main() {
 end
 
 function Map:buildDrawArrays()
+	local volume = self.size:volume()
+	-- [[ using reserve and heuristic of #cubes ~ #vtxs: brings time taken from 12 s to 0.12 s
+	self.vtxs:resize(0)
+	self.vtxs:reserve(volume)
+	self.texcoords:resize(0)
+	self.texcoords:reserve(volume)
+	self.colors:resize(0)
+	self.colors:reserve(volume)
+	--]]
 	local texpackDx = 1/tonumber(self.texpackSize.x)
 	local texpackDy = 1/tonumber(self.texpackSize.y)
 	local index = 0
@@ -187,7 +205,12 @@ function Map:buildDrawArrays()
 			end
 		end
 	end
-	
+
+	-- 184816 vertexes total ...
+	-- ... from 196608 cubes
+	print('volume', volume)
+	print('vtxs', self.vtxs.size)
+
 	-- TODO Don't reallocate gl buffers each time.
 	-- OpenGL growing buffers via glCopyBufferSubData:
 	-- https://stackoverflow.com/a/27751186/2714073

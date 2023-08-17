@@ -137,7 +137,7 @@ void main() {
 	}
 	self.map = Map{
 		app = self.app,
-		size = vec3i(32, 32, 32),
+		size = vec3i(96, 64, 32),
 	}
 
 	self.objs = table()
@@ -298,7 +298,7 @@ function Game:onEvent(event)
 			self.player.buttonUse = down
 		-- reset
 		elseif event.key.keysym.sym == ('r'):byte() then
-			self:init()
+			self.app.game = Game{app=self.app}
 		end
 
 		if down then
