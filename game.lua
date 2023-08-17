@@ -1,3 +1,4 @@
+local ffi = require 'ffi'
 local sdl = require 'ffi.req' 'sdl'
 local class = require 'ext.class'
 local table = require 'ext.table'
@@ -5,14 +6,27 @@ local Map = require 'zelda.map'
 local gl = require 'gl'
 local GLTex2D = require 'gl.tex2d'
 local GLProgram = require 'gl.program'
+local GLArrayBuffer = require 'gl.arraybuffer'
+local vec2f = require 'vec-ffi.vec2f'
 local vec3i = require 'vec-ffi.vec3i'
 local vec3f = require 'vec-ffi.vec3f'
+local vec4f = require 'vec-ffi.vec4f'
 local Obj = require 'zelda.obj.obj'
 local ThreadManager = require 'threadmanager'
 
 -- put this somewhere as to not give it a require loop
 assert(not Obj.classes)
 Obj.classes = require 'zelda.obj.all'
+
+
+local function hexcolor(i)
+	return
+		bit.band(0xff, bit.rshift(i,16))/255,
+		bit.band(0xff, bit.rshift(i,8))/255,
+		bit.band(0xff, i)/255,
+		1
+end
+
 
 
 local Game = class()
@@ -25,15 +39,38 @@ function Game:init(args)
 	self.time = 0
 	self.threads = ThreadManager()
 
+
+	self.skyVtxBufCPU = ffi.new('vec2f_t[4]', {
+		vec2f(0,0),
+		vec2f(1,0),
+		vec2f(0,1),
+		vec2f(1,1),
+	})
+	self.skyVtxBuf = GLArrayBuffer{
+		size = ffi.sizeof(self.skyVtxBufCPU),
+		data = self.skyVtxBufCPU,
+	}:unbind()
+
+	self.skyColorBufCPU = ffi.new('vec4f_t[4]', {
+		vec4f(hexcolor(0xda9134)),
+		vec4f(hexcolor(0xda9134)),
+		vec4f(hexcolor(0x313453)),
+		vec4f(hexcolor(0x313453)),
+	})
+	self.skyColorBuf = GLArrayBuffer{
+		size = ffi.sizeof(self.skyColorBufCPU),
+		data = self.skyColorBufCPU,
+	}:unbind()
+
 	self.skyShader = GLProgram{
 		vertexCode = app.glslHeader..[[
-in vec3 vertex;
+in vec2 vertex;
 in vec4 color;
 out vec4 colorv;
 uniform mat4 mvProjMat;
 void main() {
 	colorv = color;
-	gl_Position = mvProjMat * vec4(vertex, 1.);
+	gl_Position = mvProjMat * vec4(vertex, 0., 1.);
 }
 ]],
 		fragmentCode = app.glslHeader..[[
@@ -43,7 +80,11 @@ void main() {
 	fragColor = colorv;
 }
 ]],
-	}
+		attrs = {
+			vertex = self.skyVtxBuf,
+			color = self.skyColorBuf,
+		},
+	}:useNone()
 
 	self.spriteShader = GLProgram{
 		vertexCode = app.glslHeader..[[
@@ -129,13 +170,6 @@ function Game:newObj(args)
 	return obj
 end
 
-local function hexcolor(i)
-	return
-		bit.band(0xff, bit.rshift(i,16))/255,
-		bit.band(0xff, bit.rshift(i,8))/255,
-		bit.band(0xff, i)/255
-end
-
 function Game:draw()
 	local app = self.app
 	local view = app.view
@@ -159,18 +193,48 @@ function Game:draw()
 
 		gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
 		gl.glDisable(gl.GL_DEPTH_TEST)
-		gl.glBegin(gl.GL_TRIANGLE_STRIP)
-		gl.glVertexAttrib3f(shader.attrs.color.loc, hexcolor(0xda9134))	gl.glVertex2f(0,0)
-		gl.glVertexAttrib3f(shader.attrs.color.loc, hexcolor(0xda9134))	gl.glVertex2f(1,0)
-		gl.glVertexAttrib3f(shader.attrs.color.loc, hexcolor(0x313453))	gl.glVertex2f(0,1)
-		gl.glVertexAttrib3f(shader.attrs.color.loc, hexcolor(0x313453))	gl.glVertex2f(1,1)
-		gl.glEnd()
+		
+		gl.glVertexAttribPointer(shader.attrs.vertex.loc, 2, gl.GL_FLOAT, gl.GL_FALSE, 0, self.skyVtxBufCPU)
+		gl.glVertexAttribPointer(shader.attrs.color.loc, 4, gl.GL_FLOAT, gl.GL_FALSE, 0, self.skyColorBufCPU)
+		gl.glEnableVertexAttribArray(shader.attrs.vertex.loc)
+		gl.glEnableVertexAttribArray(shader.attrs.color.loc)
+	
+		gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, 4)
+
+		gl.glDisableVertexAttribArray(shader.attrs.vertex.loc)
+		gl.glDisableVertexAttribArray(shader.attrs.color.loc)
+
 		gl.glEnable(gl.GL_DEPTH_TEST)
 		
 		shader:useNone()
 		view.mvProjMat:mul4x4(view.projMat, view.mvMat)
 	end
 --]]
+--[[ with VAO / attrs in object
+	do
+		gl.glDisable(gl.GL_DEPTH_TEST)
+		
+		local shader = self.skyShader
+		shader:use()
+			:enableAttrs()
+
+		view.mvProjMat:setOrtho(0,1,0,1,-1,1)
+		gl.glUniformMatrix4fv(shader.uniforms.mvProjMat.loc, 1, gl.GL_FALSE, view.mvProjMat.ptr)
+
+		GLTex2D:unbind()
+		
+		gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, 4)
+		
+		shader
+			:disableAttrs()
+			:useNone()
+		
+		gl.glEnable(gl.GL_DEPTH_TEST)
+		
+		view.mvProjMat:mul4x4(view.projMat, view.mvMat)
+	end
+--]]
+
 
 	do
 		-- [[ clip by fragcoord

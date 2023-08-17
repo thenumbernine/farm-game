@@ -1,6 +1,3 @@
-#!/usr/bin/env luajit
-
-local class = require 'ext.class'
 local bit = require 'bit'
 local gl = require 'gl'
 local anim = require 'zelda.anim'
@@ -11,11 +8,12 @@ local OBJLoader = require 'mesh.objloader'
 
 require 'glapp.view'.useBuiltinMatrixMath = true
 
-local App = class(
+local App = 
 	--require 'glapp.orbit'(
 		require 'glapp.view'.apply(ImGuiApp)
 	--)
-)
+	:subclass()
+
 App.title = 'Zelda 4D'
 
 App.viewDist = 4
@@ -78,16 +76,16 @@ function App:update()
 	
 	gl.glClear(bit.bor(gl.GL_COLOR_BUFFER_BIT, gl.GL_DEPTH_BUFFER_BIT))
 
+	--[[ not in gles ... needs to be coded into the shaders.
 	gl.glEnable(gl.GL_ALPHA_TEST)
 	gl.glAlphaFunc(gl.GL_GEQUAL, .1)
+	--]]
 	gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 	gl.glEnable(gl.GL_BLEND)
-	gl.glEnable(gl.GL_TEXTURE_2D)
 	
 	-- TODO frameskip
 	self.game:draw()
 	
-	gl.glDisable(gl.GL_TEXTURE_2D)
 	gl.glDisable(gl.GL_BLEND)
 
 	self.updateTime = self.updateTime + deltaTime
@@ -111,4 +109,4 @@ function App:event(event, ...)
 	self.game:onEvent(event)
 end
 
-return App():run()
+return App
