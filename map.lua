@@ -1,4 +1,5 @@
 local class = require 'ext.class'
+local table = require 'ext.table'
 local ffi = require 'ffi'
 local template = require 'template'
 local vector = require 'ffi.cpp.vector'
@@ -8,7 +9,10 @@ local vec3f = require 'vec-ffi.vec3f'
 local vec2f = require 'vec-ffi.vec2f'
 local vec4ub = require 'vec-ffi.vec4ub'
 local gl = require 'gl'
+local glreport = require 'gl.report'
 local GLProgram = require 'gl.program'
+local GLArrayBuffer = require 'gl.arraybuffer'
+local GLVertexArray = require 'gl.vertexarray'
 local simplexnoise = require 'simplexnoise.3d'
 local Tile = require 'zelda.tile'
 local sides = require 'zelda.sides'
@@ -108,7 +112,7 @@ void main() {
 		uniforms = {
 			tex = 0,
 		},
-	}
+	}:useNone()
 
 	-- geometry
 	self.vtxs = vector'vec3f_t'
@@ -183,6 +187,59 @@ function Map:buildDrawArrays()
 			end
 		end
 	end
+	
+	-- TODO Don't reallocate gl buffers each time.
+	-- OpenGL growing buffers via glCopyBufferSubData:
+	-- https://stackoverflow.com/a/27751186/2714073
+
+	self.vtxBuf = GLArrayBuffer{
+		size = ffi.sizeof(self.vtxs.type) * self.vtxs.size,
+		data = self.vtxs.v,
+		-- TDOO why does dynamic draw make it black?
+		--usage = gl.GL_DYNAMIC_DRAW,
+	}:unbind()
+
+	self.texcoordBuf = GLArrayBuffer{
+		size = ffi.sizeof(self.texcoords.type) * self.texcoords.size,
+		data = self.texcoords.v,
+		--usage = gl.GL_DYNAMIC_DRAW,
+	}:unbind()
+	
+	self.colorBuf = GLArrayBuffer{
+		size = ffi.sizeof(self.colors.type) * self.colors.size,
+		data = self.colors.v,
+		--usage = gl.GL_DYNAMIC_DRAW,
+	}:unbind()
+
+	-- TODO put this in a GLSceneObject object instead
+	-- and give that its own set of attrs, uniforms, shader, geometry
+	self.shader.vao = GLVertexArray{
+		program = self.shader,
+		attrs = {
+			vertex = {
+				loc = self.shader.attrs.vertex.loc, 
+				buffer = self.vtxBuf,
+				type = gl.GL_FLOAT,
+				size = 3,
+				stride = 0,
+			},
+			texcoord = {
+				loc = self.shader.attrs.texcoord.loc,
+				buffer = self.texcoordBuf,
+				type = gl.GL_FLOAT,
+				size = 2,
+				stride = 0,
+			},
+			color = {
+				loc = self.shader.attrs.color.loc,
+				buffer = self.colordBuf,
+				type = gl.GL_UNSIGNED_BYTE,
+				size = 4,
+				normalize = true,
+				stride = 0,
+			},
+		},
+	}:useNone()
 end
 
 function Map:draw()
@@ -193,7 +250,7 @@ function Map:draw()
 	local texpack = game.texpack
 	
 	shader:use()
-	
+
 	gl.glUniformMatrix4fv(shader.uniforms.mvProjMat.loc, 1, gl.GL_FALSE, view.mvProjMat.ptr)
 	gl.glUniform4f(shader.uniforms.viewport.loc, 0, 0, app.width, app.height)
 	gl.glUniform1i(shader.uniforms.useSeeThru.loc, 1)
@@ -205,22 +262,50 @@ function Map:draw()
 	end
 
 	texpack:bind()
-	
+
+	-- TODO why do i have to set this twice?
+	--[[ cpu bind ... works
 	gl.glVertexAttribPointer(shader.attrs.vertex.loc, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, self.vtxs.v)
 	gl.glVertexAttribPointer(shader.attrs.texcoord.loc, 2, gl.GL_FLOAT, gl.GL_FALSE, 0, self.texcoords.v)
 	gl.glVertexAttribPointer(shader.attrs.color.loc, 4, gl.GL_UNSIGNED_BYTE, gl.GL_TRUE, 0, self.colors.v)
+	--]]
+	-- [[ gpu bind ... works
+	self.vtxBuf:bind()
+	gl.glVertexAttribPointer(shader.attrs.vertex.loc, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, nil)
+	self.texcoordBuf:bind()
+	gl.glVertexAttribPointer(shader.attrs.texcoord.loc, 2, gl.GL_FLOAT, gl.GL_FALSE, 0, nil)
+	self.colorBuf:bind()
+	gl.glVertexAttribPointer(shader.attrs.color.loc, 4, gl.GL_UNSIGNED_BYTE, gl.GL_TRUE, 0, nil)
+	GLArrayBuffer:unbind()
+	--]]
+	--[[ vao ... doesn't work?
+	-- redundant call to vao attr:enable?
+	--shader:enableAttrs()
+	--so instead?
+	shader.vao:bind()
+	--]]
 	gl.glEnableVertexAttribArray(shader.attrs.vertex.loc)
 	gl.glEnableVertexAttribArray(shader.attrs.texcoord.loc)
 	gl.glEnableVertexAttribArray(shader.attrs.color.loc)
-	
+
 	gl.glDrawArrays(gl.GL_QUADS, 0, self.vtxs.size)
-	
+
+	--[[ vao?
+	-- enable/disble saved in vao state?
+	--shader:disableAttrs()
+	-- so instead?
+	shader.vao:unbind()
+	--]]
+	-- [[ enable/disble
 	gl.glDisableVertexAttribArray(shader.attrs.vertex.loc)
 	gl.glDisableVertexAttribArray(shader.attrs.texcoord.loc)
 	gl.glDisableVertexAttribArray(shader.attrs.color.loc)
+	--]]
 
 	texpack:unbind()
+
 	shader:useNone()
+	glreport'here'
 end
 
 -- i,j,k integers

@@ -27,6 +27,13 @@ local anim = {
 			{filename = 'sprites/hoed/stand.obj'},
 		},
 	},
+	watered = {
+		dontUseDir = true,
+		stand = {
+			{filename = 'sprites/watered/stand.obj'},
+		},
+	},
+
 	seededground = {
 		dontUseDir = true,
 		stand = {

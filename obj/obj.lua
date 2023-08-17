@@ -1,4 +1,5 @@
 local gl = require 'gl'
+local glreport = require 'gl.report'
 local class = require 'ext.class'
 local vec2f = require 'vec-ffi.vec2f'
 local vec3f = require 'vec-ffi.vec3f'
@@ -269,6 +270,7 @@ function Obj:draw()
 						frame.tex:unbind()
 
 						shader:useNone()
+						glreport'here'
 					elseif frame.mesh then
 						modelMat:setTranslate(self.pos:unpack())
 						local shader = assert(game.meshShader)
@@ -311,6 +313,7 @@ function Obj:draw()
 						}
 						shader:useNone()
 						GLTex2D:unbind()
+						glreport'here'
 					else
 						error("hmm error in frame table")
 					end

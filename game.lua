@@ -118,6 +118,9 @@ float lenSq(vec2 v) {
 // gl_FragCoord is in pixel coordinates with origin at lower-left
 void main() {
 	fragColor = colorv * texture(tex, texcoordv);
+	
+	// alpha-testing
+	if (fragColor.a < .1) discard;
 }
 ]],
 		uniforms = {
@@ -185,43 +188,18 @@ function Game:draw()
 	
 -- [[ sky
 	do
-		local shader = self.skyShader
-		shader:use()
-
-		view.mvProjMat:setOrtho(0,1,0,1,-1,1)
-		gl.glUniformMatrix4fv(shader.uniforms.mvProjMat.loc, 1, gl.GL_FALSE, view.mvProjMat.ptr)
-
-		gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
-		gl.glDisable(gl.GL_DEPTH_TEST)
-		
-		gl.glVertexAttribPointer(shader.attrs.vertex.loc, 2, gl.GL_FLOAT, gl.GL_FALSE, 0, self.skyVtxBufCPU)
-		gl.glVertexAttribPointer(shader.attrs.color.loc, 4, gl.GL_FLOAT, gl.GL_FALSE, 0, self.skyColorBufCPU)
-		gl.glEnableVertexAttribArray(shader.attrs.vertex.loc)
-		gl.glEnableVertexAttribArray(shader.attrs.color.loc)
-	
-		gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, 4)
-
-		gl.glDisableVertexAttribArray(shader.attrs.vertex.loc)
-		gl.glDisableVertexAttribArray(shader.attrs.color.loc)
-
-		gl.glEnable(gl.GL_DEPTH_TEST)
-		
-		shader:useNone()
-		view.mvProjMat:mul4x4(view.projMat, view.mvMat)
-	end
---]]
---[[ with VAO / attrs in object
-	do
+		GLTex2D:unbind()
 		gl.glDisable(gl.GL_DEPTH_TEST)
 		
 		local shader = self.skyShader
 		shader:use()
+			-- TODO .vao should really be in a Geometry object, not a Program object
+			-- and the Geometry should accept a shader which helps determine what the attrs are and therefore what the bindings are
 			:enableAttrs()
 
 		view.mvProjMat:setOrtho(0,1,0,1,-1,1)
 		gl.glUniformMatrix4fv(shader.uniforms.mvProjMat.loc, 1, gl.GL_FALSE, view.mvProjMat.ptr)
 
-		GLTex2D:unbind()
 		
 		gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, 4)
 		
