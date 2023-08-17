@@ -1,32 +1,43 @@
 local vec3f = require 'vec-ffi.vec3f'
+local Tile = require 'zelda.tile'
 local Obj = require 'zelda.obj.obj'
 
 -- TODO placeable item ...
+-- ... two kinds?
+-- 1. place item <-> change map data
+-- 2. place item <-> place object
+
+-- TODO do I need an 'Item' parent class?
+-- not as long as I have .use() ...
+-- - as a behavior?
+
 local ItemBed = Obj:subclass()
 
 ItemBed.name = 'bed'
 ItemBed.sprite = 'bed'
 
+-- TODO eventually dont do this 
+ItemBed.useGravity = false
+ItemBed.collidesWithTiles = false
+
 function ItemBed:use(player)
 	local game = player.game
+	local map = game.map
 
-	if player.attackEndTime >= game.time then return end
-	
-	player.swingPos = vec3f(player.pos:unpack())
-	player.attackTime = game.time
-	player.attackEndTime = game.time + player.attackDuration
+	-- TODO traceline and then step back
+	local dst = (player.pos + vec3f(
+		math.cos(player.angle),
+		math.sin(player.angle),
+		0
+	)):map(math.floor)
 
-	-- see if we hit anyone
-	for _,obj in ipairs(game.objs) do
-		if obj ~= player 
-		and obj.takesDamage
-		and not obj.dead
-		then
-			local attackDist = 2	-- should match rFar in the draw code.  TODO as well consider object bbox / bounding radius.
-			if (player.pos - obj.pos):lenSq() < attackDist*attackDist then
-				obj:damage(1)
-			end
-		end
+	-- TODO also make sure no objects exist here
+	local topTile = map:get(dst:unpack())
+	if topTile == Tile.typeValues.Empty 
+	-- TODO and no solid object exists on this tile
+	then
+		local obj = player.items:remove(player.selectedItem)
+		obj.pos:set((dst+.5):unpack())
 	end
 end
 

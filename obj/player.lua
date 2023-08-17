@@ -28,10 +28,15 @@ function Player:init(...)
 		require 'zelda.obj.item.hoe',
 		require 'zelda.obj.item.wateringcan',
 		require 'zelda.obj.item.seeds',
-		require 'zelda.obj.item.bed',
 	}:mapi(function(cl)
 		return cl{game=self.game}
 	end)
+
+	local bedItem = self.game:newObj{
+		class = require 'zelda.obj.item.bed',
+		pos = vec3f(math.huge, math.huge, math.huge),
+	}
+	self.items:insert(bedItem)
 end
 
 function Player:update(dt)
