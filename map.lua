@@ -348,6 +348,21 @@ function Map:get(i,j,k)
 	return self.map[i + self.size.x * (j + self.size.y * k)].type
 end
 
+function Map:getTileObjs(x,y,z)
+	local game = self.game	-- TODO map should get .game
+	x = math.floor(x)
+	y = math.floor(y)
+	z = math.floor(z)
+	if x < 0 or x >= self.size.x
+	or y < 0 or y >= self.size.y
+	or z < 0 or z >= self.size.z
+	then
+		return nil
+	end
+	local tileIndex = x + self.size.x * (y + self.size.y * z)
+	return self.objsPerTileIndex[tileIndex]
+end
+
 -- i,j,k integers
 -- cl = object class
 -- returns true if an object of the class 'cl' is on this tile
@@ -359,14 +374,7 @@ function Map:hasObjType(x,y,z,cl)
 	x = math.floor(x)
 	y = math.floor(y)
 	z = math.floor(z)
-	if x < 0 or x >= self.size.x
-	or y < 0 or y >= self.size.y
-	or z < 0 or z >= self.size.z
-	then
-		return false
-	end
-	local tileIndex = x + self.size.x * (y + self.size.y * z)
-	local tileObjs = self.objsPerTileIndex[tileIndex]
+	local tileObjs = self:getTileObjs(x,y,z)
 	if not tileObjs then
 		return false
 	end

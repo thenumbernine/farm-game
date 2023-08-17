@@ -88,6 +88,36 @@ function Player:update(dt)
 		end
 	end
 
+	if self.buttonPickUp then
+		do -- TODO if player has room in inventory
+			-- traceline ...
+			-- see if it hits an obj or a map block
+			-- run a 'onPickUp' function on it
+		
+			local x,y,z = (player.pos + vec3f(
+				math.cos(player.angle),
+				math.sin(player.angle),
+				0
+			)):map(math.floor):unpack()
+
+			local found
+			local tileObjs = map:getTileObjs(x,y,z)
+			if tileObjs then
+				for _,obj in ipairs(tileObjs) do
+					do -- TODO if object can pick up then
+						obj:unlink()
+						self.items:insert(obj)
+						found = true
+						break
+					end
+				end
+			end
+			if not found then
+				-- TODO check map for pick up based on tile type
+			end
+		end
+	end
+
 	Player.super.update(self, dt)
 end
 

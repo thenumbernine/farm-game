@@ -297,6 +297,9 @@ function Game:onEvent(event)
 			self.player.buttonJump = down
 		elseif event.key.keysym.sym == ('z'):byte() then
 			self.player.buttonUse = down
+		elseif event.key.keysym.sym == ('c'):byte() then
+			self.player.buttonPickUp = down
+		
 		-- reset
 		elseif event.key.keysym.sym == ('r'):byte() then
 			self.app.game = Game{app=self.app}
