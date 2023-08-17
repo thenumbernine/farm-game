@@ -24,7 +24,7 @@ function ItemHoe:use(player)
 	then
 		game:newObj{
 			class = HoedGround,
-			pos = vec3f(x+.5, y+.5, z),
+			pos = vec3f(x+.5, y+.5, z + .002),
 		}
 	end
 end

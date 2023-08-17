@@ -27,7 +27,7 @@ function ItemSeeds:use(player)
 		-- TODO dif kinds of seeds ... hmm ...
 		game:newObj{
 			class = SeededGround,
-			pos = vec3f(x+.5, y+.5, z),
+			pos = vec3f(x+.5, y+.5, z + .002),
 		}
 	end
 end

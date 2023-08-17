@@ -24,7 +24,7 @@ function ItemWateringCan:use(player)
 	then
 		game:newObj{
 			class = WateredGround,
-			pos = vec3f(x+.5, y+.5, z),
+			pos = vec3f(x+.5, y+.5, z + .002),
 		}
 	end
 end

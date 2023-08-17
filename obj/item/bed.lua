@@ -2,14 +2,28 @@ local vec3f = require 'vec-ffi.vec3f'
 local Tile = require 'zelda.tile'
 local Obj = require 'zelda.obj.obj'
 
--- TODO placeable item ...
--- ... two kinds?
--- 1. place item <-> change map data
--- 2. place item <-> place object
+--[[
+TODO placeable item ...
+... two kinds?
+1. place item <-> change map data
+2. place item <-> place object
 
--- TODO do I need an 'Item' parent class?
--- not as long as I have .use() ...
--- - as a behavior?
+TODO
+- object represents the physical thing in the world
+	use an ax or something to disconnect from world and become an item that you touch to pick up.
+- object represents an item placeholder,
+	touch to pick up.
+either way i need states for pick-up-able and for world-interact-able
+
+pick-up-able should be its own thing 'item' 
+... which holds a container to the object it represents.
+
+while some things don't have world-interactable objects (tools etc)
+
+TODO do I need an 'Item' parent class?
+not as long as I have .use() ...
+- as a behavior?
+--]]
 
 local ItemBed = Obj:subclass()
 

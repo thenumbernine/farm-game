@@ -30,8 +30,10 @@ local Map = class()
 
 -- voxel-based
 function Map:init(args)	-- vec3i
-	self.app = assert(args.app)
-	local app = self.app
+	self.game = assert(args.game)
+	local game = self.game
+	local app = game.app
+
 	self.size = vec3i(args.size:unpack())
 	self.map = ffi.new('maptype_t[?]', self.size:volume())
 	ffi.fill(self.map, 0, ffi.sizeof'maptype_t' * self.size:volume())	-- 0 = empty
@@ -68,6 +70,10 @@ function Map:init(args)	-- vec3i
 			end
 		end
 	end
+
+	-- key = index in map.objsPerTileIndex = offset of the tile in the map
+	-- value = list of all objects on that tile
+	self.objsPerTileIndex = {}
 
 	self.texpackSize = vec2i(2, 2)
 
@@ -266,8 +272,8 @@ function Map:buildDrawArrays()
 end
 
 function Map:draw()
-	local app = self.app
-	local game = app.game
+	local game = self.game
+	local app = game.app
 	local view = app.view
 	local shader = self.shader
 	local texpack = game.texpack
@@ -349,11 +355,22 @@ end
 -- instead TODO link objs to tiles
 -- and have this just cycle the linkse of the tile
 function Map:hasObjType(x,y,z,cl)
+	local game = self.game	-- TODO map should get .game
 	x = math.floor(x)
 	y = math.floor(y)
 	z = math.floor(z)
-	local game = self.app.game	-- TODO map should get .game
-	for _,obj in ipairs(game.objs) do
+	if x < 0 or x >= self.size.x
+	or y < 0 or y >= self.size.y
+	or z < 0 or z >= self.size.z
+	then
+		return false
+	end
+	local tileIndex = x + self.size.x * (y + self.size.y * z)
+	local tileObjs = self.objsPerTileIndex[tileIndex]
+	if not tileObjs then
+		return false
+	end
+	for _,obj in ipairs(tileObjs) do
 		if cl:isa(obj)
 		and math.floor(obj.pos.x) == x
 		and math.floor(obj.pos.y) == y
@@ -362,6 +379,7 @@ function Map:hasObjType(x,y,z,cl)
 			return true
 		end
 	end
+	return false
 end
 
 return Map

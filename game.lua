@@ -136,7 +136,7 @@ void main() {
 		minFilter = gl.GL_NEAREST,
 	}
 	self.map = Map{
-		app = self.app,
+		game = self,
 		size = vec3i(96, 64, 32),
 	}
 
@@ -166,6 +166,7 @@ void main() {
 end
 
 function Game:newObj(args)
+print('new', args.class.name, 'at', args.pos)	
 	local cl = assert(args.class)
 	args.game = self
 	local obj = cl(args)

@@ -1,11 +1,12 @@
-local gl = require 'gl'
-local glreport = require 'gl.report'
+local table = require 'ext.table'
 local class = require 'ext.class'
 local vec2f = require 'vec-ffi.vec2f'
 local vec3f = require 'vec-ffi.vec3f'
 local vec4f = require 'vec-ffi.vec4f'
-local anim = require 'zelda.anim'
+local gl = require 'gl'
+local glreport = require 'gl.report'
 local GLTex2D = require 'gl.tex2d'
+local anim = require 'zelda.anim'
 local Tile = require 'zelda.tile'
 local sides = require 'zelda.sides'
 
@@ -14,6 +15,9 @@ local Obj = class()
 -- default
 Obj.seq = 'stand'
 Obj.frame = 1
+
+Obj.min = vec3f(-.3, -.3, -.3)
+Obj.max = vec3f(.3, .3, .3)
 
 function Obj:init(args)
 	assert(args)
@@ -36,15 +40,76 @@ function Obj:init(args)
 	if args.vel then self.vel:set(args.vel:unpack()) end
 
 	-- [[[ bbox
-	self.min = vec3f(-.3, -.3, -.3)
+	self.min = vec3f():set(self.class.min:unpack())
 	if args.min then self.min:set(args.min:unpack()) end
 	
-	self.max = vec3f(.3, .3, .3)
+	self.max = vec3f():set(self.class.max:unpack())
 	if args.max then self.max:set(args.max:unpack()) end
 	--]]
 
 	self.color = vec4f(1,1,1,1)
 	if args.color then self.color:set(args.color:unpack()) end
+
+	self.tiles = {}
+
+	self:setPos(self.pos:unpack())
+end
+
+function Obj:link()
+	local map = self.game.map
+
+	-- always unlink before you link
+	assert(next(self.tiles) == nil)
+
+	for k =
+		math.max(math.floor(self.pos.z + self.min.z), 0),
+		math.min(math.floor(self.pos.z + self.max.z), map.size.z - 1)
+	do
+		for j =
+			math.max(math.floor(self.pos.y + self.min.y), 0),
+			math.min(math.floor(self.pos.y + self.max.y), map.size.y - 1)
+		do
+			for i =
+				math.max(math.floor(self.pos.x + self.min.x), 0),
+				math.min(math.floor(self.pos.x + self.max.x), map.size.x - 1)
+			do
+				local tileIndex = i + map.size.x * (j + map.size.y * k)
+				local tileObjs = map.objsPerTileIndex[tileIndex]
+				
+				if not tileObjs then
+					tileObjs = table()
+					map.objsPerTileIndex[tileIndex] = tileObjs
+				end
+				
+				tileObjs:insertUnique(self)
+
+				self.tiles[tileIndex] = tileObjs
+			end
+		end
+	end
+end
+
+function Obj:unlink()
+	local map = self.game.map
+	-- self.tiles = list of tile-links that this obj is attached to ...
+	if self.tiles then
+		for tileIndex,tileObjs in pairs(self.tiles) do
+			tileObjs:removeObject(self)
+			if #tileObjs == 0 then
+				map.objsPerTileIndex[tileIndex] = nil
+			end
+			self.tiles[tileIndex] = nil
+		end
+	end
+	
+	assert(next(self.tiles) == nil)
+end
+
+function Obj:setPos(x,y,z)
+	self:unlink()
+	self.pos:set(x,y,z)	
+	self:link()
+	return self
 end
 
 -- how to handle collision?
@@ -153,8 +218,11 @@ Obj.collidesWithTiles = true
 
 local epsilon = 1e-5
 function Obj:update(dt)
-	self.oldpos:set(self.pos:unpack())
+	local game = self.game
+	
+	self:unlink()
 
+	self.oldpos:set(self.pos:unpack())
 
 -- [[
 	self.pos.x = self.pos.x + self.vel.x * dt
@@ -171,10 +239,19 @@ function Obj:update(dt)
 	if self.collidesWithTiles then
 		local omin = vec3f()
 		local omax = vec3f()
-		for i=math.floor(math.min(self.pos.x, self.oldpos.x) + self.min.x - 1.5),math.floor(math.max(self.pos.x, self.oldpos.x) + self.max.x + .5) do
-			for j=math.floor(math.min(self.pos.y, self.oldpos.y) + self.min.y - 1.5),math.floor(math.max(self.pos.y, self.oldpos.y) + self.max.y + .5) do
-				for k=math.floor(math.min(self.pos.z, self.oldpos.z) + self.min.z - 1.5),math.floor(math.max(self.pos.z, self.oldpos.z) + self.max.z + .5) do
-					local tiletype = app.game.map:get(i,j,k)
+		for k = 
+			math.floor(math.min(self.pos.z, self.oldpos.z) + self.min.z - 1.5),
+			math.floor(math.max(self.pos.z, self.oldpos.z) + self.max.z + .5)
+		do
+			for j =
+				math.floor(math.min(self.pos.y, self.oldpos.y) + self.min.y - 1.5),
+				math.floor(math.max(self.pos.y, self.oldpos.y) + self.max.y + .5)
+			do
+				for i =
+					math.floor(math.min(self.pos.x, self.oldpos.x) + self.min.x - 1.5),
+					math.floor(math.max(self.pos.x, self.oldpos.x) + self.max.x + .5)
+				do
+					local tiletype = game.map:get(i,j,k)
 					if tiletype > 0 then
 						local tile = Tile.types[tiletype]
 						if tile.solid then
@@ -192,6 +269,8 @@ function Obj:update(dt)
 			end
 		end
 	end
+
+	self:link()
 end
 
 -- ccw start at 0' (with 45' spread)
