@@ -36,7 +36,7 @@ precision highp float;
 	local GLTex2D = require 'gl.tex2d'
 	for _,sprite in pairs(anim) do
 		for seqname,seq in pairs(sprite) do
-			if seqname ~= 'dontUseDir' then
+			if seqname ~= 'useDirs' then	-- skip properties
 				for _,frame in pairs(seq) do
 					local fn = frame.filename
 					if fn:sub(-4) == '.png' then

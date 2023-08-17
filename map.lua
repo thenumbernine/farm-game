@@ -342,4 +342,26 @@ function Map:get(i,j,k)
 	return self.map[i + self.size.x * (j + self.size.y * k)].type
 end
 
+-- i,j,k integers
+-- cl = object class
+-- returns true if an object of the class 'cl' is on this tile
+-- TODO right now this is position-based testing
+-- instead TODO link objs to tiles
+-- and have this just cycle the linkse of the tile
+function Map:hasObjType(x,y,z,cl)
+	x = math.floor(x)
+	y = math.floor(y)
+	z = math.floor(z)
+	local game = self.app.game	-- TODO map should get .game
+	for _,obj in ipairs(game.objs) do
+		if cl:isa(obj)
+		and math.floor(obj.pos.x) == x
+		and math.floor(obj.pos.y) == y
+		and math.floor(obj.pos.z) == z
+		then
+			return true
+		end
+	end
+end
+
 return Map

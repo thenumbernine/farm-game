@@ -233,7 +233,7 @@ function Obj:draw()
 		if sprite then
 			local seqname = self.seq
 			if seqname then
-				if not sprite.dontUseDir then	-- enable this for sequences that use _u _d _l _r etc (TODO search by default?)
+				if sprite.useDirs then	-- enable this for sequences that use _u _d _l _r etc (TODO search by default?)
 					local angleIndex = math.floor(self.angle / (.5 * math.pi) + .5) % 4 + 1
 					seqname = seqname .. dirSeqSuffixes[angleIndex]
 --print('angle', self.angle, 'index', angleIndex, 'seqname', seqname)

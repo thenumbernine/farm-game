@@ -2,6 +2,7 @@
 
 local anim = {
 	link = {
+		useDirs = true,
 		stand_r = {
 			{filename = 'sprites/link/stand_r.png'},
 		},
@@ -16,30 +17,35 @@ local anim = {
 		},
 	},
 	goomba = {
-		dontUseDir = true,
 		stand = {
 			{filename = 'sprites/goomba/stand.png'},
 		},
 	},
+	
+	-- [[ ground sprites ... TODO instead use a dif rendering system for these ...
 	hoed = {
-		dontUseDir = true,
 		stand = {
 			{filename = 'sprites/hoed/stand.obj'},
 		},
 	},
 	watered = {
-		dontUseDir = true,
 		stand = {
 			{filename = 'sprites/watered/stand.obj'},
 		},
 	},
-
 	seededground = {
-		dontUseDir = true,
 		stand = {
 			{filename = 'sprites/seededground/stand.obj'},
 		},
 	},
+	--]]
+	-- [[ 3D
+	bed = {
+		stand = {
+			{filename = 'sprites/bed/stand.obj'},
+		},
+	},
+	--]]
 }
 
 -- TODO use the filesystem for the whole thing? and no table?

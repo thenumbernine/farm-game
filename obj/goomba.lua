@@ -2,6 +2,9 @@ local class = require 'ext.class'
 local Obj = require 'zelda.obj.obj'
 
 local Goomba = class(Obj)
+
+Goomba.name = 'Goomba'	-- TODO require name?
+
 Goomba.sprite = 'goomba'
 --Goomba.seq = 'walk'
 Goomba.walkSpeed = 0

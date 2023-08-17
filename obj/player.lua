@@ -8,6 +8,7 @@ local sides = require 'zelda.sides'
 
 
 local Player = Obj:subclass()
+Player.name = 'Player'	-- TODO require name?
 
 Player.sprite = 'link'
 Player.drawSize = vec2f(1,1.5)
@@ -21,12 +22,16 @@ function Player:init(...)
 	Player.super.init(self, ...)
 
 	self.selectedItem = 1
+	-- TODO array-of-stacks 
 	self.items = table{
-		require 'zelda.obj.item.sword'(),
-		require 'zelda.obj.item.hoe'(),
-		require 'zelda.obj.item.wateringcan'(),
-		require 'zelda.obj.item.seeds'(),
-	}
+		require 'zelda.obj.item.sword',
+		require 'zelda.obj.item.hoe',
+		require 'zelda.obj.item.wateringcan',
+		require 'zelda.obj.item.seeds',
+		require 'zelda.obj.item.bed',
+	}:mapi(function(cl)
+		return cl{game=self.game}
+	end)
 end
 
 function Player:update(dt)
