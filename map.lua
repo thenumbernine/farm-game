@@ -141,11 +141,11 @@ function Map:buildDrawArrays()
 	local volume = self.size:volume()
 	-- [[ using reserve and heuristic of #cubes ~ #vtxs: brings time taken from 12 s to 0.12 s
 	self.vtxs:resize(0)
-	self.vtxs:reserve(volume)
+	self.vtxs:reserve(2*volume)
 	self.texcoords:resize(0)
-	self.texcoords:reserve(volume)
+	self.texcoords:reserve(2*volume)
 	self.colors:resize(0)
-	self.colors:reserve(volume)
+	self.colors:reserve(2*volume)
 	--]]
 	local texpackDx = 1/tonumber(self.texpackSize.x)
 	local texpackDy = 1/tonumber(self.texpackSize.y)
@@ -184,7 +184,9 @@ function Map:buildDrawArrays()
 									end
 								end
 								if not nbhdtileIsUnitCube then
-									for vi,vtx in ipairs(faces) do
+									for ti=1,6 do
+										local vi = Tile.unitQuadTriIndexes[ti]
+										local vtx = faces[vi]
 										local v = tile.cubeVtxs[vtx+1]
 										
 										local c = self.colors:emplace_back()
@@ -317,7 +319,7 @@ function Map:draw()
 	gl.glEnableVertexAttribArray(shader.attrs.texcoord.loc)
 	gl.glEnableVertexAttribArray(shader.attrs.color.loc)
 
-	gl.glDrawArrays(gl.GL_QUADS, 0, self.vtxs.size)
+	gl.glDrawArrays(gl.GL_TRIANGLES, 0, self.vtxs.size)
 
 	--[[ vao?
 	-- enable/disble saved in vao state?

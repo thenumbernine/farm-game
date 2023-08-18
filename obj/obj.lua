@@ -347,8 +347,9 @@ gl.glEnable(gl.GL_DEPTH_TEST)
 						if self.vflip then vscale = vscale * -1 end
 						frame.tex:bind()
 						gl.glVertexAttrib4fv(shader.attrs.color.loc, self.color.s)
-						gl.glBegin(gl.GL_QUADS)
-						for _,uv in ipairs(Tile.unitquad) do
+						gl.glBegin(gl.GL_TRIANGLE_STRIP)
+						for _,ti in ipairs(Tile.unitQuadTriStripIndexes) do
+							local uv = Tile.unitquad[ti]
 							gl.glVertexAttrib2f(
 								shader.attrs.texcoord.loc,
 								(uv[1] - .5) * uscale + .5,

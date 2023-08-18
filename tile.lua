@@ -40,6 +40,9 @@ local cubeVtxs = makeSimplexVtxs(3)
 
 --baking makeSimplexVtxs(2) with xor'ing bits 0 and 1 for 2D simplex traversal
 local unitquad = {{0,0}, {1,0}, {1,1}, {0,1}}
+local unitQuadTris = {{0,0}, {1,0}, {0,1}, {0,1}, {1,0}, {1,1}}
+local unitQuadTriIndexes = {1, 2, 4, 4, 2, 3}
+local unitQuadTriStripIndexes = {1, 2, 4, 3}
 
 
 local Tile = class()
@@ -47,6 +50,7 @@ local Tile = class()
 Tile.min = vec3f(0,0,0)
 Tile.max = vec3f(1,1,1)
 
+--[[
 function Tile:render(i,j,k, shader)
 	gl.glBegin(gl.GL_QUADS)
 	for _,faces in ipairs(cubeFaces) do
@@ -62,11 +66,15 @@ function Tile:render(i,j,k, shader)
 	end
 	gl.glEnd()
 end
+--]]
 
 -- assign here before making subclasses
 Tile.cubeVtxs = cubeVtxs 
 Tile.cubeFaces = cubeFaces 
 Tile.unitquad = unitquad
+Tile.unitQuadTris = unitQuadTris
+Tile.unitQuadTriIndexes = unitQuadTriIndexes
+Tile.unitQuadTriStripIndexes = unitQuadTriStripIndexes 
 
 Tile.types = {}
 Tile.typeValues = {}
