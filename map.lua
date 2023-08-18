@@ -87,7 +87,7 @@ function Map:init(args)	-- vec3i
 	end
 	
 	do
-		local houseSize = vec3f(5, 5, 2)
+		local houseSize = vec3f(3, 3, 2)
 		local center = vec3f(
 			math.floor(self.size.x/2),
 			math.floor(self.size.y*3/4),
@@ -106,12 +106,10 @@ function Map:init(args)	-- vec3i
 					end
 				end
 			end
-			local index = center.x + self.size.x * (center.y - houseSize.y + self.size.y * (center.z - houseSize.z + 1))
-			local t = self.map[index]
+			local t = assert(self:getTile(center.x, center.y - houseSize.y, center.z - houseSize.z + 1))
 			t.type = 0
 			t.tex = 0
-			index = index + self.size.x * self.size.y
-			local t = self.map[index]
+			local t = assert(self:getTile(center.x, center.y - houseSize.y, center.z - houseSize.z + 2))
 			t.type = 0
 			t.tex = 0
 		end
@@ -152,8 +150,8 @@ out vec4 fragColor;
 uniform sampler2D tex;
 uniform vec4 viewport;
 uniform bool useSeeThru;
-uniform float playerPosZ;
-uniform float playerClipZ;
+uniform vec3 playerPos;
+uniform vec3 playerClipPos;
 
 void main() {
 	fragColor = texture(tex, texcoordv);
@@ -161,12 +159,25 @@ void main() {
 	if (useSeeThru &&
 		length(
 			gl_FragCoord.xy - .5 * viewport.zw
-		) < .15 * viewport.w &&
-		gl_FragCoord.z < playerClipZ &&
-		posv.z > playerPosZ
+		) < .35 * viewport.w &&
+		gl_FragCoord.z < playerClipPos.z &&
+		posv.z > playerPos.z
 	) {
-		fragColor.w = .1;
-		discard;
+#if 0	
+		vec3 dx = dFdx(gl_FragCoord.xyz);
+		vec3 dy = dFdy(gl_FragCoord.xyz);
+		vec3 n = cross(dx, dy);
+		if (dot(n, playerClipPos - gl_FragCoord.xyz) < 0.) {
+#endif			
+#if 1
+		vec3 dx = dFdx(posv.xyz);
+		vec3 dy = dFdy(posv.xyz);
+		vec3 n = cross(dx, dy);
+		if (dot(n, playerPos - posv.xyz) < 0.) {
+#endif		
+			fragColor.w = .1;
+			discard;
+		}
 	}
 }
 ]],
@@ -319,11 +330,11 @@ function Map:draw()
 	local app = game.app
 	
 	local shader = self.sceneObj.program
-	if shader.uniforms.playerPosZ then
-		self.sceneObj.uniforms.playerPosZ = game.playerPosZ
+	if shader.uniforms.playerPos then
+		self.sceneObj.uniforms.playerPos = game.playerPos.s
 	end
-	if shader.uniforms.playerClipZ then
-		self.sceneObj.uniforms.playerClipZ = game.playerClipZ
+	if shader.uniforms.playerClipPos then
+		self.sceneObj.uniforms.playerClipPos = game.playerClipPos.s
 	end
 
 	self.sceneObj.uniforms.mvProjMat = app.view.mvProjMat.ptr
@@ -337,6 +348,7 @@ function Map:draw()
 end
 
 -- i,j,k integers
+-- TODO call this 'getType' ?
 function Map:get(i,j,k)
 	if i < 0 or i >= self.size.x
 	or j < 0 or j >= self.size.y
@@ -345,6 +357,17 @@ function Map:get(i,j,k)
 		return Tile.typeValues.Empty
 	end
 	return self.map[i + self.size.x * (j + self.size.y * k)].type
+end
+
+-- return the ptr to the map tile
+function Map:getTile(i,j,k)
+	if i < 0 or i >= self.size.x
+	or j < 0 or j >= self.size.y
+	or k < 0 or k >= self.size.z
+	then
+		return
+	end
+	return self.map + (i + self.size.x * (j + self.size.y * k))
 end
 
 function Map:getTileObjs(x,y,z)

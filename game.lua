@@ -247,11 +247,11 @@ function Game:draw()
 		local dfar = 1
 		local windowZ = normalizedDeviceCoordDepth * (dfar - dnear)*.5 + (dfar + dnear)*.5
 		-- clip by depth ...
-		self.playerClipZ = windowZ
+		self.playerClipPos = vec3f(x,y,z)--windowZ
 		--]]
 		-- [[
 		-- and clip by world z ...
-		self.playerPosZ = viewFollow.pos.z + .1
+		self.playerPos = vec3f(viewFollow.pos:unpack()) + .1
 		--]]
 	end
 
