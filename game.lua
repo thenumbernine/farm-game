@@ -156,7 +156,9 @@ void main() {
 		texs = {},
 	}
 
-	self.meshShader = require 'mesh':makeShader()
+	self.meshShader = require 'mesh':makeShader{
+		glslHeader = app.glslHeader,
+	}
 
 	self.texpack = GLTex2D{
 		filename = 'texpack.png',

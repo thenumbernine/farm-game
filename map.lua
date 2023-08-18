@@ -35,6 +35,12 @@ function Map:init(args)	-- vec3i
 	local game = self.game
 	local app = game.app
 
+	local maptexs = {
+		grass = 0,
+		stone = 1,
+		wood = 2,
+	}
+
 	self.size = vec3i(args.size:unpack())
 	self.map = ffi.new('maptype_t[?]', self.size:volume())
 	ffi.fill(self.map, 0, ffi.sizeof'maptype_t' * self.size:volume())	-- 0 = empty
@@ -54,14 +60,22 @@ function Map:init(args)	-- vec3i
 				xyz.x = i / blockSize
 				local c = simplexnoise(xyz:unpack())
 				local maptype = Tile.typeValues.Empty
-				local maptex = k >= half-1 and 0 or 1
+				local maptex = k >= half-1 
+					and maptexs.grass
+					or maptexs.stone
 				if k >= half then
 					c = c + (k - half) * .5
 				end
-				if c < .5
-				then
+				
+				-- [[ make the top flat?
+				if k >= half then
+					c = k == half and 0 or 1
+				end
+				--]]
+
+				if c < .5 then
 					maptype = 
-						maptex == 1
+						maptex == maptexs.stone
 						and Tile.typeValues.Stone
 						or Tile.typeValues.Grass
 				end
@@ -71,7 +85,38 @@ function Map:init(args)	-- vec3i
 			end
 		end
 	end
-
+	
+	do
+		local houseSize = vec3f(5, 5, 2)
+		local center = vec3f(
+			math.floor(self.size.x/2),
+			math.floor(self.size.y*3/4),
+			math.floor(self.size.z/2) + houseSize.z)
+		for x=center.x-houseSize.x,center.x+houseSize.x do
+			for y=center.y-houseSize.y, center.y+houseSize.y do
+				for z=center.z-houseSize.z, center.z+houseSize.z do
+					local adx = math.abs(x - center.x)
+					local ady = math.abs(y - center.y)
+					local adz = math.abs(z - center.z)
+					local linf = math.max(adx/houseSize.x, ady/houseSize.y, adz/houseSize.z)
+					if linf == 1 then
+						local index = x + self.size.x * (y + self.size.y * z)
+						self.map[index].type = Tile.typeValues.Stone
+						self.map[index].tex = maptexs.wood
+					end
+				end
+			end
+			local index = center.x + self.size.x * (center.y - houseSize.y + self.size.y * (center.z - houseSize.z + 1))
+			local t = self.map[index]
+			t.type = 0
+			t.tex = 0
+			index = index + self.size.x * self.size.y
+			local t = self.map[index]
+			t.type = 0
+			t.tex = 0
+		end
+	end
+	
 	-- key = index in map.objsPerTileIndex = offset of the tile in the map
 	-- value = list of all objects on that tile
 	self.objsPerTileIndex = {}
