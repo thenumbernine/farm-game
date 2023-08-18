@@ -40,15 +40,15 @@ function Game:init(args)
 	self.threads = ThreadManager()
 
 
-	self.skyVtxBufCPU = ffi.new('vec2f_t[4]', {
+	self.quadVtxBufCPU = ffi.new('vec2f_t[4]', {
 		vec2f(0,0),
 		vec2f(1,0),
 		vec2f(0,1),
 		vec2f(1,1),
 	})
-	self.skyVtxBuf = GLArrayBuffer{
-		size = ffi.sizeof(self.skyVtxBufCPU),
-		data = self.skyVtxBufCPU,
+	self.quadVtxBuf = GLArrayBuffer{
+		size = ffi.sizeof(self.quadVtxBufCPU),
+		data = self.quadVtxBufCPU,
 	}:unbind()
 
 	self.skyColorBufCPU = ffi.new('vec4f_t[4]', {
@@ -61,6 +61,12 @@ function Game:init(args)
 		size = ffi.sizeof(self.skyColorBufCPU),
 		data = self.skyColorBufCPU,
 	}:unbind()
+
+	local GLGeometry = require 'gl.geometry'
+	self.quadGeom = GLGeometry{
+		mode = gl.GL_TRIANGLE_STRIP,
+		count = 4,
+	}
 
 	self.skyShader = GLProgram{
 		vertexCode = app.glslHeader..[[
@@ -80,11 +86,19 @@ void main() {
 	fragColor = colorv;
 }
 ]],
-		attrs = {
-			vertex = self.skyVtxBuf,
-			color = self.skyColorBuf,
-		},
+		-- TODO make this the standard and move VAOs into SceneObject
+		createVAO = false,
 	}:useNone()
+
+	local GLSceneObject = require 'gl.sceneobject'
+	self.skySceneObj = GLSceneObject{
+		geometry = self.quadGeom,
+		program = self.skyShader,
+		attrs = {
+			vertex = self.quadVtxBuf,
+			color = self.skyColorBuf,
+		}
+	}
 
 	self.spriteShader = GLProgram{
 		vertexCode = app.glslHeader..[[
@@ -126,6 +140,8 @@ void main() {
 		uniforms = {
 			tex = 0,
 		},
+		
+		createVAO = false,
 	}
 
 	self.meshShader = require 'mesh':makeShader()
@@ -192,21 +208,11 @@ function Game:draw()
 		GLTex2D:unbind()
 		gl.glDisable(gl.GL_DEPTH_TEST)
 		
-		local shader = self.skyShader
-		shader:use()
-			-- TODO .vao should really be in a Geometry object, not a Program object
-			-- and the Geometry should accept a shader which helps determine what the attrs are and therefore what the bindings are
-			:enableAttrs()
 
 		view.mvProjMat:setOrtho(0,1,0,1,-1,1)
-		gl.glUniformMatrix4fv(shader.uniforms.mvProjMat.loc, 1, gl.GL_FALSE, view.mvProjMat.ptr)
 
-		
-		gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, 4)
-		
-		shader
-			:disableAttrs()
-			:useNone()
+		self.skySceneObj.uniforms.mvProjMat = view.mvProjMat.ptr
+		self.skySceneObj:draw()
 		
 		gl.glEnable(gl.GL_DEPTH_TEST)
 		

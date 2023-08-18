@@ -41,7 +41,8 @@ end
 
 function Player:update(dt)
 	local game = self.game
-	
+	local map = game.map
+
 	local dx = 0
 	local dy = 0
 	if self.buttonRight then dx = dx + 1 end
@@ -94,9 +95,9 @@ function Player:update(dt)
 			-- see if it hits an obj or a map block
 			-- run a 'onPickUp' function on it
 		
-			local x,y,z = (player.pos + vec3f(
-				math.cos(player.angle),
-				math.sin(player.angle),
+			local x,y,z = (self.pos + vec3f(
+				math.cos(self.angle),
+				math.sin(self.angle),
 				0
 			)):map(math.floor):unpack()
 
@@ -104,7 +105,7 @@ function Player:update(dt)
 			local tileObjs = map:getTileObjs(x,y,z)
 			if tileObjs then
 				for _,obj in ipairs(tileObjs) do
-					do -- TODO if object can pick up then
+					if obj.canPickUp then
 						obj:unlink()
 						self.items:insert(obj)
 						found = true
