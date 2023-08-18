@@ -352,16 +352,9 @@ gl.glEnable(gl.GL_DEPTH_TEST)
 						gl.glUniform3f(shader.uniforms.pos.loc, self.pos.x, self.pos.y, self.pos.z + .1) 
 						gl.glUniform4f(shader.uniforms.color.loc, self.color:unpack())
 
-						frame.tex:bind()
-						gl.glBegin(gl.GL_TRIANGLE_STRIP)
-						for _,ti in ipairs(Tile.unitQuadTriStripIndexes) do
-							local uv = Tile.unitquad[ti]
-							gl.glVertex2f(uv[1], uv[2])
-						end
-						gl.glEnd()
-						frame.tex:unbind()
+						game.spriteSceneObj.texs[1] = frame.tex
+						game.spriteSceneObj:draw()
 
-						shader:useNone()
 						glreport'here'
 					elseif frame.mesh then
 						modelMat:setTranslate(self.pos:unpack())

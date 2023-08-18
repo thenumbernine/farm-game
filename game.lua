@@ -150,6 +150,10 @@ void main() {
 	self.spriteSceneObj = GLSceneObject{
 		geometry = self.quadGeom,
 		program = self.spriteShader,
+		attrs = {
+			vertex = self.quadVtxBuf,
+		},
+		texs = {},
 	}
 
 	self.meshShader = require 'mesh':makeShader()
