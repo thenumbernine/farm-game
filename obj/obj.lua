@@ -284,7 +284,7 @@ function Obj:draw()
 	local game = self.game
 	local view = game.app.view
 
--- [[
+--[[
 	gl.glColor3f(1,1,1)
 gl.glPointSize(10)
 gl.glDisable(gl.GL_TEXTURE_2D)
@@ -338,28 +338,25 @@ gl.glEnable(gl.GL_DEPTH_TEST)
 					local frame = seq[self.frame]
 					if frame.tex then
 						local shader = game.spriteShader
-						shader:use()
-						gl.glUniformMatrix4fv(shader.uniforms.mvProjMat.loc, 1, gl.GL_FALSE, view.mvProjMat.ptr)
 
 						local uscale = -1
 						local vscale = 1
 						if frame.hflip then uscale = uscale * -1 end
 						if self.vflip then vscale = vscale * -1 end
+						
+						shader:use()
+						gl.glUniformMatrix4fv(shader.uniforms.viewMat.loc, 1, gl.GL_FALSE, view.mvMat.ptr)
+						gl.glUniformMatrix4fv(shader.uniforms.projMat.loc, 1, gl.GL_FALSE, view.projMat.ptr)
+						gl.glUniform2f(shader.uniforms.uvscale.loc, uscale, vscale)
+						gl.glUniform2f(shader.uniforms.drawSize.loc, self.drawSize:unpack()) 
+						gl.glUniform3f(shader.uniforms.pos.loc, self.pos.x, self.pos.y, self.pos.z + .1) 
+						gl.glUniform4f(shader.uniforms.color.loc, self.color:unpack())
+
 						frame.tex:bind()
-						gl.glVertexAttrib4fv(shader.attrs.color.loc, self.color.s)
 						gl.glBegin(gl.GL_TRIANGLE_STRIP)
 						for _,ti in ipairs(Tile.unitQuadTriStripIndexes) do
 							local uv = Tile.unitquad[ti]
-							gl.glVertexAttrib2f(
-								shader.attrs.texcoord.loc,
-								(uv[1] - .5) * uscale + .5,
-								(uv[2] - .5) * vscale + .5)
-							local x,y,z = (
-								app.view.angle:xAxis() * (.5 - uv[1]) * self.drawSize.x
-								+ app.view.angle:yAxis() * (.5 - uv[2]) * self.drawSize.y
-								+ self.pos
-							):unpack()
-							gl.glVertex3f(x,y,z+.1)
+							gl.glVertex2f(uv[1], uv[2])
 						end
 						gl.glEnd()
 						frame.tex:unbind()

@@ -103,36 +103,38 @@ void main() {
 
 	self.spriteShader = GLProgram{
 		vertexCode = app.glslHeader..[[
-in vec3 vertex;
-in vec2 texcoord;
-in vec4 color;
-
+in vec2 vertex;
 out vec2 texcoordv;
-out vec4 colorv;
 
-uniform mat4 mvProjMat;
+uniform vec2 uvscale;
+uniform vec2 drawSize;
+uniform vec3 pos;
+
+uniform mat4 viewMat;
+uniform mat4 projMat;
 
 void main() {
-	texcoordv = texcoord;
-	colorv = color;
-	gl_Position = mvProjMat * vec4(vertex, 1.);
+	vec4 worldpos = vec4(pos, 1.);
+	worldpos.xyz += vec3(viewMat[0].x, viewMat[1].x, viewMat[2].x) * (.5 - vertex.x) * drawSize.x;
+	worldpos.xyz += vec3(viewMat[0].y, viewMat[1].y, viewMat[2].y) * (.5 - vertex.y) * drawSize.y;
+	worldpos = viewMat * worldpos;
+
+	texcoordv = (vertex - .5) * uvscale + .5;
+	
+	gl_Position = projMat * worldpos;
 }
 ]],
 		fragmentCode = app.glslHeader..[[
 in vec2 texcoordv;
-in vec4 colorv;
 
 out vec4 fragColor;
 
 uniform sampler2D tex;
-
-float lenSq(vec2 v) {
-	return dot(v,v);
-}
+uniform vec4 color;
 
 // gl_FragCoord is in pixel coordinates with origin at lower-left
 void main() {
-	fragColor = colorv * texture(tex, texcoordv);
+	fragColor = color * texture(tex, texcoordv);
 	
 	// alpha-testing
 	if (fragColor.a < .1) discard;
@@ -144,6 +146,11 @@ void main() {
 		
 		createVAO = false,
 	}:useNone()
+
+	self.spriteSceneObj = GLSceneObject{
+		geometry = self.quadGeom,
+		program = self.spriteShader,
+	}
 
 	self.meshShader = require 'mesh':makeShader()
 
