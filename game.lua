@@ -7,6 +7,8 @@ local gl = require 'gl'
 local GLTex2D = require 'gl.tex2d'
 local GLProgram = require 'gl.program'
 local GLArrayBuffer = require 'gl.arraybuffer'
+local GLGeometry = require 'gl.geometry'
+local GLSceneObject = require 'gl.sceneobject'
 local vec2f = require 'vec-ffi.vec2f'
 local vec3i = require 'vec-ffi.vec3i'
 local vec3f = require 'vec-ffi.vec3f'
@@ -51,6 +53,12 @@ function Game:init(args)
 		data = self.quadVtxBufCPU,
 	}:unbind()
 
+	self.quadGeom = GLGeometry{
+		mode = gl.GL_TRIANGLE_STRIP,
+		count = 4,
+	}
+
+
 	self.skyColorBufCPU = ffi.new('vec4f_t[4]', {
 		vec4f(hexcolor(0xda9134)),
 		vec4f(hexcolor(0xda9134)),
@@ -61,12 +69,6 @@ function Game:init(args)
 		size = ffi.sizeof(self.skyColorBufCPU),
 		data = self.skyColorBufCPU,
 	}:unbind()
-
-	local GLGeometry = require 'gl.geometry'
-	self.quadGeom = GLGeometry{
-		mode = gl.GL_TRIANGLE_STRIP,
-		count = 4,
-	}
 
 	self.skyShader = GLProgram{
 		vertexCode = app.glslHeader..[[
@@ -90,7 +92,6 @@ void main() {
 		createVAO = false,
 	}:useNone()
 
-	local GLSceneObject = require 'gl.sceneobject'
 	self.skySceneObj = GLSceneObject{
 		geometry = self.quadGeom,
 		program = self.skyShader,
@@ -142,7 +143,7 @@ void main() {
 		},
 		
 		createVAO = false,
-	}
+	}:useNone()
 
 	self.meshShader = require 'mesh':makeShader()
 
