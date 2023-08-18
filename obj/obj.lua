@@ -115,7 +115,8 @@ end
 -- how to handle collision?
 -- go back to start of trace?
 -- find intersection and then redo collision over remaining timestep?
--- or just push? how about just push
+-- or just push? how about just push.
+-- Writes to vel
 local epsilon = 1e-5
 local function push(pos, min, max, bmin, bmax, vel)
 	-- TODO cache these as 'worldmin'/max? 
@@ -219,7 +220,8 @@ Obj.collideFlags = 0
 local epsilon = 1e-5
 function Obj:update(dt)
 	local game = self.game
-	
+	local map = game.map
+
 	self:unlink()
 
 	self.oldpos:set(self.pos:unpack())
@@ -251,7 +253,8 @@ function Obj:update(dt)
 					math.floor(math.min(self.pos.x, self.oldpos.x) + self.min.x - 1.5),
 					math.floor(math.max(self.pos.x, self.oldpos.x) + self.max.x + .5)
 				do
-					local tiletype = game.map:get(i,j,k)
+					local tileIndex = i + map.size.x * (j + map.size.y * k)
+					local tiletype = map.map[tileIndex].type
 					if tiletype > 0 then
 						local tile = Tile.types[tiletype]
 						if tile.solid then
@@ -262,6 +265,13 @@ function Obj:update(dt)
 							-- then move horizontall
 							-- if push fails then raise up, move, and go back down, to try and do steps
 							local collided = push(self.pos, self.min, self.max, omin, omax, self.vel)
+							self.collideFlags = bit.bor(self.collideFlags, collided)
+						end
+					end
+					local objs = map.objsPerTileIndex[tileIndex]
+					if objs then
+						for _, obj in ipairs(objs) do
+							local collided = push(self.pos, self.min, self.max, obj.pos + obj.min, obj.pos + obj.max, self.vel)
 							self.collideFlags = bit.bor(self.collideFlags, collided)
 						end
 					end
