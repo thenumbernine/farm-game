@@ -156,25 +156,17 @@ uniform vec3 playerClipPos;
 void main() {
 	fragColor = texture(tex, texcoordv);
 	fragColor.xyz *= colorv.xyz;
+	
+	// keep the dx dy outside the if block to prevent errors.
+	vec3 dx = dFdx(posv.xyz);
+	vec3 dy = dFdy(posv.xyz);
 	if (useSeeThru &&
 		length(
 			gl_FragCoord.xy - .5 * viewport.zw
-		) < .35 * viewport.w &&
-		gl_FragCoord.z < playerClipPos.z &&
-		posv.z > playerPos.z
+		) < .35 * viewport.w
 	) {
-#if 0	
-		vec3 dx = dFdx(gl_FragCoord.xyz);
-		vec3 dy = dFdy(gl_FragCoord.xyz);
-		vec3 n = cross(dx, dy);
-		if (dot(n, playerClipPos - gl_FragCoord.xyz) < 0.) {
-#endif			
-#if 1
-		vec3 dx = dFdx(posv.xyz);
-		vec3 dy = dFdy(posv.xyz);
-		vec3 n = cross(dx, dy);
-		if (dot(n, playerPos - posv.xyz) < 0.) {
-#endif		
+		vec3 n = normalize(cross(dx, dy));
+		if (dot(n, playerPos - posv.xyz) < -.01) {
 			fragColor.w = .1;
 			discard;
 		}
