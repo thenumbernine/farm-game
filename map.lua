@@ -40,8 +40,21 @@ function Map:init(args)	-- vec3i
 		stone = 1,
 		wood = 2,
 	}
-
+	
 	self.size = vec3i(args.size:unpack())
+
+	local houseSize = vec3f(3, 3, 2)
+	local houseCenter = vec3f(
+		math.floor(self.size.x/2),
+		math.floor(self.size.y*3/4),
+		math.floor(self.size.z/2) + houseSize.z)
+
+	-- copied in game's init
+	local npcPos = vec3f(
+		self.size.x*.95,
+		self.size.y*.5,
+		self.size.z-.5)
+
 	self.map = ffi.new('maptype_t[?]', self.size:volume())
 	ffi.fill(self.map, 0, ffi.sizeof'maptype_t' * self.size:volume())	-- 0 = empty
 	local blockSize = 8
@@ -68,7 +81,11 @@ function Map:init(args)	-- vec3i
 				end
 				
 				-- [[ make the top flat?
-				if k >= half then
+				if k >= half
+				and (
+					(vec2f(i,j) - vec2f(houseCenter.x, houseCenter.y)):length() < 15
+					or (vec2f(i,j) - vec2f(npcPos.x, npcPos.y)):length() < 5
+				) then
 					c = k == half and 0 or 1
 				end
 				--]]
@@ -87,17 +104,12 @@ function Map:init(args)	-- vec3i
 	end
 	
 	do
-		local houseSize = vec3f(3, 3, 2)
-		local center = vec3f(
-			math.floor(self.size.x/2),
-			math.floor(self.size.y*3/4),
-			math.floor(self.size.z/2) + houseSize.z)
-		for x=center.x-houseSize.x,center.x+houseSize.x do
-			for y=center.y-houseSize.y, center.y+houseSize.y do
-				for z=center.z-houseSize.z, center.z+houseSize.z do
-					local adx = math.abs(x - center.x)
-					local ady = math.abs(y - center.y)
-					local adz = math.abs(z - center.z)
+		for x=houseCenter.x-houseSize.x,houseCenter.x+houseSize.x do
+			for y=houseCenter.y-houseSize.y, houseCenter.y+houseSize.y do
+				for z=houseCenter.z-houseSize.z, houseCenter.z+houseSize.z do
+					local adx = math.abs(x - houseCenter.x)
+					local ady = math.abs(y - houseCenter.y)
+					local adz = math.abs(z - houseCenter.z)
 					local linf = math.max(adx/houseSize.x, ady/houseSize.y, adz/houseSize.z)
 					if linf == 1 then
 						local index = x + self.size.x * (y + self.size.y * z)
@@ -106,10 +118,10 @@ function Map:init(args)	-- vec3i
 					end
 				end
 			end
-			local t = assert(self:getTile(center.x, center.y - houseSize.y, center.z - houseSize.z + 1))
+			local t = assert(self:getTile(houseCenter.x, houseCenter.y - houseSize.y, houseCenter.z - houseSize.z + 1))
 			t.type = 0
 			t.tex = 0
-			local t = assert(self:getTile(center.x, center.y - houseSize.y, center.z - houseSize.z + 2))
+			local t = assert(self:getTile(houseCenter.x, houseCenter.y - houseSize.y, houseCenter.z - houseSize.z + 2))
 			t.type = 0
 			t.tex = 0
 		end

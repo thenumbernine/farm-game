@@ -88,9 +88,28 @@ void main() {
 	fragColor = colorv;
 }
 ]],
-		-- TODO make this the standard and move VAOs into SceneObject
-		createVAO = false,
 	}:useNone()
+
+	self.swordShader = GLProgram{
+		vertexCode = app.glslHeader..[[
+in vec3 vertex;
+in vec4 color;
+out vec4 colorv;
+uniform mat4 mvProjMat;
+void main() {
+	colorv = color;
+	gl_Position = mvProjMat * vec4(vertex, 1.);
+}
+]],
+		fragmentCode = app.glslHeader..[[
+in vec4 colorv;
+out vec4 fragColor;
+void main() {
+	fragColor = colorv;
+}
+]],
+	}:useNone()
+
 
 	self.skySceneObj = GLSceneObject{
 		geometry = self.quadGeom,
@@ -143,8 +162,6 @@ void main() {
 		uniforms = {
 			tex = 0,
 		},
-		
-		createVAO = false,
 	}:useNone()
 
 	self.spriteSceneObj = GLSceneObject{

@@ -94,7 +94,8 @@ function Player:update(dt)
 	end
 
 	if self.buttonInteract then
-		do -- TODO if player has room in inventory
+		do 
+			-- TODO
 			-- traceline ...
 			-- see if it hits an obj or a map block
 			-- run a 'onPickUp' function on it
@@ -140,9 +141,12 @@ function Player:draw(...)
 
 	if self.attackEndTime > game.time then
 		local delta = (game.time - self.attackTime) / (self.attackEndTime - self.attackTime)
-		gl.glColor4f(1,1,.4,.7*(1-delta))
 		gl.glDepthMask(gl.GL_FALSE)
+		local shader = game.swordShader
+		shader:use()
+		gl.glUniformMatrix4fv(shader.uniforms.mvProjMat.loc, 1, gl.GL_FALSE, game.app.view.mvProjMat.ptr)
 		gl.glBegin(gl.GL_TRIANGLE_STRIP)
+		gl.glVertexAttrib4f(shader.attrs.color.loc, 1,1,.4,.7*(1-delta))
 		local dtheta = 150*math.pi/180
 		local ndivs = 20
 		for i=1,ndivs do
@@ -159,7 +163,7 @@ function Player:draw(...)
 		end
 		gl.glEnd()
 		gl.glDepthMask(gl.GL_TRUE)
-		gl.glColor4f(1,1,1,1)
+		shader:useNone()
 	end
 end
 
