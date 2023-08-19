@@ -57,6 +57,7 @@ precision highp float;
 	end
 	--]]
 
+	-- in degrees
 	self.targetViewYaw = 0
 	self.viewYaw = 0
 

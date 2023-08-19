@@ -108,6 +108,11 @@ function Obj:unlink()
 	assert(next(self.tiles) == nil)
 end
 
+function Obj:remove()
+	self:unlink()
+	self.game.objs:removeObject(self)
+end
+
 function Obj:setPos(x,y,z)
 	self:unlink()
 	self.pos:set(x,y,z)	
@@ -345,7 +350,8 @@ gl.glEnable(gl.GL_DEPTH_TEST)
 			local seqname = self.seq
 			if seqname then
 				if sprite.useDirs then	-- enable this for sequences that use _u _d _l _r etc (TODO search by default?)
-					local angleIndex = math.floor(self.angle / (.5 * math.pi) + .5) % 4 + 1
+					local relAngle = self.angle - math.rad(app.viewYaw)
+					local angleIndex = math.floor(relAngle / (.5 * math.pi) + .5) % 4 + 1
 					seqname = seqname .. dirSeqSuffixes[angleIndex]
 --print('angle', self.angle, 'index', angleIndex, 'seqname', seqname)
 				end

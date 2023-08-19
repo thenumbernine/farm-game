@@ -187,7 +187,6 @@ void main() {
 		uniforms = {
 			tex = 0,
 		},
-		createVAO = false,
 	}:useNone()
 
 	-- geometry

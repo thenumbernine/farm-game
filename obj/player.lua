@@ -49,6 +49,7 @@ function Player:init(...)
 	-- TODO array-of-stacks
 	self.items = table{
 		require 'zelda.obj.item.sword',
+		require 'zelda.obj.item.axe',
 		require 'zelda.obj.item.hoe',
 		require 'zelda.obj.item.wateringcan',
 		require 'zelda.obj.item.seeds',
@@ -78,14 +79,19 @@ function Player:update(dt)
 	if l > 0 then
 		l = self.walkSpeed / math.sqrt(l)
 	end
+	local localAngle
 	if dx ~= 0 or dy ~= 0 then
-		self.angle = math.atan2(dy,dx)
+		localAngle = math.atan2(dy, dx)
 	end
 	dx = dx * l
 	dy = dy * l
 
 	local zDir = app.view.angle:zAxis()	-- down dir
 	local xDir = app.view.angle:xAxis()	-- right dir
+	
+	if localAngle then
+		self.angle = localAngle + math.atan2(xDir.y, xDir.x)
+	end
 
 	--local x2Dir = vec2f(1,0)
 	local x2Dir = vec2f(xDir.x, xDir.y)

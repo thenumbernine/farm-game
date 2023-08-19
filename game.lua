@@ -234,6 +234,19 @@ void main() {
 			self.map.size.z-.5),
 	}
 
+	local houseSize = vec3f(3, 3, 2)
+	local houseCenter = vec3f(
+		math.floor(self.map.size.x/2),
+		math.floor(self.map.size.y*3/4),
+		math.floor(self.map.size.z/2) + houseSize.z)
+
+	-- copied in game's init
+	local npcPos = vec3f(
+		self.map.size.x*.95,
+		self.map.size.y*.5,
+		self.map.size.z-.5)
+
+
 	for j=0,self.map.size.y-1 do
 		for i=0,self.map.size.x-1 do
 			local k = self.map.size.z-1
@@ -247,7 +260,14 @@ void main() {
 				k = k - 1
 			end
 			if k >= 0 then
-				if math.random() < .2 then
+				-- found a grass tile
+				local r = math.random()
+				if (vec2f(i,j) - vec2f(houseCenter.x, houseCenter.y)):length() < 7.5
+				or (vec2f(i,j) - vec2f(npcPos.x, npcPos.y)):length() < 5
+				then
+					r = 1
+				end
+				if r < .2 then
 					local anim = require 'zelda.anim'
 					local sprite = table{
 						'tree1',
