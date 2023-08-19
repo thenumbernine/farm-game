@@ -7,7 +7,7 @@ local ItemHoe = Item:subclass()
 
 ItemHoe.name = 'hoe'
 
-function ItemHoe:use(player)
+function ItemHoe:useInInventory(player)
 	local game = player.game
 	local map = game.map
 	

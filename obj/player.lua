@@ -80,8 +80,9 @@ function Player:update(dt)
 		+ y2Dir.y * dy
 	)
 
-	if self.buttonUse then
-		self:use()
+	-- use = use currently selected inventory item
+	if self.buttonUseItem then
+		self:useItem()
 	end
 	
 	if self.buttonJump then
@@ -92,7 +93,7 @@ function Player:update(dt)
 		end
 	end
 
-	if self.buttonPickUp then
+	if self.buttonInteract then
 		do -- TODO if player has room in inventory
 			-- traceline ...
 			-- see if it hits an obj or a map block
@@ -108,9 +109,8 @@ function Player:update(dt)
 			local tileObjs = map:getTileObjs(x,y,z)
 			if tileObjs then
 				for _,obj in ipairs(tileObjs) do
-					if obj.canPickUp then
-						obj:unlink()
-						self.items:insert(obj)
+					if obj.interactInWorld then
+						obj:interactInWorld(self)
 						found = true
 						break
 					end
@@ -127,9 +127,9 @@ end
 
 Player.jumpVel = 4
 
-function Player:use()
+function Player:useItem()
 	local item = self.items[self.selectedItem]
-	if item then item:use(self) end
+	if item then item:useInInventory(self) end
 end
 
 function Player:draw(...)

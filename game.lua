@@ -320,12 +320,24 @@ function Game:onEvent(event)
 			self.player.buttonLeft = down
 		elseif event.key.keysym.sym == sdl.SDLK_RIGHT then
 			self.player.buttonRight = down
+		
+		--[[
+		buttons:
+			- jump
+			- use item (sword, hoe, watering can, etc)
+			- pick up 
+				... (I could combine this with 'use' and make it mandatory to select to an empty inventory slot ...)
+				... or I could get rid of this and have objects change to a touch-to-pick-up state like they do in minecraft and stardew valley
+			- talk/interact
+				... this could be same as pick-up, but for NPCs ...
+		--]]
+
 		elseif event.key.keysym.sym == ('x'):byte() then
 			self.player.buttonJump = down
 		elseif event.key.keysym.sym == ('z'):byte() then
-			self.player.buttonUse = down
+			self.player.buttonUseItem = down
 		elseif event.key.keysym.sym == ('c'):byte() then
-			self.player.buttonPickUp = down
+			self.player.buttonInteract = down
 		
 		-- reset
 		elseif event.key.keysym.sym == ('r'):byte() then

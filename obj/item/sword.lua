@@ -5,7 +5,7 @@ local ItemSword = Item:subclass()
 
 ItemSword.name = 'sword'
 
-function ItemSword:use(player)
+function ItemSword:useInInventory(player)
 	local game = player.game
 
 	if player.attackEndTime >= game.time then return end

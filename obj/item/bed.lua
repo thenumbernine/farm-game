@@ -34,7 +34,7 @@ ItemBed.sprite = 'bed'
 ItemBed.useGravity = false
 ItemBed.collidesWithTiles = false
 
-function ItemBed:use(player)
+function ItemBed:useInInventory(player)
 	local game = player.game
 	local map = game.map
 
@@ -53,6 +53,12 @@ function ItemBed:use(player)
 		local obj = player.items:remove(player.selectedItem)
 		obj.pos:set((dst+.5):unpack())
 	end
+end
+
+function ItemBed:interactInWorld(player)
+	self:unlink()
+	self.pos:set(math.huge, math.huge, math.huge)
+	player.items:insert(self)
 end
 
 return ItemBed 

@@ -8,7 +8,7 @@ local ItemSeeds = Item:subclass()
 
 ItemSeeds.name = 'seeds'
 
-function ItemSeeds:use(player)
+function ItemSeeds:useInInventory(player)
 	local game = player.game
 	local map = game.map
 	
