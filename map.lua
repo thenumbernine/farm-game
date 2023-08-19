@@ -160,25 +160,24 @@ in vec4 colorv;
 out vec4 fragColor;
 
 uniform sampler2D tex;
-uniform vec4 viewport;
 uniform bool useSeeThru;
+uniform vec4 viewport;
 uniform vec3 playerPos;
-uniform vec3 playerClipPos;
 
 void main() {
 	fragColor = texture(tex, texcoordv);
 	fragColor.xyz *= colorv.xyz;
 
 	// keep the dx dy outside the if block to prevent errors.
-	vec3 dx = dFdx(posv.xyz);
-	vec3 dy = dFdy(posv.xyz);
+	vec3 dx = dFdx(posv);
+	vec3 dy = dFdy(posv);
 	if (useSeeThru &&
 		length(
 			gl_FragCoord.xy - .5 * viewport.zw
 		) < .35 * viewport.w
 	) {
 		vec3 n = normalize(cross(dx, dy));
-		if (dot(n, playerPos - posv.xyz) < -.01) {
+		if (dot(n, playerPos - posv) < -.01) {
 			fragColor.w = .1;
 			discard;
 		}
@@ -334,12 +333,7 @@ function Map:draw()
 	local app = game.app
 
 	local shader = self.sceneObj.program
-	if shader.uniforms.playerPos then
-		self.sceneObj.uniforms.playerPos = game.playerPos.s
-	end
-	if shader.uniforms.playerClipPos then
-		self.sceneObj.uniforms.playerClipPos = game.playerClipPos.s
-	end
+	self.sceneObj.uniforms.playerPos = game.playerPos.s
 
 	self.sceneObj.uniforms.mvProjMat = app.view.mvProjMat.ptr
 	self.sceneObj.uniforms.viewport[3] = app.width

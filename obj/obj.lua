@@ -298,7 +298,8 @@ local modelMat = matrix_ffi({4,4},'float'):zeros():setIdent()
 
 function Obj:draw()
 	local game = self.game
-	local view = game.app.view
+	local app = game.app
+	local view = app.view
 
 --[[
 	gl.glColor3f(1,1,1)
@@ -367,6 +368,8 @@ gl.glEnable(gl.GL_DEPTH_TEST)
 						gl.glUniform2f(shader.uniforms.drawSize.loc, self.drawSize:unpack()) 
 						gl.glUniform3f(shader.uniforms.pos.loc, self.pos.x, self.pos.y, self.pos.z + .1) 
 						gl.glUniform4f(shader.uniforms.color.loc, self.color:unpack())
+						gl.glUniform4f(shader.uniforms.viewport.loc, 0, 0, app.width, app.height)
+						gl.glUniform4f(shader.uniforms.playerViewPos.loc, game.playerViewPos:unpack())
 
 						game.spriteSceneObj.texs[1] = frame.tex
 						game.spriteSceneObj:draw()

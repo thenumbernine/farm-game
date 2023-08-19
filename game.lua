@@ -123,6 +123,7 @@ void main() {
 		vertexCode = app.glslHeader..[[
 in vec2 vertex;
 out vec2 texcoordv;
+out vec3 posv;
 
 uniform vec2 uvscale;
 uniform vec2 drawCenter;
@@ -137,6 +138,8 @@ void main() {
 	worldpos.xyz += vec3(viewMat[0].x, viewMat[1].x, viewMat[2].x) * (drawCenter.x - vertex.x) * drawSize.x;
 	worldpos.xyz += vec3(viewMat[0].y, viewMat[1].y, viewMat[2].y) * (drawCenter.y - vertex.y) * drawSize.y;
 	worldpos = viewMat * worldpos;
+	
+	posv = worldpos.xyz;
 
 	texcoordv = (vertex - .5) * uvscale + .5;
 
@@ -145,11 +148,15 @@ void main() {
 ]],
 		fragmentCode = app.glslHeader..[[
 in vec2 texcoordv;
+in vec3 posv;
 
 out vec4 fragColor;
 
 uniform sampler2D tex;
 uniform vec4 color;
+
+uniform vec4 viewport;
+uniform vec4 playerViewPos;
 
 // gl_FragCoord is in pixel coordinates with origin at lower-left
 void main() {
@@ -157,11 +164,33 @@ void main() {
 
 	// alpha-testing
 	if (fragColor.a < .1) discard;
+
+	// keep the dx dy outside the if block to prevent errors.
+	//vec3 dx = dFdx(posv);
+	//vec3 dy = dFdy(posv);
+	if (length(
+			gl_FragCoord.xy - .5 * viewport.zw
+		) < .35 * viewport.w
+	) {
+		//vec3 n = normalize(cross(dx, dy));
+		//if (dot(n, playerPos - posv) < -.01) 
+		
+		//if (gl_FragCoord.z / gl_FragCoord.w < playerClipPos.z / playerClipPos.w)
+		//if (gl_FragCoord.z < playerClipPos.z)
+		//if (gl_FragCoord.w < playerClipPos.w)
+		
+		if (posv.z > playerViewPos.z + 1.)
+		{
+			fragColor.w = .5;
+			//discard;
+		}
+	}
 }
 ]],
 		uniforms = {
 			tex = 0,
 			drawCenter = {.5, 1},
+			viewport = {0,0,1,1},
 		},
 	}:useNone()
 
@@ -301,6 +330,11 @@ function Game:draw()
 	do
 		-- [[ clip by fragcoord
 		-- clip pos
+		local x,y,z,w = view.mvMat:mul4x4v4(
+			viewFollow.pos.x,
+			viewFollow.pos.y,
+			viewFollow.pos.z + .1)
+		self.playerViewPos = vec4f(x,y,z,w)
 		local x,y,z,w = view.mvProjMat:mul4x4v4(
 			viewFollow.pos.x,
 			viewFollow.pos.y,
@@ -310,7 +344,7 @@ function Game:draw()
 		local dfar = 1
 		local windowZ = normalizedDeviceCoordDepth * (dfar - dnear)*.5 + (dfar + dnear)*.5
 		-- clip by depth ...
-		self.playerClipPos = vec3f(x,y,z)--windowZ
+		self.playerClipPos = vec4f(x,y,z,w)
 		--]]
 		-- [[
 		-- and clip by world z ...
