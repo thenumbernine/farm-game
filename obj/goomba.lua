@@ -1,7 +1,6 @@
-local class = require 'ext.class'
 local Obj = require 'zelda.obj.obj'
 
-local Goomba = class(Obj)
+local Goomba = Obj:subclass()
 
 Goomba.name = 'Goomba'	-- TODO require name?
 

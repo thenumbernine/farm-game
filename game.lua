@@ -179,17 +179,24 @@ void main() {
 			self.map.size.z-.5),
 	}
 
+	self:newObj{
+		class = Obj.classes.NPC,
+		pos = vec3f(
+			self.map.size.x*.95,
+			self.map.size.y*.5,
+			self.map.size.z-.5),
+	}
+
 -- [[	
-	for _,dir in ipairs{{1,0},{0,1},{-1,0},{0,-1}} do
-		local ux, uy = table.unpack(dir)
-		local vx, vy = -uy, ux
-		for i=5,7,2 do
-			for j=5,7,2 do
-				local g = self:newObj{
-					class = Obj.classes.Goomba,
-					pos = vec3f(ux * i + vx * j + 8.5, uy * i + vy * j + 8.5, self.map.size.z),
-				}
-			end
+	for k=1,5 do
+		local i = math.random(tonumber(self.map.size.x))-1
+		local j = math.random(tonumber(self.map.size.y))-1
+		for _,dir in ipairs{{1,0},{0,1},{-1,0},{0,-1}} do
+			local ux, uy = table.unpack(dir)
+			local g = self:newObj{
+				class = Obj.classes.Goomba,
+				pos = vec3f(ux + i, uy + j, self.map.size.z-1),
+			}
 		end
 	end
 --]]
