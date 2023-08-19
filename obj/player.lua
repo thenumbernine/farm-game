@@ -18,8 +18,8 @@ Player.attackTime = -1
 Player.attackEndTime = -1
 Player.attackDuration = .35
 
-Player.min = vec3f(-.3, -.3, -.3)
-Player.max = vec3f(.3, .3, .3)
+Player.min = vec3f(-.3, -.3, 0)
+Player.max = vec3f(.3, .3, .6)
 
 function Player:init(...)
 	Player.super.init(self, ...)
@@ -44,6 +44,7 @@ end
 
 function Player:update(dt)
 	local game = self.game
+	local app = game.app
 	local map = game.map
 
 	local dx = 0
@@ -65,20 +66,16 @@ function Player:update(dt)
 	local zDir = app.view.angle:zAxis()	-- down dir
 	local xDir = app.view.angle:xAxis()	-- right dir
 		
-	local x2Dir = vec2f(1,0)--vec2f(xDir.x, xDir.y)
+	--local x2Dir = vec2f(1,0)
+	local x2Dir = vec2f(xDir.x, xDir.y)
 	x2Dir = x2Dir:normalize() 
 	
-	local y2Dir = vec2f(0,1)	--vec2f(-zDir.x, -zDir.y)
+	--local y2Dir = vec2f(0,1)
+	local y2Dir = vec2f(-zDir.x, -zDir.y)
 	y2Dir = y2Dir:normalize() 
 	
-	self.vel.x = (
-		x2Dir.x * dx
-		+ y2Dir.x * dy
-	)
-	self.vel.y = (
-		x2Dir.y * dx
-		+ y2Dir.y * dy
-	)
+	self.vel.x = x2Dir.x * dx + y2Dir.x * dy
+	self.vel.y = x2Dir.y * dx + y2Dir.y * dy
 
 	-- use = use currently selected inventory item
 	if self.buttonUseItem then

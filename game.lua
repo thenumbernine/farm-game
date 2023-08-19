@@ -3,6 +3,7 @@ local sdl = require 'ffi.req' 'sdl'
 local class = require 'ext.class'
 local table = require 'ext.table'
 local Map = require 'zelda.map'
+local Tile = require 'zelda.tile'
 local gl = require 'gl'
 local GLTex2D = require 'gl.tex2d'
 local GLProgram = require 'gl.program'
@@ -37,6 +38,7 @@ local Game = class()
 -- 8 x 8 x 8 = 512 tiles
 function Game:init(args)
 	self.app = assert(args.app)
+	local app = self.app
 
 	self.time = 0
 	self.threads = ThreadManager()
@@ -126,6 +128,7 @@ in vec2 vertex;
 out vec2 texcoordv;
 
 uniform vec2 uvscale;
+uniform vec2 drawCenter;
 uniform vec2 drawSize;
 uniform vec3 pos;
 
@@ -134,8 +137,8 @@ uniform mat4 projMat;
 
 void main() {
 	vec4 worldpos = vec4(pos, 1.);
-	worldpos.xyz += vec3(viewMat[0].x, viewMat[1].x, viewMat[2].x) * (.5 - vertex.x) * drawSize.x;
-	worldpos.xyz += vec3(viewMat[0].y, viewMat[1].y, viewMat[2].y) * (.5 - vertex.y) * drawSize.y;
+	worldpos.xyz += vec3(viewMat[0].x, viewMat[1].x, viewMat[2].x) * (drawCenter.x - vertex.x) * drawSize.x;
+	worldpos.xyz += vec3(viewMat[0].y, viewMat[1].y, viewMat[2].y) * (drawCenter.y - vertex.y) * drawSize.y;
 	worldpos = viewMat * worldpos;
 
 	texcoordv = (vertex - .5) * uvscale + .5;
@@ -161,6 +164,7 @@ void main() {
 ]],
 		uniforms = {
 			tex = 0,
+			drawCenter = {.5, 1},
 		},
 	}:useNone()
 
@@ -203,6 +207,40 @@ void main() {
 			self.map.size.y*.5,
 			self.map.size.z-.5),
 	}
+
+	for j=0,self.map.size.y-1 do
+		for i=0,self.map.size.x-1 do
+			local k = self.map.size.z-1
+			while k >= 0 do
+				if self.map:get(i,j,k) ~= Tile.typeValues.Empty then
+					break
+				end
+				k = k - 1
+			end
+			if k >= 0 then
+				if math.random() < .2 then
+					local anim = require 'zelda.anim'
+					local sprite = table{
+						'tree1',
+						'tree2',
+						'bush1',
+						'bush2',
+						'bush3',
+						'plant1',
+						'plant2',
+						'plant3',
+					}:pickRandom()
+					local tex = anim[sprite].stand[1].tex
+					self:newObj{
+						class = require 'zelda.obj.plant',
+						sprite = sprite,
+						drawSize = vec2f(tex.width, tex.height) / 16,
+						pos = vec3f(i + .5, j + .5, k),
+					}
+				end
+			end
+		end
+	end
 
 -- [[	
 	for k=1,5 do
@@ -324,7 +362,7 @@ function Game:fade(seconds, callback)
 	end
 end
 
-function Game:onEvent(event)
+function Game:event(event)
 	if event.type == sdl.SDL_KEYDOWN 
 	or event.type == sdl.SDL_KEYUP 
 	then

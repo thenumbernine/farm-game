@@ -16,8 +16,8 @@ local Obj = class()
 Obj.seq = 'stand'
 Obj.frame = 1
 
-Obj.min = vec3f(-.49, -.49, -.49)
-Obj.max = vec3f(.49, .49, .49)
+Obj.min = vec3f(-.49, -.49, 0)
+Obj.max = vec3f(.49, .49, .98)
 
 function Obj:init(args)
 	assert(args)
@@ -30,7 +30,7 @@ function Obj:init(args)
 	else
 		self.drawSize = vec2f(self.drawSize:unpack())
 	end
-	if args.drawSize then self.darwSize:set(args.drawSize:unpack()) end
+	if args.drawSize then self.drawSize:set(args.drawSize:unpack()) end
 
 	self.pos = vec3f(0,0,0)
 	if args.pos then self.pos:set(args.pos:unpack()) end
@@ -50,6 +50,9 @@ function Obj:init(args)
 	self.color = vec4f(1,1,1,1)
 	if args.color then self.color:set(args.color:unpack()) end
 
+	self.sprite = args.sprite
+
+	-- what tile indexes -> obj lists this object is a part of 
 	self.tiles = {}
 
 	self:setPos(self.pos:unpack())

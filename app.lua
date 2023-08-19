@@ -9,9 +9,9 @@ local OBJLoader = require 'mesh.objloader'
 require 'glapp.view'.useBuiltinMatrixMath = true
 
 local App = 
-	--require 'glapp.orbit'(
+	require 'glapp.orbit'(
 		require 'glapp.view'.apply(ImGuiApp)
-	--)
+	)
 	:subclass()
 
 App.title = 'Zelda 4D'
@@ -19,8 +19,6 @@ App.title = 'Zelda 4D'
 App.viewDist = 7
 
 function App:initGL()
-	app = self	-- global
-
 	-- instead of proj * mv , imma separate into: proj view model 
 	-- that means view.mvMat is really the view matrix
 	App.super.initGL(self)
@@ -106,7 +104,7 @@ end
 
 function App:event(event, ...)
 	App.super.event(self, event, ...)
-	self.game:onEvent(event)
+	self.game:event(event)
 end
 
 return App
