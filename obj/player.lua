@@ -18,6 +18,9 @@ Player.attackTime = -1
 Player.attackEndTime = -1
 Player.attackDuration = .35
 
+Player.min = vec3f(-.3, -.3, -.3)
+Player.max = vec3f(.3, .3, .3)
+
 function Player:init(...)
 	Player.super.init(self, ...)
 

@@ -16,8 +16,8 @@ local Obj = class()
 Obj.seq = 'stand'
 Obj.frame = 1
 
-Obj.min = vec3f(-.3, -.3, -.3)
-Obj.max = vec3f(.3, .3, .3)
+Obj.min = vec3f(-.49, -.49, -.49)
+Obj.max = vec3f(.49, .49, .49)
 
 function Obj:init(args)
 	assert(args)
@@ -253,26 +253,29 @@ function Obj:update(dt)
 					math.floor(math.min(self.pos.x, self.oldpos.x) + self.min.x - 1.5),
 					math.floor(math.max(self.pos.x, self.oldpos.x) + self.max.x + .5)
 				do
-					local tileIndex = i + map.size.x * (j + map.size.y * k)
-					local tiletype = map.map[tileIndex].type
-					if tiletype > 0 then
-						local tile = Tile.types[tiletype]
-						if tile.solid then
-							omin:set(i,j,k)
-							omax:set(i+1,j+1,k+1)
-							
-							-- TODO trace gravity fall downward separately
-							-- then move horizontall
-							-- if push fails then raise up, move, and go back down, to try and do steps
-							local collided = push(self.pos, self.min, self.max, omin, omax, self.vel)
-							self.collideFlags = bit.bor(self.collideFlags, collided)
+					if i >= 0 and i < map.size.x and j >= 0 and j < map.size.y and k >= 0 and k < map.size.z then
+						local tileIndex = i + map.size.x * (j + map.size.y * k)
+						local tiletype = map.map[tileIndex].type
+						if tiletype > 0 then
+							local tile = Tile.types[tiletype]
+							if not tile then error("failed to find tile for type "..tostring(tiletype)) end
+							if tile.solid then
+								omin:set(i,j,k)
+								omax:set(i+1,j+1,k+1)
+								
+								-- TODO trace gravity fall downward separately
+								-- then move horizontall
+								-- if push fails then raise up, move, and go back down, to try and do steps
+								local collided = push(self.pos, self.min, self.max, omin, omax, self.vel)
+								self.collideFlags = bit.bor(self.collideFlags, collided)
+							end
 						end
-					end
-					local objs = map.objsPerTileIndex[tileIndex]
-					if objs then
-						for _, obj in ipairs(objs) do
-							local collided = push(self.pos, self.min, self.max, obj.pos + obj.min, obj.pos + obj.max, self.vel)
-							self.collideFlags = bit.bor(self.collideFlags, collided)
+						local objs = map.objsPerTileIndex[tileIndex]
+						if objs then
+							for _, obj in ipairs(objs) do
+								local collided = push(self.pos, self.min, self.max, obj.pos + obj.min, obj.pos + obj.max, self.vel)
+								self.collideFlags = bit.bor(self.collideFlags, collided)
+							end
 						end
 					end
 				end
