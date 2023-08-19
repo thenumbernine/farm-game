@@ -21,7 +21,6 @@ local ThreadManager = require 'threadmanager'
 assert(not Obj.classes)
 Obj.classes = require 'zelda.obj.all'
 
-
 local function hexcolor(i)
 	return
 		bit.band(0xff, bit.rshift(i,16))/255,
@@ -29,8 +28,6 @@ local function hexcolor(i)
 		bit.band(0xff, i)/255,
 		1
 end
-
-
 
 local Game = class()
 
@@ -142,7 +139,7 @@ void main() {
 	worldpos = viewMat * worldpos;
 
 	texcoordv = (vertex - .5) * uvscale + .5;
-	
+
 	gl_Position = projMat * worldpos;
 }
 ]],
@@ -157,7 +154,7 @@ uniform vec4 color;
 // gl_FragCoord is in pixel coordinates with origin at lower-left
 void main() {
 	fragColor = color * texture(tex, texcoordv);
-	
+
 	// alpha-testing
 	if (fragColor.a < .1) discard;
 }
@@ -212,7 +209,10 @@ void main() {
 		for i=0,self.map.size.x-1 do
 			local k = self.map.size.z-1
 			while k >= 0 do
-				if self.map:get(i,j,k) ~= Tile.typeValues.Empty then
+				local tile = self.map:getTile(i,j,k)
+				if tile.type ~= Tile.typeValues.Empty
+				and tile.tex == 0	-- grass tex
+				then
 					break
 				end
 				k = k - 1
@@ -235,14 +235,14 @@ void main() {
 						class = require 'zelda.obj.plant',
 						sprite = sprite,
 						drawSize = vec2f(tex.width, tex.height) / 16,
-						pos = vec3f(i + .5, j + .5, k),
+						pos = vec3f(i + .5, j + .5, k + 1),
 					}
 				end
 			end
 		end
 	end
 
--- [[	
+-- [[
 	for k=1,5 do
 		local i = math.random(tonumber(self.map.size.x))-1
 		local j = math.random(tonumber(self.map.size.y))-1
@@ -258,7 +258,7 @@ void main() {
 end
 
 function Game:newObj(args)
-print('new', args.class.name, 'at', args.pos)	
+print('new', args.class.name, 'at', args.pos)
 	local cl = assert(args.class)
 	args.game = self
 	local obj = cl(args)
@@ -272,26 +272,27 @@ function Game:draw()
 
 	local viewFollow = self.player
 	--local viewFollow = self.goomba
-	
-	-- before calling super.update and redoing the gl matrices, update view...	
+
+	-- before calling super.update and redoing the gl matrices, update view...
 	--self.view.angle:fromAngleAxis(1,0,0,20)
 	view.pos:set((viewFollow.pos + view.angle:zAxis() * app.viewDist):unpack())
+
 	view:setup(app.width / app.height)
 	--app.orbit.pos:set((app.view.angle:zAxis() * app.viewDist):unpack())
-	
+
 -- [[ sky
 	do
 		GLTex2D:unbind()
 		gl.glDisable(gl.GL_DEPTH_TEST)
-		
+
 
 		view.mvProjMat:setOrtho(0,1,0,1,-1,1)
 
 		self.skySceneObj.uniforms.mvProjMat = view.mvProjMat.ptr
 		self.skySceneObj:draw()
-		
+
 		gl.glEnable(gl.GL_DEPTH_TEST)
-		
+
 		view.mvProjMat:mul4x4(view.projMat, view.mvMat)
 	end
 --]]
@@ -328,7 +329,7 @@ function Game:update(dt)
 	for _,obj in ipairs(self.objs) do
 		if obj.update then obj:update(dt) end
 	end
-	
+
 	-- now threads
 	self.threads:update()
 
@@ -338,11 +339,11 @@ function Game:update(dt)
 			table.remove(self.objs, i)
 		end
 	end
-	
+
 	self.time = self.time + dt
 end
 
--- TODO only call this from a 
+-- TODO only call this from a
 function Game:sleep(seconds)
 	assert(coroutine.isyieldable(coroutine.running()))
 	local endTime = self.time + seconds
@@ -363,37 +364,41 @@ function Game:fade(seconds, callback)
 end
 
 function Game:event(event)
-	if event.type == sdl.SDL_KEYDOWN 
-	or event.type == sdl.SDL_KEYUP 
+	if event.type == sdl.SDL_KEYDOWN
+	or event.type == sdl.SDL_KEYUP
 	then
-		local down = event.type == sdl.SDL_KEYDOWN 
+		local down = event.type == sdl.SDL_KEYDOWN
 		if event.key.keysym.sym == sdl.SDLK_UP then
-			self.player.buttonUp = down
+			self.player.keyPress.up = down
 		elseif event.key.keysym.sym == sdl.SDLK_DOWN then
-			self.player.buttonDown = down
+			self.player.keyPress.down = down
 		elseif event.key.keysym.sym == sdl.SDLK_LEFT then
-			self.player.buttonLeft = down
+			self.player.keyPress.left = down
 		elseif event.key.keysym.sym == sdl.SDLK_RIGHT then
-			self.player.buttonRight = down
-		
+			self.player.keyPress.right = down
+
 		--[[
-		buttons:
+		keyPress.s:
 			- jump
 			- use item (sword, hoe, watering can, etc)
-			- pick up 
+			- pick up
 				... (I could combine this with 'use' and make it mandatory to select to an empty inventory slot ...)
 				... or I could get rid of this and have objects change to a touch-to-pick-up state like they do in minecraft and stardew valley
 			- talk/interact
 				... this could be same as pick-up, but for NPCs ...
 		--]]
-
 		elseif event.key.keysym.sym == ('x'):byte() then
-			self.player.buttonJump = down
+			self.player.keyPress.jump = down
 		elseif event.key.keysym.sym == ('z'):byte() then
-			self.player.buttonUseItem = down
+			self.player.keyPress.useItem = down
 		elseif event.key.keysym.sym == ('c'):byte() then
-			self.player.buttonInteract = down
-		
+			self.player.keyPress.interact = down
+
+		elseif event.key.keysym.sym == ('a'):byte() then
+			self.player.keyPress.rotateLeft = down
+		elseif event.key.keysym.sym == ('s'):byte() then
+			self.player.keyPress.rotateRight = down
+
 		-- reset
 		elseif event.key.keysym.sym == ('r'):byte() then
 			self.app.game = Game{app=self.app}
@@ -428,7 +433,7 @@ function Game:updateGUI()
 
 	for i=1,maxItems do
 		local item = player.items[i]
-		
+
 		local selected = player.selectedItem == i
 		if selected then
 			local selectColor = ig.ImVec4(0,0,1,.5)
@@ -460,7 +465,7 @@ function Game:updateGUI()
 		end
 		--]]
 		ig.igEnd()
-		
+
 		if selected then
 			ig.igPopStyleColor(1)
 		end

@@ -40,7 +40,7 @@ function Map:init(args)	-- vec3i
 		stone = 1,
 		wood = 2,
 	}
-	
+
 	self.size = vec3i(args.size:unpack())
 
 	local houseSize = vec3f(3, 3, 2)
@@ -73,13 +73,13 @@ function Map:init(args)	-- vec3i
 				xyz.x = i / blockSize
 				local c = simplexnoise(xyz:unpack())
 				local maptype = Tile.typeValues.Empty
-				local maptex = k >= half-1 
+				local maptex = k >= half-1
 					and maptexs.grass
 					or maptexs.stone
 				if k >= half then
 					c = c + (k - half) * .5
 				end
-				
+
 				-- [[ make the top flat?
 				if k >= half
 				and (
@@ -91,7 +91,7 @@ function Map:init(args)	-- vec3i
 				--]]
 
 				if c < .5 then
-					maptype = 
+					maptype =
 						maptex == maptexs.stone
 						and Tile.typeValues.Stone
 						or Tile.typeValues.Grass
@@ -102,7 +102,7 @@ function Map:init(args)	-- vec3i
 			end
 		end
 	end
-	
+
 	do
 		for x=houseCenter.x-houseSize.x,houseCenter.x+houseSize.x do
 			for y=houseCenter.y-houseSize.y, houseCenter.y+houseSize.y do
@@ -126,7 +126,7 @@ function Map:init(args)	-- vec3i
 			t.tex = 0
 		end
 	end
-	
+
 	-- key = index in map.objsPerTileIndex = offset of the tile in the map
 	-- value = list of all objects on that tile
 	self.objsPerTileIndex = {}
@@ -168,7 +168,7 @@ uniform vec3 playerClipPos;
 void main() {
 	fragColor = texture(tex, texcoordv);
 	fragColor.xyz *= colorv.xyz;
-	
+
 	// keep the dx dy outside the if block to prevent errors.
 	vec3 dx = dFdx(posv.xyz);
 	vec3 dy = dFdy(posv.xyz);
@@ -223,7 +223,7 @@ function Map:buildDrawArrays()
 						local texIndex = tonumber(maptile.tex)
 						local texIndexX = texIndex % self.texpackSize.x
 						local texIndexY = (texIndex - texIndexX) / self.texpackSize.x
-						
+
 						if tile.isUnitCube then
 							assert(tile.cubeFaces)
 							-- faceIndex is 1-based but lines up with sides bitflags
@@ -250,7 +250,7 @@ function Map:buildDrawArrays()
 										local vi = Tile.unitQuadTriIndexes[ti]
 										local vtx = faces[vi]
 										local v = tile.cubeVtxs[vtx+1]
-										
+
 										local c = self.colors:emplace_back()
 										local l = 255 * v[3]
 										c:set(l, l, l, 255)
@@ -260,7 +260,7 @@ function Map:buildDrawArrays()
 											(texIndexX + tile.unitquad[vi][1]) * texpackDx,
 											(texIndexY + tile.unitquad[vi][2]) * texpackDy
 										)
-										
+
 										local vtx = self.vtxs:emplace_back()
 										vtx:set(i + v[1], j + v[2], k + v[3])
 									end
@@ -297,7 +297,7 @@ function Map:buildDrawArrays()
 		data = self.texcoords.v,
 		--usage = gl.GL_DYNAMIC_DRAW,
 	}:unbind()
-	
+
 	self.colorBuf = GLArrayBuffer{
 		size = ffi.sizeof(self.colors.type) * self.colors.size,
 		data = self.colors.v,
@@ -332,7 +332,7 @@ end
 function Map:draw()
 	local game = self.game
 	local app = game.app
-	
+
 	local shader = self.sceneObj.program
 	if shader.uniforms.playerPos then
 		self.sceneObj.uniforms.playerPos = game.playerPos.s

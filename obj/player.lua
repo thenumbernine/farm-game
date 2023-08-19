@@ -3,6 +3,7 @@ local class = require 'ext.class'
 local table = require 'ext.table'
 local vec2f = require 'vec-ffi.vec2f'
 local vec3f = require 'vec-ffi.vec3f'
+local quatd = require 'vec-ffi.quatd'
 local Obj = require 'zelda.obj.obj'
 local sides = require 'zelda.sides'
 
@@ -21,11 +22,31 @@ Player.attackDuration = .35
 Player.min = vec3f(-.3, -.3, 0)
 Player.max = vec3f(.3, .3, .6)
 
+Player.keyNames = table{
+	'up',
+	'down',
+	'left',
+	'right',
+	'jump',
+	'useItem',
+	'interact',
+	'rotateLeft',
+	'rotateRight',
+	'pause',
+}
+
 function Player:init(...)
 	Player.super.init(self, ...)
+	
+	self.keyPress = {}
+	self.keyPressLast = {}
+	for _,k in ipairs(self.keyNames) do
+		self.keyPress[k] = false
+		self.keyPressLast[k] = false
+	end
 
 	self.selectedItem = 1
-	-- TODO array-of-stacks 
+	-- TODO array-of-stacks
 	self.items = table{
 		require 'zelda.obj.item.sword',
 		require 'zelda.obj.item.hoe',
@@ -49,10 +70,10 @@ function Player:update(dt)
 
 	local dx = 0
 	local dy = 0
-	if self.buttonRight then dx = dx + 1 end
-	if self.buttonLeft then dx = dx - 1 end
-	if self.buttonUp then dy = dy + 1 end
-	if self.buttonDown then dy = dy - 1 end
+	if self.keyPress.right then dx = dx + 1 end
+	if self.keyPress.left then dx = dx - 1 end
+	if self.keyPress.up then dy = dy + 1 end
+	if self.keyPress.down then dy = dy - 1 end
 	local l = dx*dx + dy*dy
 	if l > 0 then
 		l = self.walkSpeed / math.sqrt(l)
@@ -65,24 +86,24 @@ function Player:update(dt)
 
 	local zDir = app.view.angle:zAxis()	-- down dir
 	local xDir = app.view.angle:xAxis()	-- right dir
-		
+
 	--local x2Dir = vec2f(1,0)
 	local x2Dir = vec2f(xDir.x, xDir.y)
-	x2Dir = x2Dir:normalize() 
-	
+	x2Dir = x2Dir:normalize()
+
 	--local y2Dir = vec2f(0,1)
 	local y2Dir = vec2f(-zDir.x, -zDir.y)
-	y2Dir = y2Dir:normalize() 
-	
+	y2Dir = y2Dir:normalize()
+
 	self.vel.x = x2Dir.x * dx + y2Dir.x * dy
 	self.vel.y = x2Dir.y * dx + y2Dir.y * dy
 
 	-- use = use currently selected inventory item
-	if self.buttonUseItem then
+	if self.keyPress.useItem then
 		self:useItem()
 	end
-	
-	if self.buttonJump then
+
+	if self.keyPress.jump then
 		-- swing?  jump?  block?  anything?
 		-- self.vel.z = self.vel.z - 10
 		if bit.band(self.collideFlags, sides.flags.zm) ~= 0 then
@@ -90,13 +111,13 @@ function Player:update(dt)
 		end
 	end
 
-	if self.buttonInteract then
-		do 
+	if self.keyPress.interact then
+		do
 			-- TODO
 			-- traceline ...
 			-- see if it hits an obj or a map block
 			-- run a 'onPickUp' function on it
-		
+
 			local x,y,z = (self.pos + vec3f(
 				math.cos(self.angle),
 				math.sin(self.angle),
@@ -120,7 +141,24 @@ function Player:update(dt)
 		end
 	end
 
+	local turnLeft = self.keyPress.rotateLeft and not self.keyPressLast.rotateLeft 
+	local turnRight = self.keyPress.rotateRight and not self.keyPressLast.rotateRight 
+	if turnLeft or turnRight then
+		if turnLeft then
+			app.targetViewYaw = app.targetViewYaw + 90
+		end
+		if turnRight then
+			app.targetViewYaw = app.targetViewYaw - 90
+		end
+	end
+
 	Player.super.update(self, dt)
+
+	-- copy current to last keypress
+	-- do this here or in a separate update after object :update()'s?
+	for k,v in pairs(self.keyPress) do
+		self.keyPressLast[k] = v
+	end
 end
 
 Player.jumpVel = 4

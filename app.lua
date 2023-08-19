@@ -1,4 +1,7 @@
 local bit = require 'bit'
+local sdl = require 'ffi.req' 'sdl'
+local ig = require 'imgui'
+local quatd = require 'vec-ffi.quatd'
 local gl = require 'gl'
 local anim = require 'zelda.anim'
 local Game = require 'zelda.game'
@@ -8,10 +11,10 @@ local OBJLoader = require 'mesh.objloader'
 
 require 'glapp.view'.useBuiltinMatrixMath = true
 
-local App = 
-	require 'glapp.orbit'(
+local App =
+	--require 'glapp.orbit'(
 		require 'glapp.view'.apply(ImGuiApp)
-	)
+	--)
 	:subclass()
 
 App.title = 'Zelda 4D'
@@ -19,7 +22,7 @@ App.title = 'Zelda 4D'
 App.viewDist = 7
 
 function App:initGL()
-	-- instead of proj * mv , imma separate into: proj view model 
+	-- instead of proj * mv , imma separate into: proj view model
 	-- that means view.mvMat is really the view matrix
 	App.super.initGL(self)
 
@@ -29,7 +32,7 @@ function App:initGL()
 #version 300 es
 precision highp float;
 ]]
-	
+
 	-- [[ load tex2ds for anim
 	local GLTex2D = require 'gl.tex2d'
 	for _,sprite in pairs(anim) do
@@ -54,13 +57,14 @@ precision highp float;
 	end
 	--]]
 
-	self.view.angle:fromAngleAxis(1,0,0,30)
+	self.targetViewYaw = 0
+	self.viewYaw = 0
 
 	self.game = Game{app=self}
-	
+
 	self.lastTime = getTime()
 	self.updateTime = 0
-	
+
 	gl.glEnable(gl.GL_DEPTH_TEST)
 	gl.glEnable(gl.GL_CULL_FACE)
 end
@@ -71,7 +75,12 @@ function App:update()
 	local thisTime = getTime()
 	local deltaTime = thisTime - self.lastTime
 	self.lastTime = thisTime
-	
+
+	self.viewYaw = self.viewYaw + .1 * (self.targetViewYaw - self.viewYaw)
+	self.view.angle = quatd():fromAngleAxis(0, 0, 1, self.viewYaw)
+					* quatd():fromAngleAxis(1,0,0,30)
+	self.view.pos = self.view.angle:zAxis() * (self.view.pos - self.view.orbit):length() + self.view.orbit
+
 	gl.glClear(bit.bor(gl.GL_COLOR_BUFFER_BIT, gl.GL_DEPTH_BUFFER_BIT))
 
 	--[[ not in gles ... needs to be coded into the shaders.
@@ -80,10 +89,10 @@ function App:update()
 	--]]
 	gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 	gl.glEnable(gl.GL_BLEND)
-	
+
 	-- TODO frameskip
 	self.game:draw()
-	
+
 	gl.glDisable(gl.GL_BLEND)
 
 	self.updateTime = self.updateTime + deltaTime
@@ -104,6 +113,22 @@ end
 
 function App:event(event, ...)
 	App.super.event(self, event, ...)
+
+-- [[ mouse rotate support?
+	local canHandleMouse = not ig.igGetIO()[0].WantCaptureMouse
+	if event.type == sdl.SDL_MOUSEMOTION then
+		if canHandleMouse
+		and bit.band(event.motion.state, 1) == 1
+		then
+			local dx = event.motion.xrel
+			self.viewYaw = self.viewYaw + dx
+			self.view.angle = quatd():fromAngleAxis(0, 0, 1, self.viewYaw)
+							* quatd():fromAngleAxis(1,0,0,30)
+			self.view.pos = self.view.angle:zAxis() * (self.view.pos - self.view.orbit):length() + self.view.orbit
+		end
+	end
+--]]
+
 	self.game:event(event)
 end
 
