@@ -29,6 +29,22 @@ local function hexcolor(i)
 		1
 end
 
+-- t = table of {value=weight}
+local function pickWeighted(t)
+	local totalWeight = 0
+	for _,p in ipairs(t) do
+		local name, weight = next(p)
+		totalWeight = totalWeight + weight
+	end
+	local pickWeight = totalWeight * math.random()
+	for _,p in ipairs(t) do
+		local name, weight = next(p)
+		pickWeight = pickWeight - weight
+		if pickWeight <= 0 then return name end
+	end
+	error"here"
+end
+
 local Game = class()
 
 -- 16 x 16 = 256 tiles in a typical screen
@@ -267,18 +283,18 @@ void main() {
 				then
 					r = 1
 				end
-				if r < .2 then
+				if r < .7 then
 					local anim = require 'zelda.anim'
-					local sprite = table{
-						'tree1',
-						'tree2',
-						'bush1',
-						'bush2',
-						'bush3',
-						'plant1',
-						'plant2',
-						'plant3',
-					}:pickRandom()
+					local sprite = pickWeighted{
+						{tree1 = 1},
+						{tree2 = 1},
+						{bush1 = 4},
+						{bush2 = 4},
+						{bush3 = 4},
+						{plant1 = 8},
+						{plant2 = 8},
+						{plant3 = 8},
+					}
 					local tex = anim[sprite].stand[1].tex
 					self:newObj{
 						class = require 'zelda.obj.plant',
