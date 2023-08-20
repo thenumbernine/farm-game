@@ -105,27 +105,6 @@ void main() {
 ]],
 	}:useNone()
 
-	self.swordShader = GLProgram{
-		vertexCode = app.glslHeader..[[
-in vec3 vertex;
-in vec4 color;
-out vec4 colorv;
-uniform mat4 mvProjMat;
-void main() {
-	colorv = color;
-	gl_Position = mvProjMat * vec4(vertex, 1.);
-}
-]],
-		fragmentCode = app.glslHeader..[[
-in vec4 colorv;
-out vec4 fragColor;
-void main() {
-	fragColor = colorv;
-}
-]],
-	}:useNone()
-
-
 	self.skySceneObj = GLSceneObject{
 		geometry = self.quadGeom,
 		program = self.skyShader,
@@ -223,11 +202,37 @@ void main() {
 		glslHeader = app.glslHeader,
 	}
 
+	self.swordShader = GLProgram{
+		vertexCode = app.glslHeader..[[
+in vec3 vertex;
+in vec4 color;
+out vec4 colorv;
+uniform mat4 mvProjMat;
+void main() {
+	colorv = color;
+	gl_Position = mvProjMat * vec4(vertex, 1.);
+}
+]],
+		fragmentCode = app.glslHeader..[[
+in vec4 colorv;
+out vec4 fragColor;
+void main() {
+	fragColor = colorv;
+}
+]],
+	}:useNone()
+
+	self.swordSwingNumDivs = 20
+	self.swordSwingVtxBufCPU = ffi.new('vec3f_t[?]', 2 * self.swordSwingNumDivs)
+	
+	-- build the map
+
 	self.texpack = GLTex2D{
 		filename = 'texpack.png',
 		magFilter = gl.GL_LINEAR,
 		minFilter = gl.GL_NEAREST,
 	}
+	
 	self.map = Map{
 		game = self,
 		size = vec3i(96, 64, 32),

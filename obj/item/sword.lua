@@ -10,7 +10,7 @@ function ItemSword:useInInventory(player)
 
 	if player.attackEndTime >= game.time then return end
 	
-	player.swingPos = vec3f(player.pos:unpack())
+	player.swingPos = vec3f(player.pos.x, player.pos.y, player.pos.z + .7)
 	player.attackTime = game.time
 	player.attackEndTime = game.time + player.attackDuration
 
