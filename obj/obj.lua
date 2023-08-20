@@ -19,6 +19,8 @@ Obj.frame = 1
 Obj.min = vec3f(-.49, -.49, 0)
 Obj.max = vec3f(.49, .49, .98)
 
+Obj.drawAngle = 0
+
 function Obj:init(args)
 	assert(args)
 	self.game = assert(args.game)
@@ -386,6 +388,7 @@ gl.glEnable(gl.GL_DEPTH_TEST)
 						gl.glUniformMatrix4fv(shader.uniforms.projMat.loc, 1, gl.GL_FALSE, view.projMat.ptr)
 						gl.glUniform2f(shader.uniforms.uvscale.loc, uscale, vscale)
 						gl.glUniform2f(shader.uniforms.drawSize.loc, self.drawSize:unpack()) 
+						gl.glUniform2f(shader.uniforms.drawAngleDir.loc, math.cos(self.drawAngle), math.sin(self.drawAngle))
 						gl.glUniform3f(shader.uniforms.pos.loc, self.pos.x, self.pos.y, self.pos.z + .1) 
 						gl.glUniform4f(shader.uniforms.color.loc, self.color:unpack())
 						gl.glUniform4f(shader.uniforms.viewport.loc, 0, 0, app.width, app.height)

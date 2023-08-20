@@ -20,23 +20,8 @@ function ItemAxe:useInInventory(player)
 	local objs = map:getTileObjs(x,y,z)
 	if objs then
 		for _,obj in ipairs(objs) do
-			if obj.canBeChoppedDown then
-				-- then bleh , make it do some animation or something
-				-- until then ...
-				obj:remove()
-				-- and then add a bunch of wood items
-				for i=1,(obj.numLogs or 0) do
-					local r = math.random() * 2
-					local theta = math.random() * 2 * math.pi
-					game:newObj{
-						class = require 'zelda.obj.log',
-						pos = obj.pos + vec3f(
-							math.cos(theta) * r,
-							math.sin(theta) * r,
-							0
-						)
-					}
-				end
+			if obj.onChopDown then
+				obj:onChopDown()
 			end
 		end
 	end

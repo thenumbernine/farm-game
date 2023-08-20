@@ -106,15 +106,23 @@ out vec3 posv;
 uniform vec2 uvscale;
 uniform vec2 drawCenter;
 uniform vec2 drawSize;
+uniform vec2 drawAngleDir;
 uniform vec3 pos;
 
 uniform mat4 viewMat;
 uniform mat4 projMat;
 
 void main() {
+	vec2 c = (drawCenter - vertex) * drawSize;
+	c = vec2(
+		c.x * drawAngleDir.x - c.y * drawAngleDir.y,
+		c.x * drawAngleDir.y + c.y * drawAngleDir.x
+	);
 	vec4 worldpos = vec4(pos, 1.);
-	worldpos.xyz += vec3(viewMat[0].x, viewMat[1].x, viewMat[2].x) * (drawCenter.x - vertex.x) * drawSize.x;
-	worldpos.xyz += vec3(viewMat[0].y, viewMat[1].y, viewMat[2].y) * (drawCenter.y - vertex.y) * drawSize.y;
+	vec3 ex = vec3(viewMat[0].x, viewMat[1].x, viewMat[2].x);
+	vec3 ey = vec3(viewMat[0].y, viewMat[1].y, viewMat[2].y);
+	worldpos.xyz += ex * c.x;
+	worldpos.xyz += ey * c.y;
 	worldpos = viewMat * worldpos;
 	
 	posv = worldpos.xyz;
