@@ -24,9 +24,9 @@ function PlayingMenu:updateGUI()
 		ig.ImGuiWindowFlags_NoDecoration,
 		ig.ImGuiWindowFlags_NoBackground
 	))
-	--ig.igSetWindowFontScale(.5)
-
-	--ig.igSetWindowFontScale(1)
+	ig.igSetWindowFontScale(.5)
+	-- ...
+	ig.igSetWindowFontScale(1)
 
 	ig.igEnd()
 	--]]
@@ -80,6 +80,7 @@ function PlayingMenu:updateGUI()
 			ig.ImGuiWindowFlags_NoBackground,
 			ig.ImGuiWindowFlags_Tooltip
 		))
+		ig.igSetWindowFontScale(.5)
 		--[[
 		if selected then
 			ig.igPushStyleVar_Float(ig.ImGuiStyleVar_FrameBorderSize, 1)
@@ -88,6 +89,8 @@ function PlayingMenu:updateGUI()
 		local name = '###'..i
 		if item then name = item.name..name end
 		ig.igButton(name, ig.ImVec2(bw,bh))
+	
+
 		--[[
 		if selected then
 			ig.igPopStyleVar(1)
@@ -103,7 +106,6 @@ function PlayingMenu:updateGUI()
 	end
 
 	ig.igPopStyleVar(1)
-
 end
 
 return PlayingMenu
