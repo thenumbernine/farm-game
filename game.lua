@@ -29,18 +29,16 @@ local function hexcolor(i)
 		1
 end
 
--- t = table of {value=weight}
+-- t = table of {.weight=...}
 local function pickWeighted(t)
 	local totalWeight = 0
 	for _,p in ipairs(t) do
-		local name, weight = next(p)
-		totalWeight = totalWeight + weight
+		totalWeight = totalWeight + p.weight
 	end
 	local pickWeight = totalWeight * math.random()
 	for _,p in ipairs(t) do
-		local name, weight = next(p)
-		pickWeight = pickWeight - weight
-		if pickWeight <= 0 then return name end
+		pickWeight = pickWeight - p.weight
+		if pickWeight <= 0 then return p end
 	end
 	error"here"
 end
@@ -364,20 +362,21 @@ void main() {
 				end
 				if r < .7 then
 					local anim = require 'zelda.anim'
-					local sprite = pickWeighted{
-						{tree1 = 1},
-						{tree2 = 1},
-						{bush1 = 4},
-						{bush2 = 4},
-						{bush3 = 4},
-						{plant1 = 8},
-						{plant2 = 8},
-						{plant3 = 8},
+					local spriteInfo = pickWeighted{
+						{sprite='tree1', weight=1, numLogs=10},
+						{sprite='tree2', weight=1, numLogs=10},
+						{sprite='bush1', weight=4, numLogs=2},
+						{sprite='bush2', weight=4, numLogs=2},
+						{sprite='bush3', weight=4, numLogs=2},
+						{sprite='plant1', weight=8},
+						{sprite='plant2', weight=8},
+						{sprite='plant3', weight=8},
 					}
-					local tex = anim[sprite].stand[1].tex
+					local tex = anim[spriteInfo.sprite].stand[1].tex
 					self:newObj{
 						class = require 'zelda.obj.plant',
-						sprite = sprite,
+						sprite = spriteInfo.sprite,
+						numLogs = spriteInfo.numLogs,
 						drawSize = vec2f(tex.width, tex.height) / 16,
 						pos = vec3f(i + .5, j + .5, k + 1),
 					}

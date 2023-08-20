@@ -38,6 +38,11 @@ local anim = {
 			{filename = 'sprites/seededground/stand.obj'},
 		},
 	},
+	log = {
+		stand = {
+			{filename = 'sprites/log/stand.png'},
+		},
+	},
 	--]]
 	-- [[ 3D
 	bed = {

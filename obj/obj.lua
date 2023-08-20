@@ -225,6 +225,7 @@ end
 Obj.gravity = -9.8
 Obj.useGravity = true	-- or TODO just change the gravity value to zero?
 Obj.collidesWithTiles = true
+Obj.collidesWithObjects = true
 Obj.collideFlags = 0
 
 local epsilon = 1e-5
@@ -248,7 +249,9 @@ function Obj:update(dt)
 
 	self.collideFlags = 0
 
-	if self.collidesWithTiles then
+	if self.collidesWithTiles
+	or self.collidesWithObjects
+	then
 		local omin = vec3f()
 		local omax = vec3f()
 		for k = 
@@ -266,7 +269,10 @@ function Obj:update(dt)
 					if i >= 0 and i < map.size.x and j >= 0 and j < map.size.y and k >= 0 and k < map.size.z then
 						local tileIndex = i + map.size.x * (j + map.size.y * k)
 						local tiletype = map.map[tileIndex].type
-						if tiletype > 0 then
+						if 
+						self.collidesWithTiles
+						and tiletype > 0
+						then
 							local tile = Tile.types[tiletype]
 							if not tile then error("failed to find tile for type "..tostring(tiletype)) end
 							if tile.solid then
@@ -283,8 +289,15 @@ function Obj:update(dt)
 						local objs = map.objsPerTileIndex[tileIndex]
 						if objs then
 							for _, obj in ipairs(objs) do
-								local collided = push(self.pos, self.min, self.max, obj.pos + obj.min, obj.pos + obj.max, self.vel)
-								self.collideFlags = bit.bor(self.collideFlags, collided)
+								if obj.collidesWithObjects then
+									local collided = push(self.pos, self.min, self.max, obj.pos + obj.min, obj.pos + obj.max, self.vel)
+									self.collideFlags = bit.bor(self.collideFlags, collided)
+									if collided ~= 0 
+									and obj.touch
+									then
+										obj:touch(self)
+									end
+								end
 							end
 						end
 					end
