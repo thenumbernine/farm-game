@@ -31,7 +31,7 @@ function Goomba:damage(amount)
 		game:fade(1, function(alpha)
 			self.color.w = 1 - alpha
 		end)
-		self.removeFlag = true
+		self:remove()
 	end)
 end
 

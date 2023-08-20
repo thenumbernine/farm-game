@@ -483,7 +483,9 @@ function Game:update(dt)
 
 	-- only after update do the removals
 	for i=#self.objs,1,-1 do
-		if self.objs[i].removeFlag then
+		local obj = self.objs[i]
+		if obj.removeFlag then
+			obj:unlink()
 			table.remove(self.objs, i)
 		end
 	end

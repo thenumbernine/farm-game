@@ -111,8 +111,7 @@ function Obj:unlink()
 end
 
 function Obj:remove()
-	self:unlink()
-	self.game.objs:removeObject(self)
+	self.removeFlag = true
 end
 
 function Obj:setPos(x,y,z)
