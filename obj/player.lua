@@ -22,28 +22,10 @@ Player.attackDuration = .35
 Player.min = vec3f(-.3, -.3, 0)
 Player.max = vec3f(.3, .3, .6)
 
-Player.keyNames = table{
-	'up',
-	'down',
-	'left',
-	'right',
-	'jump',
-	'useItem',
-	'interact',
-	'rotateLeft',
-	'rotateRight',
-	'pause',
-}
+function Player:init(args, ...)
+	Player.super.init(self, args, ...)
 
-function Player:init(...)
-	Player.super.init(self, ...)
-	
-	self.keyPress = {}
-	self.keyPressLast = {}
-	for _,k in ipairs(self.keyNames) do
-		self.keyPress[k] = false
-		self.keyPressLast[k] = false
-	end
+	self.player = assert(args.player)
 
 	self.selectedItem = 1
 	-- TODO array-of-stacks
@@ -68,13 +50,14 @@ function Player:update(dt)
 	local game = self.game
 	local app = game.app
 	local map = game.map
+	local appPlayer = assert(self.player)
 
 	local dx = 0
 	local dy = 0
-	if self.keyPress.right then dx = dx + 1 end
-	if self.keyPress.left then dx = dx - 1 end
-	if self.keyPress.up then dy = dy + 1 end
-	if self.keyPress.down then dy = dy - 1 end
+	if appPlayer.keyPress.right then dx = dx + 1 end
+	if appPlayer.keyPress.left then dx = dx - 1 end
+	if appPlayer.keyPress.up then dy = dy + 1 end
+	if appPlayer.keyPress.down then dy = dy - 1 end
 	local l = dx*dx + dy*dy
 	if l > 0 then
 		l = self.walkSpeed / math.sqrt(l)
@@ -105,11 +88,11 @@ function Player:update(dt)
 	self.vel.y = x2Dir.y * dx + y2Dir.y * dy
 
 	-- use = use currently selected inventory item
-	if self.keyPress.useItem then
+	if appPlayer.keyPress.useItem then
 		self:useItem()
 	end
 
-	if self.keyPress.jump then
+	if appPlayer.keyPress.jump then
 		-- swing?  jump?  block?  anything?
 		-- self.vel.z = self.vel.z - 10
 		if bit.band(self.collideFlags, sides.flags.zm) ~= 0 then
@@ -117,7 +100,7 @@ function Player:update(dt)
 		end
 	end
 
-	if self.keyPress.interact then
+	if appPlayer.keyPress.interact then
 		do
 			-- TODO
 			-- traceline ...
@@ -147,8 +130,8 @@ function Player:update(dt)
 		end
 	end
 
-	local turnLeft = self.keyPress.rotateLeft and not self.keyPressLast.rotateLeft 
-	local turnRight = self.keyPress.rotateRight and not self.keyPressLast.rotateRight 
+	local turnLeft = appPlayer.keyPress.rotateLeft and not appPlayer.keyPressLast.rotateLeft 
+	local turnRight = appPlayer.keyPress.rotateRight and not appPlayer.keyPressLast.rotateRight 
 	if turnLeft or turnRight then
 		if turnLeft then
 			app.targetViewYaw = app.targetViewYaw + 90
@@ -162,8 +145,8 @@ function Player:update(dt)
 
 	-- copy current to last keypress
 	-- do this here or in a separate update after object :update()'s?
-	for k,v in pairs(self.keyPress) do
-		self.keyPressLast[k] = v
+	for k,v in pairs(appPlayer.keyPress) do
+		appPlayer.keyPressLast[k] = v
 	end
 end
 

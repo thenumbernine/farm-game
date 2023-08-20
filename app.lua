@@ -1,4 +1,7 @@
 local bit = require 'bit'
+local class = require 'ext.class'
+local range = require 'ext.range'
+local table = require 'ext.table'
 local sdl = require 'ffi.req' 'sdl'
 local ig = require 'imgui'
 local quatd = require 'vec-ffi.quatd'
@@ -6,20 +9,103 @@ local gl = require 'gl'
 local anim = require 'zelda.anim'
 local Game = require 'zelda.game'
 local getTime = require 'ext.timer'.getTime
-local ImGuiApp = require 'imguiapp'
 local OBJLoader = require 'mesh.objloader'
 
 require 'glapp.view'.useBuiltinMatrixMath = true
 
-local App =
-	--require 'glapp.orbit'(
-		require 'glapp.view'.apply(ImGuiApp)
-	--)
-	:subclass()
+local App = require 'gameapp':subclass()
 
 App.title = 'Zelda 4D'
 
 App.viewDist = 7
+
+-- override Menus
+local Menu = require 'gameapp.menu.menu'
+Menu.Splash = require 'zelda.menu.splash'
+
+local PlayingMenu = require 'zelda.menu.playing'
+
+--[[
+keyPress.s:
+	- jump
+	- use item (sword, hoe, watering can, etc)
+	- pick up
+		... (I could combine this with 'use' and make it mandatory to select to an empty inventory slot ...)
+		... or I could get rid of this and have objects change to a touch-to-pick-up state like they do in minecraft and stardew valley
+	- talk/interact
+		... this could be same as pick-up, but for NPCs ...
+--]]
+local PlayerKeysEditor = require 'gameapp.menu.playerkeys'
+PlayerKeysEditor.defaultKeys = {
+	{
+		up = {sdl.SDL_KEYDOWN, sdl.SDLK_UP},
+		down = {sdl.SDL_KEYDOWN, sdl.SDLK_DOWN},
+		left = {sdl.SDL_KEYDOWN, sdl.SDLK_LEFT},
+		right = {sdl.SDL_KEYDOWN, sdl.SDLK_RIGHT},
+		jump = {sdl.SDL_KEYDOWN, ('x'):byte()},
+		useItem = {sdl.SDL_KEYDOWN, ('z'):byte()},
+		interact = {sdl.SDL_KEYDOWN, ('c'):byte()},
+		rotateLeft = {sdl.SDL_KEYDOWN, ('a'):byte()},
+		rotateRight = {sdl.SDL_KEYDOWN, ('s'):byte()},
+		pause = {sdl.SDL_KEYDOWN, sdl.SDLK_ESCAPE},
+	},
+	{
+		up = {sdl.SDL_KEYDOWN, ('w'):byte()},
+		down = {sdl.SDL_KEYDOWN, ('s'):byte()},
+		left = {sdl.SDL_KEYDOWN, ('a'):byte()},
+		right = {sdl.SDL_KEYDOWN, ('d'):byte()},
+		pause = {},	-- sorry keypad player 2
+	},
+}
+
+-- just hack the main menu class instead of subclassing it.
+local MainMenu = require 'gameapp.menu.main'
+MainMenu.menuOptions[1].click = function(self)
+	local app = self.app
+	app.cfg.numPlayers = 1
+	app.menu = PlayingMenu(app)
+
+	-- temp hack for filling out default keys
+	PlayerKeysEditor(app)
+end
+
+-- TODO combine with obj/player.lua somehow
+local Player = class()
+
+Player.gameKeyNames = table{
+	'up',
+	'down',
+	'left',
+	'right',
+	'jump',
+	'useItem',
+	'interact',
+	'rotateLeft',
+	'rotateRight',
+	'pause',
+}
+
+-- all keys to capture via sdl events
+Player.keyNames = table(Player.gameKeyNames):append{
+	'pause',
+}
+
+Player.gameKeySet = Player.gameKeyNames:mapi(function(k)
+	return true, k
+end):setmetatable(nil)
+
+function Player:init(args)
+	self.app = assert(args.app)
+	self.index = assert(args.index)
+	self.keyPress = {}
+	self.keyPressLast = {}
+	for _,k in ipairs(self.keyNames) do
+		self.keyPress[k] = false
+		self.keyPressLast[k] = false
+	end
+end
+
+App.Player = Player
 
 function App:initGL()
 	-- instead of proj * mv , imma separate into: proj view model
@@ -57,9 +143,21 @@ precision highp float;
 	end
 	--]]
 
+
+	-- TODO this in App:reset()
+
 	-- in degrees
 	self.targetViewYaw = 0
 	self.viewYaw = 0
+
+	-- NOTICE THIS IS A SHALLOW COPY
+	-- that means subtables (player keys, custom colors) won't be copied
+	-- not sure if i should bother since neither of those things are used by playcfg but ....
+	self.playcfg = table(self.cfg):setmetatable(nil)
+
+	self.players = range(self.playcfg.numPlayers):mapi(function(i)
+		return Player{index=i, app=self}
+	end)
 
 	self.game = Game{app=self}
 
@@ -72,7 +170,7 @@ end
 
 App.updateDelta = 1/30
 
-function App:update()
+function App:updateGame()
 	local thisTime = getTime()
 	local deltaTime = thisTime - self.lastTime
 	self.lastTime = thisTime
@@ -103,13 +201,6 @@ function App:update()
 		-- TODO fixed update
 		self.game:update(self.updateDelta)
 	end
-
-	App.super.update(self)
-end
-
-function App:updateGUI(...)
-	self.game:updateGUI()
-	return App.super.updateGUI(self, ...)
 end
 
 function App:event(event, ...)

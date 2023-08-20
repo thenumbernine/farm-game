@@ -56,23 +56,8 @@ function Game:init(args)
 	self.time = 0
 	self.threads = ThreadManager()
 
-
-	self.quadVtxBufCPU = ffi.new('vec2f_t[4]', {
-		vec2f(0,0),
-		vec2f(1,0),
-		vec2f(0,1),
-		vec2f(1,1),
-	})
-	self.quadVtxBuf = GLArrayBuffer{
-		size = ffi.sizeof(self.quadVtxBufCPU),
-		data = self.quadVtxBufCPU,
-	}:unbind()
-
-	self.quadGeom = GLGeometry{
-		mode = gl.GL_TRIANGLE_STRIP,
-		count = 4,
-	}
-
+	self.quadVtxBuf = app.quadVertexBuf
+	self.quadGeom = app.quadGeom
 
 	self.skyColorBufCPU = ffi.new('vec4f_t[4]', {
 		vec4f(hexcolor(0xda9134)),
@@ -239,12 +224,13 @@ void main() {
 	}
 
 	self.objs = table()
-	self.player = self:newObj{
+	app.players[1].obj = self:newObj{
 		class = Obj.classes.Player,
 		pos = vec3f(
 			self.map.size.x*.5,
 			self.map.size.y*.5,
 			self.map.size.z-.5),
+		player = assert(app.players[1]),
 	}
 
 	self:newObj{
@@ -340,7 +326,7 @@ function Game:draw()
 	local app = self.app
 	local view = app.view
 
-	local viewFollow = self.player
+	local viewFollow = app.players[1].obj
 	--local viewFollow = self.goomba
 
 	-- before calling super.update and redoing the gl matrices, update view...
@@ -438,44 +424,17 @@ function Game:fade(seconds, callback)
 	end
 end
 
-function Game:event(event)
+function Game:event(event, ...)
+	local app = self.app
+	local playerObj = app.players[1].obj
+	if not playerObj then return end
 	if event.type == sdl.SDL_KEYDOWN
 	or event.type == sdl.SDL_KEYUP
 	then
 		local down = event.type == sdl.SDL_KEYDOWN
-		if event.key.keysym.sym == sdl.SDLK_UP then
-			self.player.keyPress.up = down
-		elseif event.key.keysym.sym == sdl.SDLK_DOWN then
-			self.player.keyPress.down = down
-		elseif event.key.keysym.sym == sdl.SDLK_LEFT then
-			self.player.keyPress.left = down
-		elseif event.key.keysym.sym == sdl.SDLK_RIGHT then
-			self.player.keyPress.right = down
-
-		--[[
-		keyPress.s:
-			- jump
-			- use item (sword, hoe, watering can, etc)
-			- pick up
-				... (I could combine this with 'use' and make it mandatory to select to an empty inventory slot ...)
-				... or I could get rid of this and have objects change to a touch-to-pick-up state like they do in minecraft and stardew valley
-			- talk/interact
-				... this could be same as pick-up, but for NPCs ...
-		--]]
-		elseif event.key.keysym.sym == ('x'):byte() then
-			self.player.keyPress.jump = down
-		elseif event.key.keysym.sym == ('z'):byte() then
-			self.player.keyPress.useItem = down
-		elseif event.key.keysym.sym == ('c'):byte() then
-			self.player.keyPress.interact = down
-
-		elseif event.key.keysym.sym == ('a'):byte() then
-			self.player.keyPress.rotateLeft = down
-		elseif event.key.keysym.sym == ('s'):byte() then
-			self.player.keyPress.rotateRight = down
-
+		
 		-- reset
-		elseif event.key.keysym.sym == ('r'):byte() then
+		if event.key.keysym.sym == ('r'):byte() then
 			self.app.game = Game{app=self.app}
 		end
 
@@ -483,72 +442,16 @@ function Game:event(event)
 			if event.key.keysym.sym >= ('1'):byte()
 			and event.key.keysym.sym <= ('9'):byte()
 			then
-				self.player.selectedItem = event.key.keysym.sym - ('1'):byte() + 1
+				playerObj.selectedItem = event.key.keysym.sym - ('1'):byte() + 1
 			elseif event.key.keysym.sym == ('0'):byte() then
-				self.player.selectedItem = 10
+				playerObj.selectedItem = 10
 			elseif event.key.keysym.sym == ('-'):byte() then
-				self.player.selectedItem = 11
+				playerObj.selectedItem = 11
 			elseif event.key.keysym.sym == ('='):byte() then
-				self.player.selectedItem = 12
+				playerObj.selectedItem = 12
 			end
 		end
 	end
-end
-
-local ig = require 'imgui'
-function Game:updateGUI()
-	local player = self.player
-	local app = self.app
-	local maxItems = 12
-	local bw = math.floor(app.width / maxItems)
-	local bh = bw
-	local x = 0
-	local y = app.height - bh - 4
-	ig.igPushStyleVar_Vec2(ig.ImGuiStyleVar_ButtonTextAlign, ig.ImVec2(.5, .5))
-
-	for i=1,maxItems do
-		local item = player.items[i]
-
-		local selected = player.selectedItem == i
-		if selected then
-			local selectColor = ig.ImVec4(0,0,1,.5)
-			ig.igPushStyleColor_Vec4(ig.ImGuiCol_Button, selectColor)
-		end
-
-		ig.igSetNextWindowPos(ig.ImVec2(x,y), 0, ig.ImVec2())
-		ig.igSetNextWindowSize(ig.ImVec2(bw, bh), 0)
-		ig.igBegin('inventory '..i, nil, bit.bor(
-			ig.ImGuiWindowFlags_NoTitleBar,
-			ig.ImGuiWindowFlags_NoResize,
-			ig.ImGuiWindowFlags_NoScrollbar,
-			ig.ImGuiWindowFlags_NoCollapse,
-
-			ig.ImGuiWindowFlags_NoBackground,
-			ig.ImGuiWindowFlags_Tooltip
-		))
-		--[[
-		if selected then
-			ig.igPushStyleVar_Float(ig.ImGuiStyleVar_FrameBorderSize, 1)
-		end
-		--]]
-		local name = '###'..i
-		if item then name = item.name..name end
-		ig.igButton(name, ig.ImVec2(bw,bh))
-		--[[
-		if selected then
-			ig.igPopStyleVar(1)
-		end
-		--]]
-		ig.igEnd()
-
-		if selected then
-			ig.igPopStyleColor(1)
-		end
-
-		x = x + bw
-	end
-
-	ig.igPopStyleVar(1)
 end
 
 return Game
