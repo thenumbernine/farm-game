@@ -34,7 +34,6 @@ function Player:init(args, ...)
 		require 'zelda.obj.item.axe',
 		require 'zelda.obj.item.hoe',
 		require 'zelda.obj.item.wateringcan',
-		require 'zelda.obj.item.bed',
 	}:mapi(function(cl)
 		return {
 			class = cl,
@@ -151,12 +150,36 @@ function Player:update(dt)
 end
 
 Player.jumpVel = 4
+Player.maxItems = 12
 
 function Player:useItem()
 	local itemInfo = self.items[self.selectedItem]
 	if itemInfo then
 		itemInfo.class:useInInventory(self)
 	end
+end
+
+function Player:addItem(cl, count)
+	count = count or 1
+	for _,itemInfo in ipairs(self.items) do
+		if itemInfo.class == cl then
+			itemInfo.count = itemInfo.count + count
+			return
+		end
+	end
+	self.items:insert{
+		class = cl,
+		count = count,
+	}
+end
+
+function Player:removeSelectedItem()
+	local itemInfo = self.items[self.selectedItem]
+	itemInfo.count = itemInfo.count - 1
+	if itemInfo.count <= 0 then
+		self.items[self.selectedItem] = nil
+	end
+	return itemInfo.class
 end
 
 function Player:draw(...)

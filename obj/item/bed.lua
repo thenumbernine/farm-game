@@ -51,15 +51,16 @@ function ItemBed:useInInventory(player)
 	if topTile == Tile.typeValues.Empty 
 	-- TODO and no solid object exists on this tile
 	then
-		local obj = player.items:remove(player.selectedItem)
-		obj.pos:set((dst+.5):unpack())
+		game:newObj{
+			class = player:removeSelectedItem(),
+			pos = dst+.5,
+		}
 	end
 end
 
 function ItemBed:interactInWorld(player)
-	self:unlink()
-	self.pos:set(math.huge, math.huge, math.huge)
-	player.items:insert(self)
+	self:remove()
+	player:addItem(self.class)
 end
 
 return ItemBed 

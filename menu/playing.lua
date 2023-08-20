@@ -58,7 +58,7 @@ function PlayingMenu:updateGUI()
 		playerObj.gamePrompt()
 	else
 
-		local maxItems = 12
+		local maxItems = playerObj.maxItems
 		local bw = math.floor(app.width / maxItems)
 		local bh = bw
 		local x = 0

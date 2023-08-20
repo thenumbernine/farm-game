@@ -232,6 +232,9 @@ void main() {
 			self.map.size.z-.5),
 		player = assert(app.players[1]),
 	}
+					
+	local ItemSeeds = require 'zelda.obj.item.seeds'
+	app.players[1].obj:addItem(ItemSeeds:makeSubclass'test')
 
 	local game = self
 	self:newObj{
@@ -248,19 +251,7 @@ void main() {
 					local cost = opt.cost * amount
 					if cost <= player.money then
 						player.money = player.money - cost
-						local Seeds = require 'zelda.obj.item.seeds'
-						Seeds.subclasses = Seeds.subclasses or {}
-						local SpecificSeeds = Seeds.subclasses[opt.name]
-						if not SpecificSeeds then
-							SpecificSeeds = Seeds:subclass{
-								name = opt.name,
-							}
-							Seeds.subclasses[opt.name] = SpecificSeeds
-						end
-						playerObj.items:insert{
-							class = SpecificSeeds,
-							count = amount,
-						}
+						playerObj:addItem(ItemSeeds:makeSubclass(opt.name), amount)
 					end
 				end
 
@@ -344,8 +335,13 @@ void main() {
 		self.map.size.x*.95,
 		self.map.size.y*.5,
 		self.map.size.z-.5)
+	
+	self:newObj{
+		class = require 'zelda.obj.item.bed',
+		pos = houseCenter + vec3f(houseSize.x-1, -(houseSize.y-1), -(houseSize.z-1)) + .5,
+	}
 
-
+	-- plants
 	for j=0,self.map.size.y-1 do
 		for i=0,self.map.size.x-1 do
 			local k = self.map.size.z-1
