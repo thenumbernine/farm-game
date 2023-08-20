@@ -5,6 +5,7 @@ local ItemAxe = Item:subclass()
 
 ItemAxe.name = 'axe'
 
+-- static method
 function ItemAxe:useInInventory(player)
 	local game = player.game
 	local map = game.map

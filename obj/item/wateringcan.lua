@@ -7,6 +7,7 @@ local ItemWateringCan = Item:subclass()
 
 ItemWateringCan.name = 'watering can'
 
+-- static method
 function ItemWateringCan:useInInventory(player)
 	local game = player.game
 	local map = game.map

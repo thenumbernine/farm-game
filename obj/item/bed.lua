@@ -34,6 +34,7 @@ ItemBed.sprite = 'bed'
 ItemBed.useGravity = false
 ItemBed.collidesWithTiles = false
 
+-- static method
 function ItemBed:useInInventory(player)
 	local game = player.game
 	local map = game.map

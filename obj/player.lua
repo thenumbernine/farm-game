@@ -34,16 +34,13 @@ function Player:init(args, ...)
 		require 'zelda.obj.item.axe',
 		require 'zelda.obj.item.hoe',
 		require 'zelda.obj.item.wateringcan',
-		require 'zelda.obj.item.seeds',
+		require 'zelda.obj.item.bed',
 	}:mapi(function(cl)
-		return cl{game=self.game}
+		return {
+			class = cl,
+			count = 1,
+		}
 	end)
-
-	local bedItem = self.game:newObj{
-		class = require 'zelda.obj.item.bed',
-		pos = vec3f(math.huge, math.huge, math.huge),
-	}
-	self.items:insert(bedItem)
 end
 
 function Player:update(dt)
@@ -52,92 +49,95 @@ function Player:update(dt)
 	local map = game.map
 	local appPlayer = assert(self.player)
 
-	local dx = 0
-	local dy = 0
-	if appPlayer.keyPress.right then dx = dx + 1 end
-	if appPlayer.keyPress.left then dx = dx - 1 end
-	if appPlayer.keyPress.up then dy = dy + 1 end
-	if appPlayer.keyPress.down then dy = dy - 1 end
-	local l = dx*dx + dy*dy
-	if l > 0 then
-		l = self.walkSpeed / math.sqrt(l)
-	end
-	local localAngle
-	if dx ~= 0 or dy ~= 0 then
-		localAngle = math.atan2(dy, dx)
-	end
-	dx = dx * l
-	dy = dy * l
-
-	local zDir = app.view.angle:zAxis()	-- down dir
-	local xDir = app.view.angle:xAxis()	-- right dir
-	
-	if localAngle then
-		self.angle = localAngle + math.atan2(xDir.y, xDir.x)
-	end
-
-	--local x2Dir = vec2f(1,0)
-	local x2Dir = vec2f(xDir.x, xDir.y)
-	x2Dir = x2Dir:normalize()
-
-	--local y2Dir = vec2f(0,1)
-	local y2Dir = vec2f(-zDir.x, -zDir.y)
-	y2Dir = y2Dir:normalize()
-
-	self.vel.x = x2Dir.x * dx + y2Dir.x * dy
-	self.vel.y = x2Dir.y * dx + y2Dir.y * dy
-
-	-- use = use currently selected inventory item
-	if appPlayer.keyPress.useItem then
-		self:useItem()
-	end
-
-	if appPlayer.keyPress.jump then
-		-- swing?  jump?  block?  anything?
-		-- self.vel.z = self.vel.z - 10
-		if bit.band(self.collideFlags, sides.flags.zm) ~= 0 then
-			self.vel.z = self.vel.z + self.jumpVel
+	-- if a prompt is open then don't handle buttons
+	if not self.gamePrompt then
+		local dx = 0
+		local dy = 0
+		if appPlayer.keyPress.right then dx = dx + 1 end
+		if appPlayer.keyPress.left then dx = dx - 1 end
+		if appPlayer.keyPress.up then dy = dy + 1 end
+		if appPlayer.keyPress.down then dy = dy - 1 end
+		local l = dx*dx + dy*dy
+		if l > 0 then
+			l = self.walkSpeed / math.sqrt(l)
 		end
-	end
+		local localAngle
+		if dx ~= 0 or dy ~= 0 then
+			localAngle = math.atan2(dy, dx)
+		end
+		dx = dx * l
+		dy = dy * l
 
-	if appPlayer.keyPress.interact then
-		do
-			-- TODO
-			-- traceline ...
-			-- see if it hits an obj or a map block
-			-- run a 'onPickUp' function on it
+		local zDir = app.view.angle:zAxis()	-- down dir
+		local xDir = app.view.angle:xAxis()	-- right dir
+		
+		if localAngle then
+			self.angle = localAngle + math.atan2(xDir.y, xDir.x)
+		end
 
-			local x,y,z = (self.pos + vec3f(
-				math.cos(self.angle),
-				math.sin(self.angle),
-				0
-			)):map(math.floor):unpack()
+		--local x2Dir = vec2f(1,0)
+		local x2Dir = vec2f(xDir.x, xDir.y)
+		x2Dir = x2Dir:normalize()
 
-			local found
-			local tileObjs = map:getTileObjs(x,y,z)
-			if tileObjs then
-				for _,obj in ipairs(tileObjs) do
-					if obj.interactInWorld then
-						obj:interactInWorld(self)
-						found = true
-						break
+		--local y2Dir = vec2f(0,1)
+		local y2Dir = vec2f(-zDir.x, -zDir.y)
+		y2Dir = y2Dir:normalize()
+
+		self.vel.x = x2Dir.x * dx + y2Dir.x * dy
+		self.vel.y = x2Dir.y * dx + y2Dir.y * dy
+
+		-- use = use currently selected inventory item
+		if appPlayer.keyPress.useItem then
+			self:useItem()
+		end
+
+		if appPlayer.keyPress.jump then
+			-- swing?  jump?  block?  anything?
+			-- self.vel.z = self.vel.z - 10
+			if bit.band(self.collideFlags, sides.flags.zm) ~= 0 then
+				self.vel.z = self.vel.z + self.jumpVel
+			end
+		end
+
+		if appPlayer.keyPress.interact then
+			do
+				-- TODO
+				-- traceline ...
+				-- see if it hits an obj or a map block
+				-- run a 'onPickUp' function on it
+
+				local x,y,z = (self.pos + vec3f(
+					math.cos(self.angle),
+					math.sin(self.angle),
+					0
+				)):map(math.floor):unpack()
+
+				local found
+				local tileObjs = map:getTileObjs(x,y,z)
+				if tileObjs then
+					for _,obj in ipairs(tileObjs) do
+						if obj.interactInWorld then
+							obj:interactInWorld(self)
+							found = true
+							break
+						end
 					end
 				end
-			end
-			if not found then
-				-- TODO check map for pick up based on tile type
+				if not found then
+					-- TODO check map for pick up based on tile type
+				end
 			end
 		end
-	end
 
-	local turnLeft = appPlayer.keyPress.rotateLeft and not appPlayer.keyPressLast.rotateLeft 
-	local turnRight = appPlayer.keyPress.rotateRight and not appPlayer.keyPressLast.rotateRight 
-	if turnLeft or turnRight then
-		if turnLeft then
-			app.targetViewYaw = app.targetViewYaw + 90
-		end
-		if turnRight then
-			app.targetViewYaw = app.targetViewYaw - 90
+		local turnLeft = appPlayer.keyPress.rotateLeft and not appPlayer.keyPressLast.rotateLeft 
+		local turnRight = appPlayer.keyPress.rotateRight and not appPlayer.keyPressLast.rotateRight 
+		if turnLeft or turnRight then
+			if turnLeft then
+				app.targetViewYaw = app.targetViewYaw + 90
+			end
+			if turnRight then
+				app.targetViewYaw = app.targetViewYaw - 90
+			end
 		end
 	end
 
@@ -153,8 +153,10 @@ end
 Player.jumpVel = 4
 
 function Player:useItem()
-	local item = self.items[self.selectedItem]
-	if item then item:useInInventory(self) end
+	local itemInfo = self.items[self.selectedItem]
+	if itemInfo then
+		itemInfo.class:useInInventory(self)
+	end
 end
 
 function Player:draw(...)

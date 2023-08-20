@@ -5,6 +5,7 @@ local ItemSword = Item:subclass()
 
 ItemSword.name = 'sword'
 
+-- static method
 function ItemSword:useInInventory(player)
 	local game = player.game
 

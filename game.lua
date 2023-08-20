@@ -244,18 +244,23 @@ void main() {
 			local player = playerObj.player
 			playerObj.gamePrompt = function()
 				local function buy(opt, amount)
+					assert(amount > 0)
 					local cost = opt.cost * amount
 					if cost <= player.money then
 						player.money = player.money - cost
-						playerObj.items:insert(
-							-- TODO instead of storing classes, 
-							-- also store classname
-							-- also store amount
-							game:newObj{
-								class = require 'zelda.obj.plant',
-								pos = vec3f(math.huge, math.huge, math.huge),
+						local Seeds = require 'zelda.obj.item.seeds'
+						Seeds.subclasses = Seeds.subclasses or {}
+						local SpecificSeeds = Seeds.subclasses[opt.name]
+						if not SpecificSeeds then
+							SpecificSeeds = Seeds:subclass{
+								name = opt.name,
 							}
-						)
+							Seeds.subclasses[opt.name] = SpecificSeeds
+						end
+						playerObj.items:insert{
+							class = SpecificSeeds,
+							count = amount,
+						}
 					end
 				end
 
@@ -313,11 +318,11 @@ void main() {
 					{name='wormwood seeds', cost=10},
 				}
 				for i,opt in ipairs(options) do
-					ig.igText(opt.name)
 					for _,x in ipairs{1, 10, 100} do
-						ig.igSameLine()
 						if ig.igButton('x'..x..'###'..i..'x'..x) then buy(opt, x) end
+						ig.igSameLine()
 					end
+					ig.igText(opt.name)
 				end
 
 				if ig.igButton'Ok' then
