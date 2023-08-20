@@ -52,6 +52,8 @@ function Obj:init(args)
 
 	self.sprite = args.sprite
 
+	self.interactInWorld = args.interactInWorld
+
 	-- what tile indexes -> obj lists this object is a part of 
 	self.tiles = {}
 

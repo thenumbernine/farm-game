@@ -69,7 +69,7 @@ MainMenu.menuOptions[1].click = function(self)
 	PlayerKeysEditor(app)
 end
 
--- TODO combine with obj/player.lua somehow
+-- TODO instances should be a member of game?
 local Player = class()
 
 Player.gameKeyNames = table{
@@ -103,6 +103,8 @@ function Player:init(args)
 		self.keyPress[k] = false
 		self.keyPressLast[k] = false
 	end
+
+	self.money = 1000
 end
 
 App.Player = Player

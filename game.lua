@@ -233,12 +233,99 @@ void main() {
 		player = assert(app.players[1]),
 	}
 
+	local game = self
 	self:newObj{
 		class = Obj.classes.NPC,
 		pos = vec3f(
 			self.map.size.x*.95,
 			self.map.size.y*.5,
 			self.map.size.z-.5),
+		interactInWorld = function(interactObj, playerObj)
+			local player = playerObj.player
+			playerObj.gamePrompt = function()
+				local function buy(opt, amount)
+					local cost = opt.cost * amount
+					if cost <= player.money then
+						player.money = player.money - cost
+						playerObj.items:insert(
+							-- TODO instead of storing classes, 
+							-- also store classname
+							-- also store amount
+							game:newObj{
+								class = require 'zelda.obj.plant',
+								pos = vec3f(math.huge, math.huge, math.huge),
+							}
+						)
+					end
+				end
+
+				local ig = require 'imgui'
+				local size = ig.igGetMainViewport().WorkSize
+				ig.igSetNextWindowPos(ig.ImVec2(size.x/2, 0), ig.ImGuiCond_Appearing, ig.ImVec2(.5, 0));
+				ig.igBegin('Store Guy', nil, bit.bor(
+					ig.ImGuiWindowFlags_NoMove,
+					ig.ImGuiWindowFlags_NoResize,
+					ig.ImGuiWindowFlags_NoCollapse
+				))
+			
+				ig.igText"want to buy something?"
+			
+				local options = table{
+					{name='blackberry seeds', cost=10},
+					{name='acacia sapling', cost=10},
+					{name='almond seeds', cost=10},
+					{name='anise seeds', cost=10},
+					{name='dill seeds', cost=10},
+					{name='apple seeds', cost=10},
+					{name='citrus seeds', cost=10},
+					{name='barley seeds', cost=10},
+					{name='bay seeds', cost=10},
+					{name='greenbeans seeds', cost=10},
+					{name='cinnamon seeds', cost=10},
+					{name='corriander seeds', cost=10},
+					{name='cotton seeds', cost=10},
+					{name='cucumber seeds', cost=10},
+					{name='cumin seeds', cost=10},
+					{name='black cumin seeds', cost=10},
+					{name='date seeds', cost=10},
+					{name='fig sapling', cost=10},
+					{name='flax seeds', cost=10},
+					{name='garlic seeds', cost=10},
+					{name='grape seeds', cost=10},
+					{name='hemlock seeds', cost=10},
+					{name='jujube seeds', cost=10},
+					{name='leek seeds', cost=10},
+					{name='lentil seeds', cost=10},
+					{name='lily-of-the-valley seeds', cost=10},
+					{name='linen seeds', cost=10},
+					{name='mint seeds', cost=10},
+					{name='mustard seeds', cost=10},
+					{name='nettle seeds', cost=10},
+					{name='pistachio seeds', cost=10},
+					{name='oak sapling', cost=10},
+					{name='olive sapling', cost=10},
+					{name='onion seeds', cost=10},
+					{name='pomegranate sapling', cost=10},
+					{name='saffron seeds', cost=10},
+					{name='walnut sapling', cost=10},
+					{name='watermelon seeds', cost=10},
+					{name='wheat seeds', cost=10},
+					{name='wormwood seeds', cost=10},
+				}
+				for i,opt in ipairs(options) do
+					ig.igText(opt.name)
+					for _,x in ipairs{1, 10, 100} do
+						ig.igSameLine()
+						if ig.igButton('x'..x..'###'..i..'x'..x) then buy(opt, x) end
+					end
+				end
+
+				if ig.igButton'Ok' then
+					playerObj.gamePrompt = nil
+				end
+				ig.igEnd()		
+			end
+		end,
 	}
 
 	local houseSize = vec3f(3, 3, 2)
