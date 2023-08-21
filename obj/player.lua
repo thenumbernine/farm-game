@@ -114,11 +114,14 @@ function Player:update(dt)
 				local found
 				local tileObjs = map:getTileObjs(x,y,z)
 				if tileObjs then
+					-- TODO custom iterator for only the non-removed objects
 					for _,obj in ipairs(tileObjs) do
-						if obj.interactInWorld then
-							obj:interactInWorld(self)
-							found = true
-							break
+						if not obj.removeFlag then
+							if obj.interactInWorld then
+								obj:interactInWorld(self)
+								found = true
+								break
+							end
 						end
 					end
 				end

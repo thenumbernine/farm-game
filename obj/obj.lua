@@ -290,13 +290,15 @@ function Obj:update(dt)
 						local objs = map.objsPerTileIndex[tileIndex]
 						if objs then
 							for _, obj in ipairs(objs) do
-								if obj.collidesWithObjects then
-									local collided = push(self.pos, self.min, self.max, obj.pos + obj.min, obj.pos + obj.max, self.vel)
-									self.collideFlags = bit.bor(self.collideFlags, collided)
-									if collided ~= 0 
-									and obj.touch
-									then
-										obj:touch(self)
+								if not obj.removeFlag then
+									if obj.collidesWithObjects then
+										local collided = push(self.pos, self.min, self.max, obj.pos + obj.min, obj.pos + obj.max, self.vel)
+										self.collideFlags = bit.bor(self.collideFlags, collided)
+										if collided ~= 0 
+										and obj.touch
+										then
+											obj:touch(self)
+										end
 									end
 								end
 							end
