@@ -1,4 +1,5 @@
 local vec3f = require 'vec-ffi.vec3f'
+local Tile = require 'zelda.tile'
 local Obj = require 'zelda.obj.obj'
 
 -- TODO move to obj/item/ ?
@@ -38,9 +39,10 @@ function LogItem:useInInventory(player)
 
 	local tile = map:getTile(dst:unpack())
 	if tile.type == Tile.typeValues.Empty then
-		tile.type = Tile.typeValues.Solid
+		player:removeSelectedItem()
+		tile.type = Tile.typeValues.Stone
 		tile.tex = 2	--maptexs.wood
-		map:updateDrawArrays()
+		map:buildDrawArrays()
 	end
 end
 
