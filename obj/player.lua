@@ -3,6 +3,7 @@ local class = require 'ext.class'
 local table = require 'ext.table'
 local vec2f = require 'vec-ffi.vec2f'
 local vec3f = require 'vec-ffi.vec3f'
+local box3f = require 'vec-ffi.box3f'
 local quatd = require 'vec-ffi.quatd'
 local Obj = require 'zelda.obj.obj'
 local sides = require 'zelda.sides'
@@ -19,8 +20,10 @@ Player.attackTime = -1
 Player.attackEndTime = -1
 Player.attackDuration = .35
 
-Player.min = vec3f(-.3, -.3, 0)
-Player.max = vec3f(.3, .3, .6)
+Player.bbox = box3f{
+	min = {-.3, -.3, 0},
+	max = {.3, .3, .6},
+}
 
 function Player:init(args, ...)
 	Player.super.init(self, args, ...)

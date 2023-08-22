@@ -14,6 +14,7 @@ end
 
 function PlayingMenu:updateGUI()
 	local app = self.app
+	local game = app.game
 	local player = app.players[1]
 	local playerObj = player.obj
 	

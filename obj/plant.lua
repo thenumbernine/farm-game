@@ -28,6 +28,7 @@ bushes
 
 --]]
 local vec3f = require 'vec-ffi.vec3f'
+local box3f = require 'vec-ffi.box3f'
 local Obj = require 'zelda.obj.obj'
 
 local Plant = require 'zelda.obj.takesdamage'(Obj):subclass()
@@ -40,8 +41,7 @@ Plant.collidesWithTiles = false	-- this slows things down a lot.  so just turn o
 Plant.collidesWithObjects = false --?
 
 -- default
---Obj.min = vec3f(-.49, -.49, 0)
---Obj.max = vec3f(.49, .49, .98)
+--Obj.box = box3f(vec3f(-.49, -.49, 0), vec3f(.49, .49, .98))
 
 function Plant:init(args, ...)
 	Plant.super.init(self, args, ...)

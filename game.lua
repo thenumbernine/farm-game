@@ -396,6 +396,18 @@ void main() {
 --]]
 end
 
+function Game:timeToStr()
+	local ts = math.floor(self.time)
+	local s = ts % 60
+	local tm = (s - ts) / 60
+	local m = tm % 60
+	local th = (m - tm) / 60
+	local h = th % 24
+	local td = (h - th) / 24
+	if h == 0 then h = 12 end
+	return ('%d %02d:%02d:%02d'):format(td,h,m,s)
+end
+
 function Game:newObj(args)
 print('new', args.class.name, 'at', args.pos)
 	local cl = assert(args.class)

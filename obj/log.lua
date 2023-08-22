@@ -1,4 +1,5 @@
 local vec3f = require 'vec-ffi.vec3f'
+local box3f = require 'vec-ffi.box3f'
 local Tile = require 'zelda.tile'
 local Obj = require 'zelda.obj.obj'
 
@@ -16,8 +17,10 @@ LogItem.collidesWithTiles = false
 -- quake engines did touchtype_item ...
 --LogItem.collidesWithObjects = false	
 
-LogItem.min = vec3f(-.3, -.3, -.3)
-LogItem.max = vec3f(.3, .3, .3)
+LogItem.min = box3f{
+	min = {-.3, -.3, -.3},
+	max = {.3, .3, .3},
+}
 
 function LogItem:touch(other)
 	if other.addItem then
@@ -40,7 +43,7 @@ function LogItem:useInInventory(player)
 	local tile = map:getTile(dst:unpack())
 	if tile.type == Tile.typeValues.Empty then
 		player:removeSelectedItem()
-		tile.type = Tile.typeValues.Stone
+		tile.type = Tile.typeValues.Wood
 		tile.tex = 2	--maptexs.wood
 		map:buildDrawArrays()
 	end

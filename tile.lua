@@ -1,7 +1,8 @@
 local class = require 'ext.class'
 local table = require 'ext.table'
-local gl = require 'gl'
 local vec3f = require 'vec-ffi.vec3f'
+local box3f = require 'vec-ffi.box3f'
+local gl = require 'gl'
 
 local cubeFaces = table()
 for pm=0,1 do	-- plus/minus
@@ -47,8 +48,10 @@ local unitQuadTriStripIndexes = {1, 2, 4, 3}
 
 local Tile = class()
 
-Tile.min = vec3f(0,0,0)
-Tile.max = vec3f(1,1,1)
+Tile.bbox = box3f{
+	min = {0,0,0},
+	max = {1,1,1},
+}
 
 --[[
 function Tile:render(i,j,k, shader)
@@ -59,9 +62,9 @@ function Tile:render(i,j,k, shader)
 			gl.glVertexAttrib1f(shader.attrs.lum.loc, v[3])
 			gl.glVertexAttrib2f(shader.attrs.texcoord.loc, unitquad[f][1], unitquad[f][2])
 			gl.glVertex3f(
-				i + (1 - v[1]) * self.min.x + v[1] * self.max.x, 
-				j + (1 - v[2]) * self.min.y + v[2] * self.max.y, 
-				k + (1 - v[3]) * self.min.z + v[3] * self.max.z) 
+				i + (1 - v[1]) * self.bbox.min.x + v[1] * self.bbox.max.x, 
+				j + (1 - v[2]) * self.bbox.min.y + v[2] * self.bbox.max.y, 
+				k + (1 - v[3]) * self.bbox.min.z + v[3] * self.bbox.max.z) 
 		end
 	end
 	gl.glEnd()
@@ -101,15 +104,13 @@ local WoodTile = SolidTile:subclass{name='Wood'}
 local SolidBottomHalfTile = Tile:subclass()
 SolidBottomHalfTile.name = 'SolidBottomHalf'
 SolidBottomHalfTile.solid = true
-SolidBottomHalfTile.min = vec3f(0,0,0)
-SolidBottomHalfTile.max = vec3f(1,1,.5)
+SolidBottomHalfTile.bbox = box3f{min={0,0,0}, max={1,1,.5}}
 
 
 local SolidTopHalfTile = Tile:subclass()
 SolidTopHalfTile.name = 'SolidTopHalf'
 SolidTopHalfTile.solid = true
-SolidTopHalfTile.min = vec3f(0,0,.5)
-SolidTopHalfTile.max = vec3f(1,1,1)
+SolidTopHalfTile.bbox = box3f{min = {0,0,.5}, max={1,1,1}}
 
 --[[
 what do i want ...

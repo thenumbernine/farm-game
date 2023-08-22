@@ -3,6 +3,7 @@ local class = require 'ext.class'
 local vec2f = require 'vec-ffi.vec2f'
 local vec3f = require 'vec-ffi.vec3f'
 local vec4f = require 'vec-ffi.vec4f'
+local box3f = require 'vec-ffi.box3f'
 local gl = require 'gl'
 local glreport = require 'gl.report'
 local GLTex2D = require 'gl.tex2d'
@@ -16,8 +17,10 @@ local Obj = class()
 Obj.seq = 'stand'
 Obj.frame = 1
 
-Obj.min = vec3f(-.49, -.49, 0)
-Obj.max = vec3f(.49, .49, .98)
+Obj.bbox = box3f{
+	min = {-.49, -.49, 0},
+	max = {.49, .49, .98},
+}
 
 Obj.drawAngle = 0
 
@@ -41,13 +44,8 @@ function Obj:init(args)
 	self.vel = vec3f(0,0,0)
 	if args.vel then self.vel:set(args.vel:unpack()) end
 
-	-- [[[ bbox
-	self.min = vec3f():set(self.class.min:unpack())
-	if args.min then self.min:set(args.min:unpack()) end
-	
-	self.max = vec3f():set(self.class.max:unpack())
-	if args.max then self.max:set(args.max:unpack()) end
-	--]]
+	self.bbox = box3f(self.class.bbox)
+	if args.bbox then self.bbox = box3f(args.bbox) end
 
 	self.color = vec4f(1,1,1,1)
 	if args.color then self.color:set(args.color:unpack()) end
@@ -69,16 +67,16 @@ function Obj:link()
 	assert(next(self.tiles) == nil)
 
 	for k =
-		math.max(math.floor(self.pos.z + self.min.z), 0),
-		math.min(math.floor(self.pos.z + self.max.z), map.size.z - 1)
+		math.max(math.floor(self.pos.z + self.bbox.min.z), 0),
+		math.min(math.floor(self.pos.z + self.bbox.max.z), map.size.z - 1)
 	do
 		for j =
-			math.max(math.floor(self.pos.y + self.min.y), 0),
-			math.min(math.floor(self.pos.y + self.max.y), map.size.y - 1)
+			math.max(math.floor(self.pos.y + self.bbox.min.y), 0),
+			math.min(math.floor(self.pos.y + self.bbox.max.y), map.size.y - 1)
 		do
 			for i =
-				math.max(math.floor(self.pos.x + self.min.x), 0),
-				math.min(math.floor(self.pos.x + self.max.x), map.size.x - 1)
+				math.max(math.floor(self.pos.x + self.bbox.min.x), 0),
+				math.min(math.floor(self.pos.x + self.bbox.max.x), map.size.x - 1)
 			do
 				local tileIndex = i + map.size.x * (j + map.size.y * k)
 				local tileObjs = map.objsPerTileIndex[tileIndex]
@@ -256,16 +254,16 @@ function Obj:update(dt)
 		local omin = vec3f()
 		local omax = vec3f()
 		for k = 
-			math.floor(math.min(self.pos.z, self.oldpos.z) + self.min.z - 1.5),
-			math.floor(math.max(self.pos.z, self.oldpos.z) + self.max.z + .5)
+			math.floor(math.min(self.pos.z, self.oldpos.z) + self.bbox.min.z - 1.5),
+			math.floor(math.max(self.pos.z, self.oldpos.z) + self.bbox.max.z + .5)
 		do
 			for j =
-				math.floor(math.min(self.pos.y, self.oldpos.y) + self.min.y - 1.5),
-				math.floor(math.max(self.pos.y, self.oldpos.y) + self.max.y + .5)
+				math.floor(math.min(self.pos.y, self.oldpos.y) + self.bbox.min.y - 1.5),
+				math.floor(math.max(self.pos.y, self.oldpos.y) + self.bbox.max.y + .5)
 			do
 				for i =
-					math.floor(math.min(self.pos.x, self.oldpos.x) + self.min.x - 1.5),
-					math.floor(math.max(self.pos.x, self.oldpos.x) + self.max.x + .5)
+					math.floor(math.min(self.pos.x, self.oldpos.x) + self.bbox.min.x - 1.5),
+					math.floor(math.max(self.pos.x, self.oldpos.x) + self.bbox.max.x + .5)
 				do
 					if i >= 0 and i < map.size.x and j >= 0 and j < map.size.y and k >= 0 and k < map.size.z then
 						local tileIndex = i + map.size.x * (j + map.size.y * k)
@@ -283,7 +281,7 @@ function Obj:update(dt)
 								-- TODO trace gravity fall downward separately
 								-- then move horizontall
 								-- if push fails then raise up, move, and go back down, to try and do steps
-								local collided = push(self.pos, self.min, self.max, omin, omax, self.vel)
+								local collided = push(self.pos, self.bbox.min, self.bbox.max, omin, omax, self.vel)
 								self.collideFlags = bit.bor(self.collideFlags, collided)
 							end
 						end
@@ -292,7 +290,7 @@ function Obj:update(dt)
 							for _, obj in ipairs(objs) do
 								if not obj.removeFlag then
 									if obj.collidesWithObjects then
-										local collided = push(self.pos, self.min, self.max, obj.pos + obj.min, obj.pos + obj.max, self.vel)
+										local collided = push(self.pos, self.bbox.min, self.bbox.max, obj.pos + obj.bbox.min, obj.pos + obj.bbox.max, self.vel)
 										self.collideFlags = bit.bor(self.collideFlags, collided)
 										if collided ~= 0 
 										and obj.touch
@@ -348,9 +346,9 @@ gl.glBegin(gl.GL_POINTS)
 		for _,vtxCoordFlags in ipairs(faces) do
 			local v = Tile.cubeVtxs[vtxCoordFlags+1]
 			gl.glVertex3f(
-				self.pos.x + (1 - v[1]) * self.min.x + v[1] * self.max.x,
-				self.pos.y + (1 - v[2]) * self.min.y + v[2] * self.max.y,
-				self.pos.z + (1 - v[3]) * self.min.z + v[3] * self.max.z)
+				self.pos.x + (1 - v[1]) * self.bbox.min.x + v[1] * self.bbox.max.x,
+				self.pos.y + (1 - v[2]) * self.bbox.min.y + v[2] * self.bbox.max.y,
+				self.pos.z + (1 - v[3]) * self.bbox.min.z + v[3] * self.bbox.max.z)
 		end
 		gl.glEnd()
 	end
