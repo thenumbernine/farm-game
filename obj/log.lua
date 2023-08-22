@@ -7,6 +7,11 @@ LogItem.name = 'Log'
 LogItem.sprite = 'log'
 LogItem.useGravity = false
 LogItem.collidesWithTiles = false
+
+-- hmm how do I say 'test touch' but not 'test movement collision' ?
+-- quake engines did touchtype_item ...
+--LogItem.collidesWithObjects = false	
+
 LogItem.min = vec3f(-.3, -.3, -.3)
 LogItem.max = vec3f(.3, .3, .3)
 
