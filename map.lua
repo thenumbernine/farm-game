@@ -179,15 +179,16 @@ void main() {
 	fragColor.xyz *= colorv.xyz;
 
 	// keep the dx dy outside the if block to prevent errors.
-	vec3 dx = dFdx(viewPosv);
-	vec3 dy = dFdy(viewPosv);
-	if (useSeeThru &&
-		normalize(viewPosv - playerViewPos).z > cosClipAngle
-	) {
-		vec3 n = normalize(cross(dx, dy));
-		if (dot(n, playerViewPos - viewPosv) < -.01) {
-			fragColor.w = .1;
-			discard;
+	if (useSeeThru) {
+		vec3 dx = dFdx(viewPosv);
+		vec3 dy = dFdy(viewPosv);
+		vec3 testViewPos = playerViewPos + vec3(0., 1., 0.);
+		if (normalize(viewPosv - testViewPos).z > cosClipAngle) {
+			vec3 n = normalize(cross(dx, dy));
+			if (dot(n, testViewPos - viewPosv) < -.01) {
+				fragColor.w = .1;
+				discard;
+			}
 		}
 	}
 }

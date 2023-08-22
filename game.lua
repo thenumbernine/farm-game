@@ -177,19 +177,17 @@ void main() {
 	// alpha-testing
 	if (fragColor.a < .1) discard;
 
-	vec3 testViewPos = playerViewPos + vec3(0., 1., -2.);
-
-	if (useSeeThru &&
-		normalize(viewPosv - testViewPos).z > cosClipAngle
-	) {
-		fragColor.w = .4;
-		//discard;
+	if (useSeeThru) {
+		vec3 testViewPos = playerViewPos + vec3(0., 1., -2.);
+		if (normalize(viewPosv - testViewPos).z > cosClipAngle) {
+			fragColor.w = .4;
+			//discard;
+		}
 	}
 }
 ]],
 		uniforms = {
 			tex = 0,
-			drawCenter = {.5, 1},
 		},
 	}:useNone()
 

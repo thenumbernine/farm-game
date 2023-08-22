@@ -13,7 +13,7 @@ local Player = Obj:subclass()
 Player.name = 'Player'	-- TODO require name?
 
 Player.sprite = 'link'
-Player.drawSize = vec2f(1,1.5)
+Player.drawSize = vec2f(1, 1.5)
 Player.walkSpeed = 6
 
 Player.attackTime = -1
@@ -34,6 +34,7 @@ function Player:init(args, ...)
 	-- TODO array-of-stacks
 	self.items = table{
 		require 'zelda.obj.item.sword',
+		require 'zelda.obj.item.shovel',
 		require 'zelda.obj.item.axe',
 		require 'zelda.obj.item.hoe',
 		require 'zelda.obj.item.wateringcan',

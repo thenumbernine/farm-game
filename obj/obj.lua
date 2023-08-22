@@ -24,18 +24,20 @@ Obj.bbox = box3f{
 
 Obj.drawAngle = 0
 
+Obj.drawSize = vec2f(1,1)
+Obj.drawCenter = vec2f(.5, 1)
+
 function Obj:init(args)
 	assert(args)
 	self.game = assert(args.game)
 
 	self.angle = 1.5 * math.pi
 	
-	if not self.drawSize then
-		self.drawSize = vec2f(1,1)
-	else
-		self.drawSize = vec2f(self.drawSize:unpack())
-	end
-	if args.drawSize then self.drawSize:set(args.drawSize:unpack()) end
+	self.drawSize = vec2f(self.class.drawSize)
+	if args.drawSize then self.drawSize = vec2f(args.drawSize) end
+	
+	self.drawCenter = vec2f(self.class.drawCenter)
+	if args.drawCenter then self.drawCenter = vec2f(args.drawCenter) end
 
 	self.pos = vec3f(0,0,0)
 	if args.pos then self.pos:set(args.pos:unpack()) end
@@ -387,6 +389,7 @@ gl.glEnable(gl.GL_DEPTH_TEST)
 						gl.glUniformMatrix4fv(shader.uniforms.viewMat.loc, 1, gl.GL_FALSE, view.mvMat.ptr)
 						gl.glUniformMatrix4fv(shader.uniforms.projMat.loc, 1, gl.GL_FALSE, view.projMat.ptr)
 						gl.glUniform2f(shader.uniforms.uvscale.loc, uscale, vscale)
+						gl.glUniform2f(shader.uniforms.drawCenter.loc, self.drawCenter:unpack()) 
 						gl.glUniform2f(shader.uniforms.drawSize.loc, self.drawSize:unpack()) 
 						gl.glUniform2f(shader.uniforms.drawAngleDir.loc, math.cos(self.drawAngle), math.sin(self.drawAngle))
 						gl.glUniform3f(shader.uniforms.pos.loc, self.pos.x, self.pos.y, self.pos.z + .1) 

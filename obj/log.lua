@@ -6,30 +6,30 @@ local Obj = require 'zelda.obj.obj'
 -- TODO move to obj/item/ ?
 -- or ... no need for obj/item/ at all?
 -- idk how to organize
-local LogItem = Obj:subclass()
+local Log = Obj:subclass()
 
-LogItem.name = 'Log'
-LogItem.sprite = 'log'
-LogItem.useGravity = false
-LogItem.collidesWithTiles = false
+Log.name = 'Log'
+Log.sprite = 'log'
+Log.useGravity = false
 
+Log.collidesWithTiles = false
 -- hmm how do I say 'test touch' but not 'test movement collision' ?
 -- quake engines did touchtype_item ...
---LogItem.collidesWithObjects = false	
+--Log.collidesWithObjects = false	
 
-LogItem.min = box3f{
+Log.min = box3f{
 	min = {-.3, -.3, -.3},
 	max = {.3, .3, .3},
 }
 
-function LogItem:touch(other)
+function Log:touch(other)
 	if other.addItem then
-		other:addItem(LogItem)
+		other:addItem(Log)
 		self:remove()
 	end
 end
 
-function LogItem:useInInventory(player)
+function Log:useInInventory(player)
 	local game = player.game
 	local map = game.map
 
@@ -49,4 +49,4 @@ function LogItem:useInInventory(player)
 	end
 end
 
-return LogItem
+return Log
