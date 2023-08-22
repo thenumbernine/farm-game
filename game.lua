@@ -370,9 +370,9 @@ void main() {
 				end
 				if r < .7 then
 					local anim = require 'zelda.anim'
-					local spriteInfo = pickWeighted{
-						{sprite='tree1', weight=1, numLogs=10},
-						{sprite='tree2', weight=1, numLogs=10},
+					local objInfo = pickWeighted{
+						{sprite='tree1', weight=1, numLogs=10, hpMax=5},
+						{sprite='tree2', weight=1, numLogs=10, hpMax=5},
 						{sprite='bush1', weight=4, numLogs=2},
 						{sprite='bush2', weight=4, numLogs=2},
 						{sprite='bush3', weight=4, numLogs=2},
@@ -380,14 +380,12 @@ void main() {
 						{sprite='plant2', weight=8},
 						{sprite='plant3', weight=8},
 					}
-					local tex = anim[spriteInfo.sprite].stand[1].tex
-					self:newObj{
+					local tex = anim[objInfo.sprite].stand[1].tex
+					self:newObj(table(objInfo, {
 						class = require 'zelda.obj.plant',
-						sprite = spriteInfo.sprite,
-						numLogs = spriteInfo.numLogs,
 						drawSize = vec2f(tex.width, tex.height) / 16,
 						pos = vec3f(i + .5, j + .5, k + 1),
-					}
+					}):setmetatable(nil))
 				end
 			end
 		end

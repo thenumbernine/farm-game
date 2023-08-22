@@ -47,8 +47,8 @@ function ItemBed:useInInventory(player)
 	)):map(math.floor)
 
 	-- TODO also make sure no objects exist here
-	local topTile = map:get(dst:unpack())
-	if topTile == Tile.typeValues.Empty 
+	local tileType = map:get(dst:unpack())
+	if tileType == Tile.typeValues.Empty 
 	-- TODO and no solid object exists on this tile
 	then
 		game:newObj{

@@ -63,7 +63,7 @@ function PlayingMenu:updateGUI()
 		local bh = bw
 		local x = 0
 		local y = app.height - bh - 4
-		ig.igPushStyleVar_Vec2(ig.ImGuiStyleVar_ButtonTextAlign, ig.ImVec2(.5, .5))
+		ig.igPushStyleVar_Vec2(ig.ImGuiStyleVar_ButtonTextAlign, ig.ImVec2(0,0))
 
 		for i=1,maxItems do
 			local itemInfo = playerObj.items[i]
@@ -96,7 +96,7 @@ function PlayingMenu:updateGUI()
 				if itemInfo.count == 1 then
 					name = itemInfo.class.name..name
 				else
-					name = itemInfo.class.name..'x'..itemInfo.count..name
+					name = itemInfo.class.name..'\nx'..itemInfo.count..name
 				end
 			end
 			ig.igButton(name, ig.ImVec2(bw,bh))

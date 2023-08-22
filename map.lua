@@ -113,8 +113,9 @@ function Map:init(args)	-- vec3i
 					local linf = math.max(adx/houseSize.x, ady/houseSize.y, adz/houseSize.z)
 					if linf == 1 then
 						local index = x + self.size.x * (y + self.size.y * z)
-						self.map[index].type = Tile.typeValues.Stone
-						self.map[index].tex = maptexs.wood
+						local tile = self.map + index
+						tile.type = Tile.typeValues.Stone
+						tile.tex = maptexs.wood
 					end
 				end
 			end
@@ -189,24 +190,86 @@ void main() {
 		},
 	}:useNone()
 
+
 	-- geometry
 	self.vtxs = vector'vec3f_t'
 	self.texcoords = vector'vec2f_t'
 	self.colors = vector'vec4ub_t'
 
+	local volume = self.size:volume()
+	-- [[ using reserve and heuristic of #cubes ~ #vtxs: brings time taken from 12 s to 0.12 s
+	self.vtxs:reserve(2*volume)
+	self.texcoords:reserve(2*volume)
+	self.colors:reserve(2*volume)
+	--]]
+
+	-- TODO Don't reallocate gl buffers each time.
+	-- OpenGL growing buffers via glCopyBufferSubData:
+	-- https://stackoverflow.com/a/27751186/2714073
+
+	self.vtxBuf = GLArrayBuffer{
+		size = ffi.sizeof(self.vtxs.type) * self.vtxs.capacity,
+		data = self.vtxs.v,
+		usage = gl.GL_DYNAMIC_DRAW,
+	}:unbind()
+
+	self.texcoordBuf = GLArrayBuffer{
+		size = ffi.sizeof(self.texcoords.type) * self.texcoords.capacity,
+		data = self.texcoords.v,
+		usage = gl.GL_DYNAMIC_DRAW,
+	}:unbind()
+
+	self.colorBuf = GLArrayBuffer{
+		size = ffi.sizeof(self.colors.type) * self.colors.capacity,
+		data = self.colors.v,
+		usage = gl.GL_DYNAMIC_DRAW,
+	}:unbind()
+
+	-- TODO put this in a GLSceneObject object instead
+	-- and give that its own set of attrs, uniforms, shader, geometry
+	self.sceneObj = GLSceneObject{
+		geometry = GLGeometry{
+			mode = gl.GL_TRIANGLES,
+			count = self.vtxs.size,
+		},
+		program = self.shader,
+		attrs = {
+			vertex = {
+				buffer = self.vtxBuf,
+				type = gl.GL_FLOAT,
+				size = 3,
+			},
+			texcoord = {
+				buffer = self.texcoordBuf,
+				type = gl.GL_FLOAT,
+				size = 2,
+			},
+			color = {
+				buffer = self.colorBuf,
+				type = gl.GL_UNSIGNED_BYTE,
+				size = 4,
+				normalize = true,
+			},
+		},
+		uniforms = {
+			viewport = {0,0,1,1},
+		},
+		texs = {},
+	}
+
+
+	self:buildDrawArrays()
+end
+
+-- TODO 1) chunks 2) grow-gl-buffers functionality 3) do this without any new allocations
+function Map:buildDrawArrays()
 	self:buildDrawArrays()
 end
 
 function Map:buildDrawArrays()
-	local volume = self.size:volume()
-	-- [[ using reserve and heuristic of #cubes ~ #vtxs: brings time taken from 12 s to 0.12 s
 	self.vtxs:resize(0)
-	self.vtxs:reserve(2*volume)
 	self.texcoords:resize(0)
-	self.texcoords:reserve(2*volume)
 	self.colors:resize(0)
-	self.colors:reserve(2*volume)
-	--]]
 	local texpackDx = 1/tonumber(self.texpackSize.x)
 	local texpackDy = 1/tonumber(self.texpackSize.y)
 	local index = 0
@@ -276,55 +339,33 @@ function Map:buildDrawArrays()
 
 	-- 184816 vertexes total ...
 	-- ... from 196608 cubes
+	local volume = self.size:volume()
 	print('volume', volume)
 	print('vtxs', self.vtxs.size)
 
-	-- TODO Don't reallocate gl buffers each time.
-	-- OpenGL growing buffers via glCopyBufferSubData:
-	-- https://stackoverflow.com/a/27751186/2714073
+	local vtxSize = self.vtxs.size * ffi.sizeof(self.vtxs.type)
+	local texcoordSize = self.texcoords.size * ffi.sizeof(self.texcoords.type)
+	local colorSize = self.colors.size * ffi.sizeof(self.colors.type)	
+	
+	if vtxSize > self.vtxBuf.size then
+		print'TODO needs vtxBuf resize'
+		return
+	end
+	if texcoordSize > self.texcoordBuf.size then
+		print'TODO needs texcoordBuf resize'
+		return
+	end
+	if colorSize > self.colorBuf.size then
+		print'TODO needs colorBuf resize'
+		return
+	end
 
-	self.vtxBuf = GLArrayBuffer{
-		size = ffi.sizeof(self.vtxs.type) * self.vtxs.size,
-		data = self.vtxs.v,
-		-- TDOO why does dynamic draw make it black?
-		--usage = gl.GL_DYNAMIC_DRAW,
-	}:unbind()
+	self.vtxBuf:bind():updateData(0, vtxSize)
+	self.texcoordBuf:bind():updateData(0, texcoordSize)
+	self.colorBuf:bind():updateData(0, colorSize)
+		:unbind()
 
-	self.texcoordBuf = GLArrayBuffer{
-		size = ffi.sizeof(self.texcoords.type) * self.texcoords.size,
-		data = self.texcoords.v,
-		--usage = gl.GL_DYNAMIC_DRAW,
-	}:unbind()
-
-	self.colorBuf = GLArrayBuffer{
-		size = ffi.sizeof(self.colors.type) * self.colors.size,
-		data = self.colors.v,
-		--usage = gl.GL_DYNAMIC_DRAW,
-	}:unbind()
-
-	-- TODO put this in a GLSceneObject object instead
-	-- and give that its own set of attrs, uniforms, shader, geometry
-	self.sceneObj = GLSceneObject{
-		geometry = GLGeometry{
-			mode = gl.GL_TRIANGLES,
-			count = self.vtxs.size,
-		},
-		program = self.shader,
-		attrs = {
-			vertex = self.vtxBuf,
-			texcoord = self.texcoordBuf,
-			color = {
-				buffer = self.colorBuf,
-				type = gl.GL_UNSIGNED_BYTE,
-				size = 4,
-				normalize = true,
-			},
-		},
-		uniforms = {
-			viewport = {0,0,1,1},
-		},
-		texs = {},
-	}
+	self.sceneObj.geometry.count = self.vtxs.size
 end
 
 function Map:draw()

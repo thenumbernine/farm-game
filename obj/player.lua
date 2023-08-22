@@ -158,7 +158,10 @@ Player.maxItems = 12
 function Player:useItem()
 	local itemInfo = self.items[self.selectedItem]
 	if itemInfo then
-		itemInfo.class:useInInventory(self)
+		local cl = itemInfo.class
+		if cl.useInInventory then
+			cl:useInInventory(self)
+		end
 	end
 end
 

@@ -11,7 +11,8 @@ local function takesDamage(parent)
 		self.hpMax = args.hpMax
 		assert(self.hpMax)	-- either override or class static
 
-		self.hp = self.hpMax
+		-- idk why you would want to start an enemy off at less than optimal HP but the feature is available ... 
+		self.hp = args.hp or self.hpMax
 	end
 
 	-- inflicter might be an object in the case of a projectile

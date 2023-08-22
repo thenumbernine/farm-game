@@ -68,6 +68,10 @@ MainMenu.menuOptions[1].click = function(self)
 	-- temp hack for filling out default keys
 	PlayerKeysEditor(app)
 end
+assert(MainMenu.menuOptions:remove(4).name == 'High Scores')
+assert(MainMenu.menuOptions:remove(2).name == 'New Game Co-op')
+
+App.url = 'https://github.com/thenumbernine/zelda3d-lua'
 
 -- TODO instances should be a member of game?
 local Player = class()
