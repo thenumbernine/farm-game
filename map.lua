@@ -114,7 +114,7 @@ function Map:init(args)	-- vec3i
 					if linf == 1 then
 						local index = x + self.size.x * (y + self.size.y * z)
 						local tile = self.map + index
-						tile.type = Tile.typeValues.Stone
+						tile.type = Tile.typeValues.Wood
 						tile.tex = maptexs.wood
 					end
 				end
@@ -140,21 +140,27 @@ in vec3 vertex;
 in vec2 texcoord;
 in vec4 color;
 
-out vec3 posv;
+out vec3 viewPosv;
 out vec2 texcoordv;
 out vec4 colorv;
 
-uniform mat4 mvProjMat;
+//model transform is ident for map
+// so this is just the view mat + proj mat
+uniform mat4 mvMat;
+uniform mat4 projMat;
 
 void main() {
 	texcoordv = texcoord;
 	colorv = color;
-	posv = vertex;
-	gl_Position = mvProjMat * vec4(vertex, 1.);
+	
+	vec4 viewPos = mvMat * vec4(vertex, 1.);
+	viewPosv = viewPos.xyz;
+	
+	gl_Position = projMat * viewPos;
 }
 ]],
 		fragmentCode = app.glslHeader..[[
-in vec3 posv;
+in vec3 viewPosv;
 in vec2 texcoordv;
 in vec4 colorv;
 
@@ -162,23 +168,24 @@ out vec4 fragColor;
 
 uniform sampler2D tex;
 uniform bool useSeeThru;
-uniform vec4 viewport;
-uniform vec3 playerPos;
+uniform vec3 playerViewPos;
+
+//lol, C standard is 'const' associates left
+//but GLSL requires it to associate right
+const float cosClipAngle = .9;	// = cone with 25 degree from axis 
 
 void main() {
 	fragColor = texture(tex, texcoordv);
 	fragColor.xyz *= colorv.xyz;
 
 	// keep the dx dy outside the if block to prevent errors.
-	vec3 dx = dFdx(posv);
-	vec3 dy = dFdy(posv);
+	vec3 dx = dFdx(viewPosv);
+	vec3 dy = dFdy(viewPosv);
 	if (useSeeThru &&
-		length(
-			gl_FragCoord.xy - .5 * viewport.zw
-		) < .35 * viewport.w
+		normalize(viewPosv - playerViewPos).z > cosClipAngle
 	) {
 		vec3 n = normalize(cross(dx, dy));
-		if (dot(n, playerPos - posv) < -.01) {
+		if (dot(n, playerViewPos - viewPosv) < -.01) {
 			fragColor.w = .1;
 			discard;
 		}
@@ -250,9 +257,6 @@ void main() {
 				size = 4,
 				normalize = true,
 			},
-		},
-		uniforms = {
-			viewport = {0,0,1,1},
 		},
 		texs = {},
 	}
@@ -377,11 +381,10 @@ function Map:draw()
 	local app = game.app
 
 	local shader = self.sceneObj.program
-	self.sceneObj.uniforms.playerPos = game.playerPos.s
+	self.sceneObj.uniforms.playerViewPos = game.playerViewPos.s
 
-	self.sceneObj.uniforms.mvProjMat = app.view.mvProjMat.ptr
-	self.sceneObj.uniforms.viewport[3] = app.width
-	self.sceneObj.uniforms.viewport[4] = app.height
+	self.sceneObj.uniforms.mvMat = app.view.mvMat.ptr
+	self.sceneObj.uniforms.projMat = app.view.projMat.ptr
 	self.sceneObj.uniforms.useSeeThru = 1
 	self.sceneObj.texs[1] = game.texpack
 	self.sceneObj:draw()

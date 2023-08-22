@@ -1,4 +1,5 @@
 local vec3f = require 'vec-ffi.vec3f'
+local Tile = require 'zelda.tile'
 local Item = require 'zelda.obj.item.item'
 
 local ItemAxe = Item:subclass()
@@ -22,6 +23,16 @@ function ItemAxe:useInInventory(player)
 		math.sin(player.angle),
 		0
 	)):map(math.floor):unpack()
+
+	local tile = map:getTile(x,y,z)
+	if tile 
+	and tile.type == Tile.typeValues.Wood
+	then
+		tile.type = Tile.typeValues.Empty
+		map:buildDrawArrays()
+		player:addItem(require 'zelda.obj.log')
+		return
+	end
 
 	local objs = map:getTileObjs(x,y,z)
 	if objs then

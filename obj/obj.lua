@@ -393,8 +393,8 @@ gl.glEnable(gl.GL_DEPTH_TEST)
 						gl.glUniform2f(shader.uniforms.drawAngleDir.loc, math.cos(self.drawAngle), math.sin(self.drawAngle))
 						gl.glUniform3f(shader.uniforms.pos.loc, self.pos.x, self.pos.y, self.pos.z + .1) 
 						gl.glUniform4f(shader.uniforms.color.loc, self.color:unpack())
-						gl.glUniform4f(shader.uniforms.viewport.loc, 0, 0, app.width, app.height)
-						gl.glUniform4f(shader.uniforms.playerViewPos.loc, game.playerViewPos:unpack())
+						gl.glUniform3fv(shader.uniforms.playerViewPos.loc, 1, game.playerViewPos.s)
+						gl.glUniform1i(shader.uniforms.useSeeThru.loc, self == game.viewFollow and 0 or 1)
 
 						game.spriteSceneObj.texs[1] = frame.tex
 						game.spriteSceneObj:draw()

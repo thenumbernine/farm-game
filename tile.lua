@@ -96,6 +96,7 @@ assert(SolidTile.cubeFaces)
 local StoneTile = SolidTile:subclass{name='Stone'}
 
 local GrassTile = SolidTile:subclass{name='Grass'}
+local WoodTile = SolidTile:subclass{name='Wood'}
 
 local SolidBottomHalfTile = Tile:subclass()
 SolidBottomHalfTile.name = 'SolidBottomHalf'
@@ -123,6 +124,8 @@ what do i want ...
 Tile.types[0] = EmptyTile()
 table.insert(Tile.types, StoneTile())
 table.insert(Tile.types, GrassTile())
+table.insert(Tile.types, WoodTile())
+-- I'm not using these right now ...
 table.insert(Tile.types, SolidBottomHalfTile())
 table.insert(Tile.types, SolidTopHalfTile())
 
