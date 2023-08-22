@@ -397,15 +397,14 @@ void main() {
 end
 
 function Game:timeToStr()
-	local ts = math.floor(self.time)
-	local s = ts % 60
-	local tm = (s - ts) / 60
+	-- time scale?  1 second = 1 minute?
+	local tm = math.floor(self.time) 
 	local m = tm % 60
 	local th = (m - tm) / 60
 	local h = th % 24
 	local td = (h - th) / 24
-	if h == 0 then h = 12 end
-	return ('%d %02d:%02d:%02d'):format(td,h,m,s)
+	if h == 0 then h = 24 end
+	return ('%d %02d:%02d'):format(td,h,m)
 end
 
 function Game:newObj(args)
