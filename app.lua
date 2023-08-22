@@ -72,6 +72,7 @@ end
 -- TODO instances should be a member of game?
 local Player = class()
 
+-- gameplay keys to record for demos (excludes pause)
 Player.gameKeyNames = table{
 	'up',
 	'down',
@@ -82,14 +83,14 @@ Player.gameKeyNames = table{
 	'interact',
 	'rotateLeft',
 	'rotateRight',
-	'pause',
 }
 
--- all keys to capture via sdl events
+-- all keys to capture via sdl events during gameplay
 Player.keyNames = table(Player.gameKeyNames):append{
 	'pause',
 }
 
+-- set of game keys (for set testing)
 Player.gameKeySet = Player.gameKeyNames:mapi(function(k)
 	return true, k
 end):setmetatable(nil)
