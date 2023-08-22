@@ -2,18 +2,19 @@ local ffi = require 'ffi'
 local sdl = require 'ffi.req' 'sdl'
 local class = require 'ext.class'
 local table = require 'ext.table'
-local Map = require 'zelda.map'
-local Tile = require 'zelda.tile'
+local vec2f = require 'vec-ffi.vec2f'
+local vec3i = require 'vec-ffi.vec3i'
+local vec3f = require 'vec-ffi.vec3f'
+local vec4f = require 'vec-ffi.vec4f'
+local Image = require 'image'
 local gl = require 'gl'
 local GLTex2D = require 'gl.tex2d'
 local GLProgram = require 'gl.program'
 local GLArrayBuffer = require 'gl.arraybuffer'
 local GLGeometry = require 'gl.geometry'
 local GLSceneObject = require 'gl.sceneobject'
-local vec2f = require 'vec-ffi.vec2f'
-local vec3i = require 'vec-ffi.vec3i'
-local vec3f = require 'vec-ffi.vec3f'
-local vec4f = require 'vec-ffi.vec4f'
+local Map = require 'zelda.map'
+local Tile = require 'zelda.tile'
 local Obj = require 'zelda.obj.obj'
 local ThreadManager = require 'threadmanager'
 
@@ -51,41 +52,61 @@ function Game:init(args)
 	self.app = assert(args.app)
 	local app = self.app
 
-	self.time = 0
+	-- start at dawn on the first day
+	self.time = 60 * 6
+	
 	self.threads = ThreadManager()
 
 	self.quadVtxBuf = app.quadVertexBuf
 	self.quadGeom = app.quadGeom
 
-	self.skyColorBufCPU = ffi.new('vec4f_t[4]', {
-		vec4f(hexcolor(0xda9134)),
-		vec4f(hexcolor(0xda9134)),
-		vec4f(hexcolor(0x313453)),
-		vec4f(hexcolor(0x313453)),
-	})
-	self.skyColorBuf = GLArrayBuffer{
-		size = ffi.sizeof(self.skyColorBufCPU),
-		data = self.skyColorBufCPU,
-	}:unbind()
+	-- TODO would be nice per-hour-of-the-day ...
+	-- why am I not putting this in a texture?
+	-- because I also want a gradient for at-ground vs undergournd
+	-- but maybe I still should ..
+	local skyTexData = {
+		{{10, 10, 20}, {50, 50, 85}},
+		{{80, 80, 120}, {70, 80, 110}},
+		{{80, 120, 140}, {140, 170, 200}},
+		{{0, 100, 170}, {255, 100, 0}},
+		{{10, 10, 20}, {50, 50, 85}},
+	}
+
+	self.skyTex = GLTex2D{
+		image = Image(#skyTexData, #skyTexData[1], 4, 'unsigned char', function(u,v)
+			local t = skyTexData[u+1][v+1]
+			return t[1], t[2], t[3], 255
+		end),
+		minFilter = gl.GL_NEAREST,
+		magFilter = gl.GL_LINEAR,
+		wrap = {
+			s = gl.GL_CLAMP_TO_EDGE,
+			t = gl.GL_CLAMP_TO_EDGE,
+		},
+	}
 
 	self.skyShader = GLProgram{
 		vertexCode = app.glslHeader..[[
 in vec2 vertex;
-in vec4 color;
-out vec4 colorv;
+out vec2 vtxv;
 uniform mat4 mvProjMat;
 void main() {
-	colorv = color;
+	vtxv = vertex;
 	gl_Position = mvProjMat * vec4(vertex, 0., 1.);
 }
 ]],
 		fragmentCode = app.glslHeader..[[
-in vec4 colorv;
+in vec2 vtxv;
 out vec4 fragColor;
+uniform float timeOfDay;
+uniform sampler2D skyTex;
 void main() {
-	fragColor = colorv;
+	fragColor = texture(skyTex, vec2(timeOfDay, vtxv.y));
 }
 ]],
+		uniforms = {
+			skyTex = 0,
+		},
 	}:useNone()
 
 	self.skySceneObj = GLSceneObject{
@@ -93,8 +114,10 @@ void main() {
 		program = self.skyShader,
 		attrs = {
 			vertex = self.quadVtxBuf,
-			color = self.skyColorBuf,
-		}
+		},
+		texs = {
+			self.skyTex,
+		},
 	}
 
 	self.spriteShader = GLProgram{
@@ -400,10 +423,11 @@ function Game:timeToStr()
 	-- time scale?  1 second = 1 minute?
 	local tm = math.floor(self.time) 
 	local m = tm % 60
-	local th = (m - tm) / 60
+	local th = (tm - m) / 60
 	local h = th % 24
-	local td = (h - th) / 24
+	local td = (th - h) / 24
 	if h == 0 then h = 24 end
+	m = math.floor(m/10) * 10
 	return ('%d %02d:%02d'):format(td,h,m)
 end
 
@@ -432,13 +456,14 @@ function Game:draw()
 
 -- [[ sky
 	do
-		GLTex2D:unbind()
 		gl.glDisable(gl.GL_DEPTH_TEST)
-
 
 		view.mvProjMat:setOrtho(0,1,0,1,-1,1)
 
 		self.skySceneObj.uniforms.mvProjMat = view.mvProjMat.ptr
+		self.skySceneObj.uniforms.timeOfDay = (self.time / (60 * 24)) % 1
+		-- testing: 1 min = 1 day
+		--self.skySceneObj.uniforms.timeOfDay = (self.time / 60) % 1
 		self.skySceneObj:draw()
 
 		gl.glEnable(gl.GL_DEPTH_TEST)
