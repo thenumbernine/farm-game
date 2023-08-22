@@ -8,6 +8,7 @@ local ItemSeeds = Item:subclass()
 
 ItemSeeds.name = 'seeds'
 
+-- TODO instead make this all part of Plant
 ItemSeeds.subclasses = {}
 
 function ItemSeeds:makeSubclass(name)

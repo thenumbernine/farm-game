@@ -29,6 +29,7 @@ function PlayingMenu:updateGUI()
 	))
 	ig.igSetWindowFontScale(.5)
 	ig.igText('$'..player.money)
+	ig.igText(game:timeToStr())
 	ig.igSetWindowFontScale(1)
 
 	ig.igEnd()

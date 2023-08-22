@@ -1,3 +1,32 @@
+--[[
+ok plants ...
+
+trees
+	- start as saplings
+	- grow up - gives you 2 logs 
+	- once they're full - gives you 5 logs
+		- also you can periodically pick stuff from them
+			- ex: fruit?
+			- ex: flowers?
+			- ex: seeds?
+	- then loses leafs + branches - deadwood - gives you 4 logs?
+	- then naturally falls over ... and blits with world ... to create deadwood?
+	
+
+bushes
+	- no logs?
+	- can periodically pick
+		- berries
+		- seeds?  or seeds == berries ...
+
+- gather-plants 
+	- grab them and get them
+	- ex: ferns, roots, ...
+
+- scythe-to-harvest?
+	- ex: hay, straw, grains ...
+
+--]]
 local vec3f = require 'vec-ffi.vec3f'
 local Obj = require 'zelda.obj.obj'
 
@@ -10,8 +39,14 @@ Plant.useGravity = false	-- true?
 Plant.collidesWithTiles = false	-- this slows things down a lot.  so just turn off gravity and dont test with world.
 Plant.collidesWithObjects = false --?
 
+-- default
+--Obj.min = vec3f(-.49, -.49, 0)
+--Obj.max = vec3f(.49, .49, .98)
+
 function Plant:init(args, ...)
 	Plant.super.init(self, args, ...)
+	
+	-- TODO instead of 'numLogs', how about some kind of num-resources-dropped
 	self.numLogs = args.numLogs
 end
 
