@@ -202,12 +202,18 @@ end
 
 App.updateDelta = 1/30
 
+App.needsResortSprites = true
 function App:updateGame()
+	local game = self.game
+	
 	local thisTime = getTime()
 	local deltaTime = thisTime - self.lastTime
 	self.lastTime = thisTime
 
+	-- in degrees:
+	self.lastViewYaw = self.viewYaw
 	self.viewYaw = self.viewYaw + .1 * (self.targetViewYaw - self.viewYaw)
+	
 	self.view.angle = quatd():fromAngleAxis(0, 0, 1, self.viewYaw)
 					* quatd():fromAngleAxis(1,0,0,30)
 	self.view.pos = self.view.angle:zAxis() * (self.view.pos - self.view.orbit):length() + self.view.orbit
@@ -222,9 +228,7 @@ function App:updateGame()
 	gl.glEnable(gl.GL_BLEND)
 
 	-- TODO frameskip
-	if self.game then
-		self.game:draw()
-	end
+	if game then game:draw() end
 
 	gl.glDisable(gl.GL_BLEND)
 
@@ -233,10 +237,8 @@ function App:updateGame()
 		self.updateTime = self.updateTime - self.updateDelta
 
 		-- TODO fixed update
-		if self.game
-		and not self.paused
-		then
-			self.game:update(self.updateDelta)
+		if game and not self.paused then
+			game:update(self.updateDelta)
 		end
 	end
 end
