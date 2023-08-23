@@ -269,7 +269,7 @@ function Obj:update(dt)
 				do
 					if i >= 0 and i < map.size.x and j >= 0 and j < map.size.y and k >= 0 and k < map.size.z then
 						local tileIndex = i + map.size.x * (j + map.size.y * k)
-						local tiletype = map.map[tileIndex].type
+						local tiletype = map:get(i,j,k)
 						if 
 						self.collidesWithTiles
 						and tiletype > 0

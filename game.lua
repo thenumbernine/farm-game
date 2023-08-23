@@ -234,10 +234,11 @@ void main() {
 		magFilter = gl.GL_LINEAR,
 		minFilter = gl.GL_NEAREST,
 	}
-	
+
+	-- TODO chop into chunks for faster updates
 	self.map = Map{
 		game = self,
-		size = vec3i(96, 64, 32),
+		sizeInChunks = vec3i(3, 2, 1),
 	}
 
 	self.objs = table()

@@ -27,7 +27,219 @@ typedef struct {
 } maptype_t;
 ]]
 
+local Chunk = class()
+
+-- static member
+Chunk.bitsize = vec3i(5, 5, 5)
+Chunk.size = Chunk.bitsize:map(function(x) return bit.lshift(1, x) end)
+Chunk.bitmask = Chunk.size - 1
+Chunk.volume = Chunk.size:volume()
+
+function Chunk:init(args)
+	local map = assert(args.map)
+	self.map = map
+	self.pos = vec3i(assert(args.pos))
+	
+	self.v = ffi.new('maptype_t[?]', self.volume)
+	ffi.fill(self.v, 0, ffi.sizeof'maptype_t' * self.volume)	-- 0 = empty
+
+	-- geometry
+	self.vtxs = vector'vec3f_t'
+	self.texcoords = vector'vec2f_t'
+	self.colors = vector'vec4ub_t'
+
+	local volume = self.volume
+	-- [[ using reserve and heuristic of #cubes ~ #vtxs: brings time taken from 12 s to 0.12 s
+	self.vtxs:reserve(2*volume)
+	self.texcoords:reserve(2*volume)
+	self.colors:reserve(2*volume)
+	--]]
+
+	-- TODO Don't reallocate gl buffers each time.
+	-- OpenGL growing buffers via glCopyBufferSubData:
+	-- https://stackoverflow.com/a/27751186/2714073
+
+	self.vtxBuf = GLArrayBuffer{
+		size = ffi.sizeof(self.vtxs.type) * self.vtxs.capacity,
+		data = self.vtxs.v,
+		usage = gl.GL_DYNAMIC_DRAW,
+	}:unbind()
+
+	self.texcoordBuf = GLArrayBuffer{
+		size = ffi.sizeof(self.texcoords.type) * self.texcoords.capacity,
+		data = self.texcoords.v,
+		usage = gl.GL_DYNAMIC_DRAW,
+	}:unbind()
+
+	self.colorBuf = GLArrayBuffer{
+		size = ffi.sizeof(self.colors.type) * self.colors.capacity,
+		data = self.colors.v,
+		usage = gl.GL_DYNAMIC_DRAW,
+	}:unbind()
+
+	-- TODO put this in a GLSceneObject object instead
+	-- and give that its own set of attrs, uniforms, shader, geometry
+	self.sceneObj = GLSceneObject{
+		geometry = GLGeometry{
+			mode = gl.GL_TRIANGLES,
+			count = self.vtxs.size,
+		},
+		program = map.shader,
+		attrs = {
+			vertex = {
+				buffer = self.vtxBuf,
+				type = gl.GL_FLOAT,
+				size = 3,
+			},
+			texcoord = {
+				buffer = self.texcoordBuf,
+				type = gl.GL_FLOAT,
+				size = 2,
+			},
+			color = {
+				buffer = self.colorBuf,
+				type = gl.GL_UNSIGNED_BYTE,
+				size = 4,
+				normalize = true,
+			},
+		},
+		texs = {},
+	}
+end
+
+-- hack vector, instead of resizing by 32 bytes (slowly)
+-- how about increase by 20% then round up to nearest 32
+function vector:resize(newsize)
+	newsize = assert(tonumber(newsize))
+	local newcap = newsize + bit.rshift(newsize, 1)
+	newcap = bit.rshift(newcap, 5)
+	newcap = newcap + 1
+	newcap = bit.lshift(newcap, 5)
+	self:reserve(newcap)
+	self.size = newsize
+end
+
+-- TODO 
+-- 1) divide map into chunks 
+-- 2) grow-gl-buffers functionality 
+function Chunk:buildDrawArrays()
+	local map = self.map
+	self.vtxs:resize(0)
+	self.texcoords:resize(0)
+	self.colors:resize(0)
+	local texpackDx = 1/tonumber(map.texpackSize.x)
+	local texpackDy = 1/tonumber(map.texpackSize.y)
+	for dk=0,self.size.z-1 do
+		local k = dk + bit.lshift(self.pos.z, self.bitsize.z)
+		for dj=0,self.size.y-1 do
+			local j = dj + bit.lshift(self.pos.y, self.bitsize.y)
+--print('getting for', j,k,'local pos',dj,dk)				
+			for di=0,self.size.x-1 do
+				local i = di + bit.lshift(self.pos.x, self.bitsize.x)
+				local maptile = assert(map:getTile(i,j,k))
+				local tiletype = maptile.type
+				if tiletype > 0 then	-- skip empty
+					local tile = Tile.types[tiletype]
+					if tile then
+						local texIndex = tonumber(maptile.tex)
+						local texIndexX = texIndex % map.texpackSize.x
+						local texIndexY = (texIndex - texIndexX) / map.texpackSize.x
+
+						if tile.isUnitCube then
+							assert(tile.cubeFaces)
+							-- faceIndex is 1-based but lines up with sides bitflags
+							for faceIndex,faces in ipairs(tile.cubeFaces) do
+								local ofsx, ofsy, ofsz = sides.dirs[faceIndex]:unpack()
+								local nx = i + ofsx
+								local ny = j + ofsy
+								local nz = k + ofsz
+								local nbhdtileIsUnitCube
+								local nbhdtiletype = map:get(nx, ny, nz)
+								if nbhdtiletype > 0 then
+									local nbhdtile = Tile.types[nbhdtiletype]
+									if nbhdtile then
+										nbhdtileIsUnitCube = nbhdtile.isUnitCube
+									end
+								end
+								if not nbhdtileIsUnitCube then
+									for ti=1,6 do
+										local vi = Tile.unitQuadTriIndexes[ti]
+										local vtx = faces[vi]
+										local v = tile.cubeVtxs[vtx+1]
+
+										local c = self.colors:emplace_back()
+										local l = 255 * v[3]
+										c:set(l, l, l, 255)
+
+										local tc = self.texcoords:emplace_back()
+										tc:set(
+											(texIndexX + tile.unitquad[vi][1]) * texpackDx,
+											(texIndexY + tile.unitquad[vi][2]) * texpackDy
+										)
+
+										local vtx = self.vtxs:emplace_back()
+										vtx:set(i + v[1], j + v[2], k + v[3])
+									end
+								end
+							end
+						else
+							print'TODO'
+						end
+					end
+				end
+			end
+		end
+	end
+
+	-- 184816 vertexes total ...
+	-- ... from 196608 cubes
+--[[	
+	local volume = self.volume
+	print('volume', volume)
+	print('vtxs', self.vtxs.size)
+--]]
+
+	local vtxSize = self.vtxs.size * ffi.sizeof(self.vtxs.type)
+	local texcoordSize = self.texcoords.size * ffi.sizeof(self.texcoords.type)
+	local colorSize = self.colors.size * ffi.sizeof(self.colors.type)	
+	
+	if vtxSize > self.vtxBuf.size then
+		print'TODO needs vtxBuf resize'
+		-- create a new buffer
+		-- copy old onto new
+		-- update new buffer in GLAttribute object
+		-- then rebind buffer in GLSceneObject's .vao
+		return
+	end
+	if texcoordSize > self.texcoordBuf.size then
+		print'TODO needs texcoordBuf resize'
+		return
+	end
+	if colorSize > self.colorBuf.size then
+		print'TODO needs colorBuf resize'
+		return
+	end
+
+	self.vtxBuf:bind():updateData(0, vtxSize)
+	self.texcoordBuf:bind():updateData(0, texcoordSize)
+	self.colorBuf:bind():updateData(0, colorSize)
+		:unbind()
+
+	self.sceneObj.geometry.count = self.vtxs.size
+end
+
+function Chunk:draw(app, game)
+	self.sceneObj.uniforms.playerViewPos = game.playerViewPos.s
+	self.sceneObj.uniforms.mvMat = app.view.mvMat.ptr
+	self.sceneObj.uniforms.projMat = app.view.projMat.ptr
+	self.sceneObj.uniforms.useSeeThru = 1
+	self.sceneObj.texs[1] = game.texpack
+	self.sceneObj:draw()
+end
+
 local Map = class()
+
+Map.chunkSize = 32
 
 -- voxel-based
 function Map:init(args)	-- vec3i
@@ -41,99 +253,16 @@ function Map:init(args)	-- vec3i
 		wood = 2,
 	}
 
-	self.size = vec3i(args.size:unpack())
+	self.sizeInChunks = vec3i(assert(args.sizeInChunks))
+	self.chunkVolume = self.sizeInChunks:volume()
+	self.size = self.sizeInChunks:map(function(x,i) return x * Chunk.size.s[i] end)
+	self.volume = self.size:volume()
 
-	local houseSize = vec3f(3, 3, 2)
-	local houseCenter = vec3f(
-		math.floor(self.size.x/2),
-		math.floor(self.size.y*3/4),
-		math.floor(self.size.z/2) + houseSize.z)
+	-- 0-based index, based on chunk position
+	self.chunks = {}
 
-	-- copied in game's init
-	local npcPos = vec3f(
-		self.size.x*.95,
-		self.size.y*.5,
-		self.size.z-.5)
 
-	self.map = ffi.new('maptype_t[?]', self.size:volume())
-	ffi.fill(self.map, 0, ffi.sizeof'maptype_t' * self.size:volume())	-- 0 = empty
-	local blockSize = 8
-	local half = bit.rshift(self.size.z, 1)
-	local step = vec3i(1, self.size.x, self.size.x * self.size.y)
-	local ijk = vec3i()
-	local xyz = vec3f()
-	for k=0,self.size.z-1 do
-		ijk.z = k
-		xyz.z = k / blockSize
-		for j=0,self.size.y-1 do
-			ijk.y = j
-			xyz.y = j / blockSize
-			for i=0,self.size.x-1 do
-				ijk.x = i
-				xyz.x = i / blockSize
-				local c = simplexnoise(xyz:unpack())
-				local maptype = Tile.typeValues.Empty
-				local maptex = k >= half-1
-					and maptexs.grass
-					or maptexs.stone
-				if k >= half then
-					c = c + (k - half) * .5
-				end
-
-				-- [[ make the top flat?
-				if k >= half
-				and (
-					(vec2f(i,j) - vec2f(houseCenter.x, houseCenter.y)):length() < 15
-					or (vec2f(i,j) - vec2f(npcPos.x, npcPos.y)):length() < 5
-				) then
-					c = k == half and 0 or 1
-				end
-				--]]
-
-				if c < .5 then
-					maptype =
-						maptex == maptexs.stone
-						and Tile.typeValues.Stone
-						or Tile.typeValues.Grass
-				end
-				local index = ijk:dot(step)
-				self.map[index].type = maptype
-				self.map[index].tex = maptex
-			end
-		end
-	end
-
-	do
-		for x=houseCenter.x-houseSize.x,houseCenter.x+houseSize.x do
-			for y=houseCenter.y-houseSize.y, houseCenter.y+houseSize.y do
-				for z=houseCenter.z-houseSize.z, houseCenter.z+houseSize.z do
-					local adx = math.abs(x - houseCenter.x)
-					local ady = math.abs(y - houseCenter.y)
-					local adz = math.abs(z - houseCenter.z)
-					local linf = math.max(adx/houseSize.x, ady/houseSize.y, adz/houseSize.z)
-					if linf == 1 then
-						local index = x + self.size.x * (y + self.size.y * z)
-						local tile = self.map + index
-						tile.type = Tile.typeValues.Wood
-						tile.tex = maptexs.wood
-					end
-				end
-			end
-			local t = assert(self:getTile(houseCenter.x, houseCenter.y - houseSize.y, houseCenter.z - houseSize.z + 1))
-			t.type = 0
-			t.tex = 0
-			local t = assert(self:getTile(houseCenter.x, houseCenter.y - houseSize.y, houseCenter.z - houseSize.z + 2))
-			t.type = 0
-			t.tex = 0
-		end
-	end
-
-	-- key = index in map.objsPerTileIndex = offset of the tile in the map
-	-- value = list of all objects on that tile
-	self.objsPerTileIndex = {}
-
-	self.texpackSize = vec2i(2, 2)
-
+	-- setup shader before creating chunks
 	self.shader = GLProgram{
 		vertexCode = app.glslHeader..[[
 in vec3 vertex;
@@ -200,210 +329,133 @@ void main() {
 	}:useNone()
 
 
-	-- geometry
-	self.vtxs = vector'vec3f_t'
-	self.texcoords = vector'vec2f_t'
-	self.colors = vector'vec4ub_t'
 
-	local volume = self.size:volume()
-	-- [[ using reserve and heuristic of #cubes ~ #vtxs: brings time taken from 12 s to 0.12 s
-	self.vtxs:reserve(2*volume)
-	self.texcoords:reserve(2*volume)
-	self.colors:reserve(2*volume)
-	--]]
-
-	-- TODO Don't reallocate gl buffers each time.
-	-- OpenGL growing buffers via glCopyBufferSubData:
-	-- https://stackoverflow.com/a/27751186/2714073
-
-	self.vtxBuf = GLArrayBuffer{
-		size = ffi.sizeof(self.vtxs.type) * self.vtxs.capacity,
-		data = self.vtxs.v,
-		usage = gl.GL_DYNAMIC_DRAW,
-	}:unbind()
-
-	self.texcoordBuf = GLArrayBuffer{
-		size = ffi.sizeof(self.texcoords.type) * self.texcoords.capacity,
-		data = self.texcoords.v,
-		usage = gl.GL_DYNAMIC_DRAW,
-	}:unbind()
-
-	self.colorBuf = GLArrayBuffer{
-		size = ffi.sizeof(self.colors.type) * self.colors.capacity,
-		data = self.colors.v,
-		usage = gl.GL_DYNAMIC_DRAW,
-	}:unbind()
-
-	-- TODO put this in a GLSceneObject object instead
-	-- and give that its own set of attrs, uniforms, shader, geometry
-	self.sceneObj = GLSceneObject{
-		geometry = GLGeometry{
-			mode = gl.GL_TRIANGLES,
-			count = self.vtxs.size,
-		},
-		program = self.shader,
-		attrs = {
-			vertex = {
-				buffer = self.vtxBuf,
-				type = gl.GL_FLOAT,
-				size = 3,
-			},
-			texcoord = {
-				buffer = self.texcoordBuf,
-				type = gl.GL_FLOAT,
-				size = 2,
-			},
-			color = {
-				buffer = self.colorBuf,
-				type = gl.GL_UNSIGNED_BYTE,
-				size = 4,
-				normalize = true,
-			},
-		},
-		texs = {},
-	}
-
-
-	self:buildDrawArrays()
-end
-
--- TODO 
--- 1) divide map into chunks 
--- 2) grow-gl-buffers functionality 
-function Map:buildDrawArrays()
-	self.vtxs:resize(0)
-	self.texcoords:resize(0)
-	self.colors:resize(0)
-	local texpackDx = 1/tonumber(self.texpackSize.x)
-	local texpackDy = 1/tonumber(self.texpackSize.y)
-	local index = 0
-	for k=0,self.size.z-1 do
-		for j=0,self.size.y-1 do
-			for i=0,self.size.x-1 do
-				local maptile = self.map[index]
-				local tiletype = maptile.type
-				if tiletype > 0 then	-- skip empty
-					local tile = Tile.types[tiletype]
-					if tile then
-						local texIndex = tonumber(maptile.tex)
-						local texIndexX = texIndex % self.texpackSize.x
-						local texIndexY = (texIndex - texIndexX) / self.texpackSize.x
-
-						if tile.isUnitCube then
-							assert(tile.cubeFaces)
-							-- faceIndex is 1-based but lines up with sides bitflags
-							for faceIndex,faces in ipairs(tile.cubeFaces) do
-								local ofsx, ofsy, ofsz = sides.dirs[faceIndex]:unpack()
-								local nx = i + ofsx
-								local ny = j + ofsy
-								local nz = k + ofsz
-								local nbhdtileIsUnitCube
-								if nx >= 0 and nx < self.size.x
-								and ny >= 0 and ny < self.size.y
-								and nz >= 0 and nz < self.size.z
-								then
-									local nbhdtiletype = self.map[nx + self.size.x * (ny + self.size.y * nz)].type
-									if nbhdtiletype > 0 then
-										local nbhdtile = Tile.types[nbhdtiletype]
-										if nbhdtile then
-											nbhdtileIsUnitCube = nbhdtile.isUnitCube
-										end
-									end
-								end
-								if not nbhdtileIsUnitCube then
-									for ti=1,6 do
-										local vi = Tile.unitQuadTriIndexes[ti]
-										local vtx = faces[vi]
-										local v = tile.cubeVtxs[vtx+1]
-
-										local c = self.colors:emplace_back()
-										local l = 255 * v[3]
-										c:set(l, l, l, 255)
-
-										local tc = self.texcoords:emplace_back()
-										tc:set(
-											(texIndexX + tile.unitquad[vi][1]) * texpackDx,
-											(texIndexY + tile.unitquad[vi][2]) * texpackDy
-										)
-
-										local vtx = self.vtxs:emplace_back()
-										vtx:set(i + v[1], j + v[2], k + v[3])
-									end
-								end
-							end
-						else
-							print'TODO'
-						end
-					end
+	do
+		local chunkIndex = 0
+		for k=0,self.sizeInChunks.z-1 do
+			for j=0,self.sizeInChunks.y-1 do
+				for i=0,self.sizeInChunks.x-1 do
+					self.chunks[chunkIndex] = Chunk{map=self, pos=vec3i(i,j,k)}
+					chunkIndex = chunkIndex + 1
 				end
-				index = index + 1
 			end
 		end
 	end
 
-	-- 184816 vertexes total ...
-	-- ... from 196608 cubes
---[[	
-	local volume = self.size:volume()
-	print('volume', volume)
-	print('vtxs', self.vtxs.size)
---]]
+--print'generating map'
 
-	local vtxSize = self.vtxs.size * ffi.sizeof(self.vtxs.type)
-	local texcoordSize = self.texcoords.size * ffi.sizeof(self.texcoords.type)
-	local colorSize = self.colors.size * ffi.sizeof(self.colors.type)	
-	
-	if vtxSize > self.vtxBuf.size then
-		print'TODO needs vtxBuf resize'
-		-- create a new buffer
-		-- copy old onto new
-		-- update new buffer in GLAttribute object
-		-- then rebind buffer in GLSceneObject's .vao
-		return
-	end
-	if texcoordSize > self.texcoordBuf.size then
-		print'TODO needs texcoordBuf resize'
-		return
-	end
-	if colorSize > self.colorBuf.size then
-		print'TODO needs colorBuf resize'
-		return
+	local houseSize = vec3f(3, 3, 2)
+	local houseCenter = vec3f(
+		math.floor(self.size.x/2),
+		math.floor(self.size.y*3/4),
+		math.floor(self.size.z/2) + houseSize.z)
+
+	-- copied in game's init
+	local npcPos = vec3f(
+		self.size.x*.95,
+		self.size.y*.5,
+		self.size.z-.5)
+
+	-- simplex noise resolution
+	local blockSize = 8
+	local half = bit.rshift(self.size.z, 1)
+	--local step = vec3i(1, self.size.x, self.size.x * self.size.y)
+	--local ijk = vec3i()
+	local xyz = vec3f()
+	for k=0,self.size.z-1 do
+		--ijk.z = k
+		xyz.z = k / blockSize
+		for j=0,self.size.y-1 do
+			--ijk.y = j
+			xyz.y = j / blockSize
+			for i=0,self.size.x-1 do
+				--ijk.x = i
+				xyz.x = i / blockSize
+				local c = simplexnoise(xyz:unpack())
+				local maptype = Tile.typeValues.Empty
+				local maptex = k >= half-1
+					and maptexs.grass
+					or maptexs.stone
+				if k >= half then
+					c = c + (k - half) * .5
+				end
+
+				-- [[ make the top flat?
+				if k >= half
+				and (
+					(vec2f(i,j) - vec2f(houseCenter.x, houseCenter.y)):length() < 15
+					or (vec2f(i,j) - vec2f(npcPos.x, npcPos.y)):length() < 5
+				) then
+					c = k == half and 0 or 1
+				end
+				--]]
+
+				if c < .5 then
+					maptype =
+						maptex == maptexs.stone
+						and Tile.typeValues.Stone
+						or Tile.typeValues.Grass
+				end
+				--local index = ijk:dot(step)
+				local tile = assert(self:getTile(i,j,k))
+				tile.type = maptype
+				tile.tex = maptex
+			end
+		end
 	end
 
-	self.vtxBuf:bind():updateData(0, vtxSize)
-	self.texcoordBuf:bind():updateData(0, texcoordSize)
-	self.colorBuf:bind():updateData(0, colorSize)
-		:unbind()
+	do
+		for x=houseCenter.x-houseSize.x,houseCenter.x+houseSize.x do
+			for y=houseCenter.y-houseSize.y, houseCenter.y+houseSize.y do
+				for z=houseCenter.z-houseSize.z, houseCenter.z+houseSize.z do
+					local adx = math.abs(x - houseCenter.x)
+					local ady = math.abs(y - houseCenter.y)
+					local adz = math.abs(z - houseCenter.z)
+					local linf = math.max(adx/houseSize.x, ady/houseSize.y, adz/houseSize.z)
+					if linf == 1 then
+						local tile = assert(self:getTile(x,y,z))
+						tile.type = Tile.typeValues.Wood
+						tile.tex = maptexs.wood
+					end
+				end
+			end
+			local t = assert(self:getTile(houseCenter.x, houseCenter.y - houseSize.y, houseCenter.z - houseSize.z + 1))
+			t.type = 0
+			t.tex = 0
+			local t = assert(self:getTile(houseCenter.x, houseCenter.y - houseSize.y, houseCenter.z - houseSize.z + 2))
+			t.type = 0
+			t.tex = 0
+		end
+	end
 
-	self.sceneObj.geometry.count = self.vtxs.size
+	-- key = index in map.objsPerTileIndex = offset of the tile in the map
+	-- value = list of all objects on that tile
+	self.objsPerTileIndex = {}
+
+	self.texpackSize = vec2i(2, 2)
+
+--print"building draw arrays"
+	self:buildDrawArrays()
+
+--print'init done'
+end
+
+function Map:buildDrawArrays()
+	for chunkIndex=0,self.chunkVolume-1 do
+--print('building chunk', chunkIndex)	
+		self.chunks[chunkIndex]:buildDrawArrays()
+	end
 end
 
 function Map:draw()
 	local game = self.game
 	local app = game.app
 
-	local shader = self.sceneObj.program
-	self.sceneObj.uniforms.playerViewPos = game.playerViewPos.s
-
-	self.sceneObj.uniforms.mvMat = app.view.mvMat.ptr
-	self.sceneObj.uniforms.projMat = app.view.projMat.ptr
-	self.sceneObj.uniforms.useSeeThru = 1
-	self.sceneObj.texs[1] = game.texpack
-	self.sceneObj:draw()
+	for chunkIndex=0,self.chunkVolume-1 do
+		self.chunks[chunkIndex]:draw(app, game)
+	end
 
 	glreport'here'
-end
-
--- i,j,k integers
--- TODO call this 'getType' ?
-function Map:get(i,j,k)
-	if i < 0 or i >= self.size.x
-	or j < 0 or j >= self.size.y
-	or k < 0 or k >= self.size.z
-	then
-		return Tile.typeValues.Empty
-	end
-	return self.map[i + self.size.x * (j + self.size.y * k)].type
 end
 
 -- return the ptr to the map tile
@@ -414,8 +466,25 @@ function Map:getTile(i,j,k)
 	then
 		return
 	end
-	return self.map + (i + self.size.x * (j + self.size.y * k))
+	local cx = bit.rshift(i, Chunk.bitsize.x)
+	local cy = bit.rshift(j, Chunk.bitsize.y)
+	local cz = bit.rshift(k, Chunk.bitsize.z)
+	local dx = bit.band(i, Chunk.bitmask.x)
+	local dy = bit.band(j, Chunk.bitmask.y)
+	local dz = bit.band(k, Chunk.bitmask.z)
+	local chunkIndex = cx + self.sizeInChunks.x * (cy + self.sizeInChunks.y * cz)
+	local chunk = self.chunks[chunkIndex]
+	return chunk.v + (dx + Chunk.size.x * (dy + Chunk.size.y * dz))
 end
+
+-- i,j,k integers
+-- TODO call this 'getType' ?
+function Map:get(i,j,k)
+	local tile = self:getTile(i,j,k)
+	if not tile then return Tile.typeValues.Empty end
+	return tile.type
+end
+
 
 function Map:getTileObjs(x,y,z)
 	local game = self.game	-- TODO map should get .game
