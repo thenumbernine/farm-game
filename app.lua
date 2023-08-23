@@ -227,6 +227,21 @@ function App:updateGame()
 	gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 	gl.glEnable(gl.GL_BLEND)
 
+--[[
+	if math.abs(self.lastViewYaw - self.viewYaw) > 1 then
+		self.needsResortSprites = true
+	end
+	if game and self.needsResortSprites then
+		self.needsResortSprites = false
+print('updating sprite z order')
+		local v = self.view.angle:zAxis()
+print('dir', v)	
+		game.objs:sort(function(a,b)
+			return a.pos:dot(v) < b.pos:dot(v)
+		end)
+	end
+--]]
+
 	-- TODO frameskip
 	if game then game:draw() end
 

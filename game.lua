@@ -180,8 +180,8 @@ void main() {
 	if (useSeeThru) {
 		vec3 testViewPos = playerViewPos + vec3(0., 1., -2.);
 		if (normalize(viewPosv - testViewPos).z > cosClipAngle) {
-			fragColor.w = .2;
-			//discard;
+			//fragColor.w = .2;
+			discard;
 		}
 	}
 }
