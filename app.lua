@@ -68,15 +68,28 @@ assert(MainMenu.menuOptions[1].name == 'New Game')
 MainMenu.menuOptions[1].click = function(self)
 	local app = self.app
 	app.cfg.numPlayers = 1
-	app.menu = PlayingMenu(app)
+	app.menu = app.playingMenu
 	
 	app.game = Game{app=app}
+	app.paused = false
 
 	-- temp hack for filling out default keys
 	PlayerKeysEditor(app)
 end
 assert(MainMenu.menuOptions:remove(4).name == 'High Scores')
 assert(MainMenu.menuOptions:remove(2).name == 'New Game Co-op')
+
+MainMenu.menuOptions:insert(1, {
+	name = 'Resume Game',
+	click = function(self)
+		local app = self.app
+		app.menu = app.playingMenu
+		app.paused = false
+	end,
+	visible = function(self)
+		return self.app.game ~= nil
+	end,
+})
 
 App.url = 'https://github.com/thenumbernine/zelda3d-lua'
 
@@ -125,6 +138,8 @@ function App:initGL()
 	-- instead of proj * mv , imma separate into: proj view model
 	-- that means view.mvMat is really the view matrix
 	App.super.initGL(self)
+
+	self.playingMenu = PlayingMenu(self)
 
 	self.view.fovY = 90
 
@@ -215,7 +230,9 @@ function App:updateGame()
 		self.updateTime = self.updateTime - self.updateDelta
 
 		-- TODO fixed update
-		if self.game then
+		if self.game
+		and not self.paused
+		then
 			self.game:update(self.updateDelta)
 		end
 	end

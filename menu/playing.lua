@@ -1,4 +1,8 @@
+--[[
+TODO move this back to gameapp.menu
+--]]
 local ig = require 'imgui'
+local sdl = require 'ffi.req' 'sdl'
 local Menu = require 'gameapp.menu.menu'
 
 local PlayingMenu = Menu:subclass()
@@ -34,25 +38,6 @@ function PlayingMenu:updateGUI()
 	ig.igSetWindowFontScale(1)
 
 	ig.igEnd()
-	--]]
-
-	--[[ if esc / pause-key was pushed ...
-	if app.paused then
-		local size = ig.igGetMainViewport().WorkSize
-		ig.igSetNextWindowPos(ig.ImVec2(size.x/2, size.y/2), ig.ImGuiCond_Appearing, ig.ImVec2(.5, .5));
-		ig.igBegin'Paused'
-		if ig.igButton(app.paused and 'Resume' or 'Pause') then
-			app.paused = not app.paused
-		end
-		if ig.igButton'Config' then
-			app.pushMenuState = app.menustate
-			app.menustate = Menu.Config(app)
-		end
-		if ig.igButton'End Game' then
-			app:endGame()
-		end
-		ig.igEnd()
-	end
 	--]]
 
 	if playerObj.gamePrompt then
@@ -118,6 +103,17 @@ function PlayingMenu:updateGUI()
 			x = x + bw
 		end
 		ig.igPopStyleVar(1)
+	end
+end
+
+function PlayingMenu:event(e)
+	local app = self.app
+	if e.type == sdl.SDL_KEYDOWN
+	and e.key.keysym.sym == sdl.SDLK_ESCAPE
+	and app.game
+	then
+		app.paused = true
+		app.menu = app.mainMenu
 	end
 end
 
