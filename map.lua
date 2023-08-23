@@ -49,10 +49,11 @@ function Chunk:init(args)
 	self.colors = vector'vec4ub_t'
 
 	local volume = self.volume
+
 	-- [[ using reserve and heuristic of #cubes ~ #vtxs: brings time taken from 12 s to 0.12 s
-	self.vtxs:reserve(2*volume)
-	self.texcoords:reserve(2*volume)
-	self.colors:reserve(2*volume)
+	self.vtxs:reserve(3*volume)
+	self.texcoords:reserve(3*volume)
+	self.colors:reserve(3*volume)
 	--]]
 
 	-- TODO Don't reallocate gl buffers each time.
@@ -105,18 +106,15 @@ function Chunk:init(args)
 		},
 		texs = {},
 	}
-end
 
--- hack vector, instead of resizing by 32 bytes (slowly)
--- how about increase by 20% then round up to nearest 32
-function vector:resize(newsize)
-	newsize = assert(tonumber(newsize))
-	local newcap = newsize + bit.rshift(newsize, 1)
-	newcap = bit.rshift(newcap, 5)
-	newcap = newcap + 1
-	newcap = bit.lshift(newcap, 5)
-	self:reserve(newcap)
-	self.size = newsize
+	local function newreserve(self, newcap)
+		if newcap <= self.capacity then return end
+		print('asked for resize to', newcap, 'when our cap was', self.capacity)
+		error'here'
+	end
+	self.vtxs.reserve = newreserve
+	self.texcoords.reserve = newreserve
+	self.colors.reserve = newreserve
 end
 
 -- TODO 
@@ -129,14 +127,14 @@ function Chunk:buildDrawArrays()
 	self.colors:resize(0)
 	local texpackDx = 1/tonumber(map.texpackSize.x)
 	local texpackDy = 1/tonumber(map.texpackSize.y)
+	local index = 0
 	for dk=0,self.size.z-1 do
-		local k = dk + bit.lshift(self.pos.z, self.bitsize.z)
+		local k = bit.bor(dk, bit.lshift(self.pos.z, self.bitsize.z))
 		for dj=0,self.size.y-1 do
-			local j = dj + bit.lshift(self.pos.y, self.bitsize.y)
---print('getting for', j,k,'local pos',dj,dk)				
+			local j = bit.bor(dj, bit.lshift(self.pos.y, self.bitsize.y))
 			for di=0,self.size.x-1 do
-				local i = di + bit.lshift(self.pos.x, self.bitsize.x)
-				local maptile = assert(map:getTile(i,j,k))
+				local i = bit.bor(di, bit.lshift(self.pos.x, self.bitsize.x))
+				local maptile = self.v[index]
 				local tiletype = maptile.type
 				if tiletype > 0 then	-- skip empty
 					local tile = Tile.types[tiletype]
@@ -154,6 +152,8 @@ function Chunk:buildDrawArrays()
 								local ny = j + ofsy
 								local nz = k + ofsz
 								local nbhdtileIsUnitCube
+								-- TODO test if it's along the sides, if not just use offset + step
+								-- if so then use map:get
 								local nbhdtiletype = map:get(nx, ny, nz)
 								if nbhdtiletype > 0 then
 									local nbhdtile = Tile.types[nbhdtiletype]
@@ -187,13 +187,14 @@ function Chunk:buildDrawArrays()
 						end
 					end
 				end
+				index = index + 1
 			end
 		end
 	end
 
 	-- 184816 vertexes total ...
 	-- ... from 196608 cubes
---[[	
+-- [[	
 	local volume = self.volume
 	print('volume', volume)
 	print('vtxs', self.vtxs.size)
@@ -202,7 +203,7 @@ function Chunk:buildDrawArrays()
 	local vtxSize = self.vtxs.size * ffi.sizeof(self.vtxs.type)
 	local texcoordSize = self.texcoords.size * ffi.sizeof(self.texcoords.type)
 	local colorSize = self.colors.size * ffi.sizeof(self.colors.type)	
-	
+
 	if vtxSize > self.vtxBuf.size then
 		print'TODO needs vtxBuf resize'
 		-- create a new buffer
@@ -237,9 +238,8 @@ function Chunk:draw(app, game)
 	self.sceneObj:draw()
 end
 
-local Map = class()
 
-Map.chunkSize = 32
+local Map = class()
 
 -- voxel-based
 function Map:init(args)	-- vec3i
@@ -335,7 +335,10 @@ void main() {
 		for k=0,self.sizeInChunks.z-1 do
 			for j=0,self.sizeInChunks.y-1 do
 				for i=0,self.sizeInChunks.x-1 do
-					self.chunks[chunkIndex] = Chunk{map=self, pos=vec3i(i,j,k)}
+					self.chunks[chunkIndex] = Chunk{
+						map = self,
+						pos = vec3i(i,j,k),
+					}
 					chunkIndex = chunkIndex + 1
 				end
 			end
@@ -474,7 +477,8 @@ function Map:getTile(i,j,k)
 	local dz = bit.band(k, Chunk.bitmask.z)
 	local chunkIndex = cx + self.sizeInChunks.x * (cy + self.sizeInChunks.y * cz)
 	local chunk = self.chunks[chunkIndex]
-	return chunk.v + (dx + Chunk.size.x * (dy + Chunk.size.y * dz))
+	local index = bit.bor(dx, bit.lshift(bit.bor(dy, bit.lshift(dz, Chunk.bitsize.y)), Chunk.bitsize.x))
+	return chunk.v + index
 end
 
 -- i,j,k integers

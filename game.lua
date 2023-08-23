@@ -359,7 +359,7 @@ void main() {
 		pos = houseCenter + vec3f(houseSize.x-1, -(houseSize.y-1), -(houseSize.z-1)) + .5,
 	}
 
-	-- plants
+	-- [[ plants
 	for j=0,self.map.size.y-1 do
 		for i=0,self.map.size.x-1 do
 			local k = self.map.size.z-1
@@ -402,7 +402,8 @@ void main() {
 			end
 		end
 	end
-
+	--]]
+	
 -- [[
 	for k=1,5 do
 		local i = math.random(tonumber(self.map.size.x))-1
@@ -431,7 +432,7 @@ function Game:timeToStr()
 end
 
 function Game:newObj(args)
-print('new', args.class.name, 'at', args.pos)
+--print('new', args.class.name, 'at', args.pos)
 	local cl = assert(args.class)
 	args.game = self
 	local obj = cl(args)

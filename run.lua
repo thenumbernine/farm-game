@@ -23,4 +23,17 @@ end
 require 'gl.setup'(glfn)
 --]]
 
+
+-- hack vector, instead of resizing by 32 bytes (slowly)
+-- how about increase by 20% then round up to nearest 32
+local vector = require 'ffi.cpp.vector'
+function vector:resize(newsize)
+	newsize = assert(tonumber(newsize))
+	local newcap = newsize + bit.rshift(newsize, 1)
+	newcap = bit.lshift(bit.rshift(newcap, 5) + 1, 5)
+	self:reserve(newcap)
+	self.size = newsize
+end
+
+
 return require 'zelda.app'():run()

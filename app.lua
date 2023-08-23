@@ -19,6 +19,9 @@ App.title = 'Zelda 4D'
 
 App.viewDist = 7
 
+App.showFPS = true
+
+
 -- override Menus
 local Menu = require 'gameapp.menu.menu'
 Menu.Splash = require 'zelda.menu.splash'
