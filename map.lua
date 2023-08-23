@@ -182,10 +182,11 @@ void main() {
 	if (useSeeThru) {
 		vec3 dx = dFdx(viewPosv);
 		vec3 dy = dFdy(viewPosv);
-		vec3 testViewPos = playerViewPos + vec3(0., 1., 0.);
+		vec3 testViewPos = playerViewPos + vec3(0., 0., 0.);
 		if (normalize(viewPosv - testViewPos).z > cosClipAngle) {
 			vec3 n = normalize(cross(dx, dy));
-			if (dot(n, testViewPos - viewPosv) < -.01) {
+			//if (dot(n, testViewPos - viewPosv) < -.01) 
+			{
 				fragColor.w = .1;
 				discard;
 			}

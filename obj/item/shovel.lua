@@ -24,6 +24,9 @@ function ItemShovel:useInInventory(player)
 		and tile.type == Tile.typeValues.Grass
 		then
 			tile.type = Tile.typeValues.Empty
+			-- TODO here remove all the hoe and water and seeds and stuff somehow ...
+			-- in fact, seeds => pick-up-able seeds?
+
 			map:buildDrawArrays()
 			player:addItem(require 'zelda.obj.dirt')
 			return

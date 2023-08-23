@@ -60,10 +60,17 @@ PlayerKeysEditor.defaultKeys = {
 
 -- just hack the main menu class instead of subclassing it.
 local MainMenu = require 'gameapp.menu.main'
+function MainMenu:update()
+-- why does this hide the gui?
+--	self.app.splashMenu:update()
+end
+assert(MainMenu.menuOptions[1].name == 'New Game')
 MainMenu.menuOptions[1].click = function(self)
 	local app = self.app
 	app.cfg.numPlayers = 1
 	app.menu = PlayingMenu(app)
+	
+	app.game = Game{app=app}
 
 	-- temp hack for filling out default keys
 	PlayerKeysEditor(app)
@@ -166,7 +173,7 @@ precision highp float;
 		return Player{index=i, app=self}
 	end)
 
-	self.game = Game{app=self}
+	--self.game = Game{app=self}
 
 	self.lastTime = getTime()
 	self.updateTime = 0
@@ -197,7 +204,9 @@ function App:updateGame()
 	gl.glEnable(gl.GL_BLEND)
 
 	-- TODO frameskip
-	self.game:draw()
+	if self.game then
+		self.game:draw()
+	end
 
 	gl.glDisable(gl.GL_BLEND)
 
@@ -206,7 +215,9 @@ function App:updateGame()
 		self.updateTime = self.updateTime - self.updateDelta
 
 		-- TODO fixed update
-		self.game:update(self.updateDelta)
+		if self.game then
+			self.game:update(self.updateDelta)
+		end
 	end
 end
 
@@ -228,7 +239,9 @@ function App:event(event, ...)
 	end
 --]]
 
-	self.game:event(event)
+	if self.game then
+		self.game:event(event)
+	end
 end
 
 return App
