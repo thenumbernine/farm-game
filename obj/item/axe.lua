@@ -24,25 +24,27 @@ function ItemAxe:useInInventory(player)
 		0
 	)):map(math.floor):unpack()
 
-	local tile = map:getTile(x,y,z)
-	if tile 
-	and tile.type == Tile.typeValues.Wood
-	then
-		tile.type = Tile.typeValues.Empty
-		map:buildDrawArrays()
-		player:addItem(require 'zelda.obj.log')
-		return
-	end
+	for dz=0,-1,-1 do
+		local tile = map:getTile(x,y,z+dz)
+		if tile 
+		and tile.type == Tile.typeValues.Wood
+		then
+			tile.type = Tile.typeValues.Empty
+			map:buildDrawArrays()
+			player:addItem(require 'zelda.obj.log')
+			return
+		end
 
-	local objs = map:getTileObjs(x,y,z)
-	if objs then
-		for _,obj in ipairs(objs) do
-			if not obj.removeFlag
-			and obj ~= player
-			and obj.takesDamage
-			and not obj.dead
-			then
-				obj:damage(1, player, self)
+		local objs = map:getTileObjs(x,y,z)
+		if objs then
+			for _,obj in ipairs(objs) do
+				if not obj.removeFlag
+				and obj ~= player
+				and obj.takesDamage
+				and not obj.dead
+				then
+					obj:damage(1, player, self)
+				end
 			end
 		end
 	end

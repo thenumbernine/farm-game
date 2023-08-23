@@ -11,7 +11,13 @@ ItemShovel.name = 'shovel'
 function ItemShovel:useInInventory(player)
 	local game = player.game
 	local map = game.map
-	
+
+	-- TODO dif animation than sword
+	if player.attackEndTime >= game.time then return end
+	player.swingPos = vec3f(player.pos.x, player.pos.y, player.pos.z + .7)
+	player.attackTime = game.time
+	player.attackEndTime = game.time + player.attackDuration
+
 	local x,y,z = (player.pos + vec3f(
 		math.cos(player.angle),
 		math.sin(player.angle),
