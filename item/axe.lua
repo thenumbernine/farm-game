@@ -24,8 +24,8 @@ function ItemAxe:useInInventory(player)
 		0
 	)):map(math.floor):unpack()
 
-	for dz=0,-1,-1 do
-		local tile = map:getTile(x,y,z+dz)
+	for dz=-1,1 do
+		local tile = map:getTile(x,y,z-dz)
 		if tile 
 		and tile.type == Tile.typeValues.Wood
 		then
@@ -44,6 +44,7 @@ function ItemAxe:useInInventory(player)
 				and not obj.dead
 				then
 					obj:damage(1, player, self)
+					return
 				end
 			end
 		end

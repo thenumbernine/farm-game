@@ -22,7 +22,7 @@ Player.attackDuration = .35
 
 Player.bbox = box3f{
 	min = {-.3, -.3, 0},
-	max = {.3, .3, .6},
+	max = {.3, .3, 1.5},
 }
 
 function Player:init(args, ...)

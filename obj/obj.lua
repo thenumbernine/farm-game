@@ -24,15 +24,21 @@ Obj.bbox = box3f{
 
 Obj.drawAngle = 0
 
-Obj.drawSize = vec2f(1,1)
 Obj.drawCenter = vec2f(.5, 1)
+
+-- TODO spriteScale?
+Obj.drawSize = vec2f(1,1)
+
+Obj.rotation = 0
 
 function Obj:init(args)
 	assert(args)
 	self.game = assert(args.game)
 
 	self.angle = 1.5 * math.pi
-	
+
+	self.rotation = args.rotation
+
 	self.drawSize = vec2f(self.class.drawSize)
 	if args.drawSize then self.drawSize = vec2f(args.drawSize) end
 	
@@ -236,6 +242,8 @@ function Obj:update(dt)
 
 	self:unlink()
 
+	self.angle = self.angle + self.rotation * dt
+
 	self.oldpos:set(self.pos:unpack())
 
 -- [[
@@ -403,6 +411,8 @@ gl.glEnable(gl.GL_DEPTH_TEST)
 						glreport'here'
 					elseif frame.mesh then
 						modelMat:setTranslate(self.pos:unpack())
+							:applyScale(self.drawSize.x, self.drawSize.x, self.drawSize.y)
+							:applyRotate(0, 0, 1, self.angle)
 						local shader = assert(game.meshShader)
 						--[[
 						shader

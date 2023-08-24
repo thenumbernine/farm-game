@@ -62,8 +62,31 @@ end
 here's the beginning of item-state vs game-state
 --]]
 function ItemBed:interactInWorld(player)
+	if self.sleeping then return end
+	self.sleeping = true
+	
+	-- TODO sleep
+	print'sleeping'
+	local game = self.game
+	game.threads:add(function()
+		game:sleep(1)
+		-- offst to the next cycle of 6am
+		local day = math.floor((game.time / 60 - 6) / 24) + 1
+		game.time = day * 24 * 60 + 6 * 60
+		self.sleeping = false
+	end)
+end
+
+ItemBed.takesDamage = true
+function ItemBed:damage(amount, attacker, inflicter)
+	if not (inflicter and inflicter.name == 'axe') then return end
+
+	self.game:newObj{
+		class = require 'zelda.obj.item',
+		itemClass = require 'zelda.obj.bed',
+		pos = self.pos,
+	}
 	self:remove()
-	player:addItem(self.class)
 end
 
 return ItemBed 
