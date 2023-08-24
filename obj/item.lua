@@ -32,7 +32,7 @@ Item.min = box3f{
 }
 
 Item.drawSize = vec2f(.5, .5)
-Item.rotation = math.pi/2
+Item.rotation = math.pi * .5
 
 function Item:init(args)
 	Item.super.init(self, args)
