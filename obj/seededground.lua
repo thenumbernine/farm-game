@@ -6,6 +6,7 @@ local SeededGround = Obj:subclass()
 SeededGround.sprite = 'seededground'
 SeededGround.useGravity = false
 SeededGround.collidesWithTiles = false
+SeededGround.collidesWithObjects = false
 SeededGround.bbox = box3f{
 	min = {-.3, -.3, -.001},
 	max = {.3, .3, .001},
