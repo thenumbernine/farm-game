@@ -193,7 +193,7 @@ function App:updateGame()
 	self.lastViewYaw = self.viewYaw
 	self.viewYaw = self.viewYaw + .1 * (self.targetViewYaw - self.viewYaw)
 	
-	self.view.angle = quatd():fromAngleAxis(0, 0, 1, self.viewYaw)
+	self.view.angle = quatd():fromAngleAxis(0, 0, 1, math.deg(self.viewYaw))
 					* quatd():fromAngleAxis(1,0,0,30)
 	self.view.pos = self.view.angle:zAxis() * (self.view.pos - self.view.orbit):length() + self.view.orbit
 
@@ -207,7 +207,7 @@ function App:updateGame()
 	gl.glEnable(gl.GL_BLEND)
 
 --[[
-	if math.abs(self.lastViewYaw - self.viewYaw) > 1 then
+	if math.abs(self.lastViewYaw - self.viewYaw) > .02 then
 		self.needsResortSprites = true
 	end
 	if game and self.needsResortSprites then
@@ -247,8 +247,8 @@ function App:event(event, ...)
 		and bit.band(event.motion.state, 1) == 1
 		then
 			local dx = event.motion.xrel
-			self.viewYaw = self.viewYaw + dx
-			self.view.angle = quatd():fromAngleAxis(0, 0, 1, self.viewYaw)
+			self.viewYaw = self.viewYaw + math.rad(dx)
+			self.view.angle = quatd():fromAngleAxis(0, 0, 1, math.deg(self.viewYaw))
 							* quatd():fromAngleAxis(1,0,0,30)
 			self.view.pos = self.view.angle:zAxis() * (self.view.pos - self.view.orbit):length() + self.view.orbit
 		end

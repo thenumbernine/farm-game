@@ -139,10 +139,10 @@ function Player:update(dt)
 		local turnRight = appPlayer.keyPress.rotateRight and not appPlayer.keyPressLast.rotateRight 
 		if turnLeft or turnRight then
 			if turnLeft then
-				app.targetViewYaw = app.targetViewYaw + 90
+				app.targetViewYaw = app.targetViewYaw + math.pi*.5
 			end
 			if turnRight then
-				app.targetViewYaw = app.targetViewYaw - 90
+				app.targetViewYaw = app.targetViewYaw - math.pi*.5
 			end
 		end
 	end

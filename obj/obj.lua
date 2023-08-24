@@ -376,7 +376,7 @@ gl.glEnable(gl.GL_DEPTH_TEST)
 			local seqname = self.seq
 			if seqname then
 				if sprite.useDirs then	-- enable this for sequences that use _u _d _l _r etc (TODO search by default?)
-					local relAngle = self.angle - math.rad(app.viewYaw)
+					local relAngle = self.angle - app.viewYaw
 					local angleIndex = math.floor(relAngle / (.5 * math.pi) + .5) % 4 + 1
 					seqname = seqname .. dirSeqSuffixes[angleIndex]
 --print('angle', self.angle, 'index', angleIndex, 'seqname', seqname)
