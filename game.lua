@@ -46,14 +46,25 @@ end
 
 local Game = class()
 
+Game.secondsPerMinute = 1
+
+Game.minutesPerHour = 60
+Game.secondsPerHour = Game.secondsPerMinute * Game.minutesPerHour
+
+Game.hoursPerDay = 24
+Game.secondsPerDay = Game.secondsPerHour * Game.hoursPerDay
+
+-- when to start / wake up
+Game.wakeHour = 6
+
 -- 16 x 16 = 256 tiles in a typical screen
 -- 8 x 8 x 8 = 512 tiles
 function Game:init(args)
 	self.app = assert(args.app)
 	local app = self.app
 
-	-- start at dawn on the first day
-	self.time = 60 * 6
+	-- start at 6am on the first day
+	self.time = self.wakeHour * self.secondsPerHour
 	
 	self.threads = ThreadManager()
 
@@ -422,11 +433,12 @@ end
 function Game:timeToStr()
 	-- time scale?  1 second = 1 minute?
 	local tm = math.floor(self.time) 
-	local m = tm % 60
-	local th = (tm - m) / 60
-	local h = th % 24
-	local td = (th - h) / 24
-	if h == 0 then h = 24 end
+	local m = tm % self.minutesPerHour
+	local th = (tm - m) / self.minutesPerHour
+	local h = th % self.hoursPerDay
+	local td = (th - h) / self.hoursPerDay
+	-- for display's sake:
+	if h == 0 then h = self.hoursPerDay end
 	m = math.floor(m/10) * 10
 	return ('%d %02d:%02d'):format(td,h,m)
 end
@@ -461,7 +473,7 @@ function Game:draw()
 		view.mvProjMat:setOrtho(0,1,0,1,-1,1)
 
 		self.skySceneObj.uniforms.mvProjMat = view.mvProjMat.ptr
-		self.skySceneObj.uniforms.timeOfDay = (self.time / (60 * 24)) % 1
+		self.skySceneObj.uniforms.timeOfDay = (self.time / self.secondsPerDay) % 1
 		-- testing: 1 min = 1 day
 		--self.skySceneObj.uniforms.timeOfDay = (self.time / 60) % 1
 		self.skySceneObj:draw()

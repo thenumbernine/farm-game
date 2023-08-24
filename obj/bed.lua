@@ -71,8 +71,8 @@ function ItemBed:interactInWorld(player)
 	game.threads:add(function()
 		game:sleep(1)
 		-- offst to the next cycle of 6am
-		local day = math.floor((game.time / 60 - 6) / 24) + 1
-		game.time = day * 24 * 60 + 6 * 60
+		local day = math.floor((game.time / game.secondsPerHour - game.wakeHour) / game.hoursPerDay) + 1
+		game.time = (day * game.hoursPerDay + game.wakeHour) * game.secondsPerHour
 		self.sleeping = false
 	end)
 end
