@@ -412,7 +412,7 @@ gl.glEnable(gl.GL_DEPTH_TEST)
 					elseif frame.mesh then
 						modelMat:setTranslate(self.pos:unpack())
 							:applyScale(self.drawSize.x, self.drawSize.x, self.drawSize.y)
-							:applyRotate(math.deg(self.angle), 0, 0, 1)
+							:applyRotate(self.angle, 0, 0, 1)
 						local shader = assert(game.meshShader)
 						--[[
 						shader
