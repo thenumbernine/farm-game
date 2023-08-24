@@ -1,20 +1,7 @@
---[[
-TODO move this back to gameapp.menu
---]]
 local ig = require 'imgui'
-local sdl = require 'ffi.req' 'sdl'
-local Menu = require 'gameapp.menu.menu'
+local GameAppPlayingMenu = require 'gameapp.menu.playing'
 
-local PlayingMenu = Menu:subclass()
-
-function PlayingMenu:init(app)
-	PlayingMenu.super.init(self, app)
-	app.paused = false
-end
-
-function PlayingMenu:update()
-	self.app:drawTouchRegions()
-end
+local PlayingMenu = GameAppPlayingMenu:subclass()
 
 function PlayingMenu:updateGUI()
 	local app = self.app
@@ -103,17 +90,6 @@ function PlayingMenu:updateGUI()
 			x = x + bw
 		end
 		ig.igPopStyleVar(1)
-	end
-end
-
-function PlayingMenu:event(e)
-	local app = self.app
-	if e.type == sdl.SDL_KEYDOWN
-	and e.key.keysym.sym == sdl.SDLK_ESCAPE
-	and app.game
-	then
-		app.paused = true
-		app.menu = app.mainMenu
 	end
 end
 

@@ -26,7 +26,7 @@ App.showFPS = true
 local Menu = require 'gameapp.menu.menu'
 Menu.Splash = require 'zelda.menu.splash'
 
-local PlayingMenu = require 'zelda.menu.playing'
+Menu.Playing = require 'zelda.menu.playing'
 
 --[[
 keyPress.s:
@@ -141,8 +141,6 @@ function App:initGL()
 	-- instead of proj * mv , imma separate into: proj view model
 	-- that means view.mvMat is really the view matrix
 	App.super.initGL(self)
-
-	self.playingMenu = PlayingMenu(self)
 
 	self.view.fovY = 90
 
