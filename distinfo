@@ -23,6 +23,7 @@ files = {
 		'zelda/splash.png',
 		'zelda/texpack.png',
 		'zelda/tile.lua',
+		'zelda/item',
 		'zelda/menu',
 		'zelda/obj',
 
