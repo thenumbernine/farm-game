@@ -14,7 +14,6 @@ local GLProgram = require 'gl.program'
 local GLArrayBuffer = require 'gl.arraybuffer'
 local GLSceneObject = require 'gl.sceneobject'
 local GLGeometry = require 'gl.geometry'
-local simplexnoise = require 'simplexnoise.3d'
 local Tile = require 'zelda.tile'
 local sides = require 'zelda.sides'
 
@@ -33,7 +32,7 @@ local Chunk = class()
 Chunk.bitsize = vec3i(5, 5, 5)
 Chunk.size = Chunk.bitsize:map(function(x) return bit.lshift(1, x) end)
 Chunk.bitmask = Chunk.size - 1
-Chunk.volume = Chunk.size:volume()
+Chunk.volume = Chunk.size:volume()	-- same as 1 << bitsize:sum() (if i had a :sum() function...)
 
 function Chunk:init(args)
 	local map = assert(args.map)
@@ -42,6 +41,9 @@ function Chunk:init(args)
 	
 	self.v = ffi.new('maptype_t[?]', self.volume)
 	ffi.fill(self.v, 0, ffi.sizeof'maptype_t' * self.volume)	-- 0 = empty
+
+	-- height of highest block that occludes light
+	self.lumAlt = ffi.new('int16_t', self.size.x * self.size.y)
 
 	-- geometry
 	self.vtxs = vector'vec3f_t'
@@ -247,12 +249,6 @@ function Map:init(args)	-- vec3i
 	local game = self.game
 	local app = game.app
 
-	local maptexs = {
-		grass = 0,
-		stone = 1,
-		wood = 2,
-	}
-
 	self.sizeInChunks = vec3i(assert(args.sizeInChunks))
 	self.chunkVolume = self.sizeInChunks:volume()
 	self.size = self.sizeInChunks:map(function(x,i) return x * Chunk.size.s[i] end)
@@ -328,8 +324,7 @@ void main() {
 		},
 	}:useNone()
 
-
-
+	-- create the chunks
 	do
 		local chunkIndex = 0
 		for k=0,self.sizeInChunks.z-1 do
@@ -345,102 +340,11 @@ void main() {
 		end
 	end
 
---print'generating map'
-
-	local houseSize = vec3f(3, 3, 2)
-	local houseCenter = vec3f(
-		math.floor(self.size.x/2),
-		math.floor(self.size.y*3/4),
-		math.floor(self.size.z/2) + houseSize.z)
-
-	-- copied in game's init
-	local npcPos = vec3f(
-		self.size.x*.95,
-		self.size.y*.5,
-		self.size.z-.5)
-
-	-- simplex noise resolution
-	local blockSize = 8
-	local half = bit.rshift(self.size.z, 1)
-	--local step = vec3i(1, self.size.x, self.size.x * self.size.y)
-	--local ijk = vec3i()
-	local xyz = vec3f()
-	for k=0,self.size.z-1 do
-		--ijk.z = k
-		xyz.z = k / blockSize
-		for j=0,self.size.y-1 do
-			--ijk.y = j
-			xyz.y = j / blockSize
-			for i=0,self.size.x-1 do
-				--ijk.x = i
-				xyz.x = i / blockSize
-				local c = simplexnoise(xyz:unpack())
-				local maptype = Tile.typeValues.Empty
-				local maptex = k >= half-1
-					and maptexs.grass
-					or maptexs.stone
-				if k >= half then
-					c = c + (k - half) * .5
-				end
-
-				-- [[ make the top flat?
-				if k >= half
-				and (
-					(vec2f(i,j) - vec2f(houseCenter.x, houseCenter.y)):length() < 15
-					or (vec2f(i,j) - vec2f(npcPos.x, npcPos.y)):length() < 5
-				) then
-					c = k == half and 0 or 1
-				end
-				--]]
-
-				if c < .5 then
-					maptype =
-						maptex == maptexs.stone
-						and Tile.typeValues.Stone
-						or Tile.typeValues.Grass
-				end
-				--local index = ijk:dot(step)
-				local tile = assert(self:getTile(i,j,k))
-				tile.type = maptype
-				tile.tex = maptex
-			end
-		end
-	end
-
-	do
-		for x=houseCenter.x-houseSize.x,houseCenter.x+houseSize.x do
-			for y=houseCenter.y-houseSize.y, houseCenter.y+houseSize.y do
-				for z=houseCenter.z-houseSize.z, houseCenter.z+houseSize.z do
-					local adx = math.abs(x - houseCenter.x)
-					local ady = math.abs(y - houseCenter.y)
-					local adz = math.abs(z - houseCenter.z)
-					local linf = math.max(adx/houseSize.x, ady/houseSize.y, adz/houseSize.z)
-					if linf == 1 then
-						local tile = assert(self:getTile(x,y,z))
-						tile.type = Tile.typeValues.Wood
-						tile.tex = maptexs.wood
-					end
-				end
-			end
-			local t = assert(self:getTile(houseCenter.x, houseCenter.y - houseSize.y, houseCenter.z - houseSize.z + 1))
-			t.type = 0
-			t.tex = 0
-			local t = assert(self:getTile(houseCenter.x, houseCenter.y - houseSize.y, houseCenter.z - houseSize.z + 2))
-			t.type = 0
-			t.tex = 0
-		end
-	end
-
 	-- key = index in map.objsPerTileIndex = offset of the tile in the map
 	-- value = list of all objects on that tile
 	self.objsPerTileIndex = {}
 
 	self.texpackSize = vec2i(2, 2)
-
---print"building draw arrays"
-	self:buildDrawArrays()
-
---print'init done'
 end
 
 function Map:buildDrawArrays()

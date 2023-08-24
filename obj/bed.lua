@@ -62,18 +62,18 @@ end
 here's the beginning of item-state vs game-state
 --]]
 function ItemBed:interactInWorld(player)
-	if self.sleeping then return end
-	self.sleeping = true
+	if player.sleeping then return end
+	player.sleeping = true
 	
-	-- TODO sleep
-	print'sleeping'
+	player:setPos(self.pos:unpack())
+	
 	local game = self.game
 	game.threads:add(function()
 		game:sleep(1)
 		-- offst to the next cycle of 6am
 		local day = math.floor((game.time / game.secondsPerHour - game.wakeHour) / game.hoursPerDay) + 1
 		game.time = (day * game.hoursPerDay + game.wakeHour) * game.secondsPerHour
-		self.sleeping = false
+		player.sleeping = false
 	end)
 end
 

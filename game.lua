@@ -252,6 +252,107 @@ void main() {
 		sizeInChunks = vec3i(3, 2, 1),
 	}
 
+	do
+		local simplexnoise = require 'simplexnoise.3d'
+	--print'generating map'
+		local map = self.map
+		local maptexs = {
+			grass = 0,
+			stone = 1,
+			wood = 2,
+		}
+
+		local houseSize = vec3f(3, 3, 2)
+		local houseCenter = vec3f(
+			math.floor(map.size.x/2),
+			math.floor(map.size.y*3/4),
+			math.floor(map.size.z/2) + houseSize.z)
+
+		-- copied in game's init
+		local npcPos = vec3f(
+			map.size.x*.95,
+			map.size.y*.5,
+			map.size.z-.5)
+
+		-- simplex noise resolution
+		local blockSize = 8
+		local half = bit.rshift(map.size.z, 1)
+		--local step = vec3i(1, map.size.x, map.size.x * map.size.y)
+		--local ijk = vec3i()
+		local xyz = vec3f()
+		for k=0,map.size.z-1 do
+			--ijk.z = k
+			xyz.z = k / blockSize
+			for j=0,map.size.y-1 do
+				--ijk.y = j
+				xyz.y = j / blockSize
+				for i=0,map.size.x-1 do
+					--ijk.x = i
+					xyz.x = i / blockSize
+					local c = simplexnoise(xyz:unpack())
+					local maptype = Tile.typeValues.Empty
+					local maptex = k >= half-1
+						and maptexs.grass
+						or maptexs.stone
+					if k >= half then
+						c = c + (k - half) * .5
+					end
+
+					-- [[ make the top flat?
+					if k >= half
+					and (
+						(vec2f(i,j) - vec2f(houseCenter.x, houseCenter.y)):length() < 15
+						or (vec2f(i,j) - vec2f(npcPos.x, npcPos.y)):length() < 5
+					) then
+						c = k == half and 0 or 1
+					end
+					--]]
+
+					if c < .5 then
+						maptype =
+							maptex == maptexs.stone
+							and Tile.typeValues.Stone
+							or Tile.typeValues.Grass
+					end
+					--local index = ijk:dot(step)
+					local tile = assert(map:getTile(i,j,k))
+					tile.type = maptype
+					tile.tex = maptex
+				end
+			end
+		end
+
+		do
+			for x=houseCenter.x-houseSize.x,houseCenter.x+houseSize.x do
+				for y=houseCenter.y-houseSize.y, houseCenter.y+houseSize.y do
+					for z=houseCenter.z-houseSize.z, houseCenter.z+houseSize.z do
+						local adx = math.abs(x - houseCenter.x)
+						local ady = math.abs(y - houseCenter.y)
+						local adz = math.abs(z - houseCenter.z)
+						local linf = math.max(adx/houseSize.x, ady/houseSize.y, adz/houseSize.z)
+						if linf == 1 then
+							local tile = assert(map:getTile(x,y,z))
+							tile.type = Tile.typeValues.Wood
+							tile.tex = maptexs.wood
+						end
+					end
+				end
+				local t = assert(map:getTile(houseCenter.x, houseCenter.y - houseSize.y, houseCenter.z - houseSize.z + 1))
+				t.type = 0
+				t.tex = 0
+				local t = assert(map:getTile(houseCenter.x, houseCenter.y - houseSize.y, houseCenter.z - houseSize.z + 2))
+				t.type = 0
+				t.tex = 0
+			end
+		end
+
+	--print"building draw arrays"
+		map:buildDrawArrays()
+
+	--print'init done'
+
+	end
+
 	self.objs = table()
 	app.players[1].obj = self:newObj{
 		class = Obj.classes.Player,

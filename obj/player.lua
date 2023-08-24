@@ -52,6 +52,8 @@ function Player:update(dt)
 	local map = game.map
 	local appPlayer = assert(self.player)
 
+	if self.sleeping then return end
+
 	-- if a prompt is open then don't handle buttons
 	if not self.gamePrompt then
 		local dx = 0
