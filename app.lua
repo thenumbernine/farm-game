@@ -67,20 +67,12 @@ function MainMenu:update()
 -- why does this hide the gui?
 --	self.app.splashMenu:update()
 end
-assert(MainMenu.menuOptions:remove(4).name == 'High Scores')
-assert(MainMenu.menuOptions:remove(2).name == 'New Game Co-op')
-
-MainMenu.menuOptions:insert(1, {
-	name = 'Resume Game',
-	click = function(self)
-		local app = self.app
-		app.menu = app.playingMenu
-		app.playingMenu:resumeGame()
-	end,
-	visible = function(self)
-		return self.app.game ~= nil
-	end,
-})
+MainMenu.menuOptions:removeObject(nil, function(o)
+	return o.name == 'New Game Co-op'
+end)
+MainMenu.menuOptions:removeObject(nil, function(o)
+	return o.name == 'High Scores'
+end)
 
 App.url = 'https://github.com/thenumbernine/zelda3d-lua'
 
@@ -176,8 +168,6 @@ precision highp float;
 	self.players = range(self.playcfg.numPlayers):mapi(function(i)
 		return Player{index=i, app=self}
 	end)
-
-	--self.game = Game{app=self}
 
 	-- TODO put this in parent class
 	self.rng = self.RNG(self.playcfg.randseed)
