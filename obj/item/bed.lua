@@ -58,6 +58,9 @@ function ItemBed:useInInventory(player)
 	end
 end
 
+--[[
+here's the beginning of item-state vs game-state
+--]]
 function ItemBed:interactInWorld(player)
 	self:remove()
 	player:addItem(self.class)

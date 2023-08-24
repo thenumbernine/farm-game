@@ -79,7 +79,8 @@ function Plant:die()
 			local r = math.random() * 2
 			local theta = math.random() * 2 * math.pi
 			game:newObj{
-				class = require 'zelda.obj.log',
+				class = require 'zelda.obj.item',
+				itemClass = require 'zelda.obj.log',
 				pos = self.pos + vec3f(
 					math.cos(theta) * r,
 					math.sin(theta) * r,
