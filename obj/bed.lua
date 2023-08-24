@@ -1,4 +1,5 @@
 local vec3f = require 'vec-ffi.vec3f'
+local box3f = require 'vec-ffi.box3f'
 local Tile = require 'zelda.tile'
 local Obj = require 'zelda.obj.obj'
 
@@ -33,6 +34,11 @@ ItemBed.sprite = 'bed'
 -- TODO eventually dont do this 
 ItemBed.useGravity = false
 ItemBed.collidesWithTiles = false
+
+ItemBed.bbox = box3f{
+	min = {-.5, -.5, 0},
+	max = {.5, .5, .5},
+}
 
 -- static method
 function ItemBed:useInInventory(player)

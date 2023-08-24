@@ -252,6 +252,19 @@ void main() {
 		sizeInChunks = vec3i(3, 2, 1),
 	}
 
+
+	local houseSize = vec3f(3, 3, 2)
+	local houseCenter = vec3f(
+		math.floor(self.map.size.x/2),
+		math.floor(self.map.size.y*3/4),
+		math.floor(self.map.size.z/2) + houseSize.z)
+
+	-- copied in game's init
+	local npcPos = vec3f(
+		self.map.size.x*.95,
+		self.map.size.y*.5,
+		self.map.size.z-.5)
+	
 	do
 		local simplexnoise = require 'simplexnoise.3d'
 	--print'generating map'
@@ -261,18 +274,6 @@ void main() {
 			stone = 1,
 			wood = 2,
 		}
-
-		local houseSize = vec3f(3, 3, 2)
-		local houseCenter = vec3f(
-			math.floor(map.size.x/2),
-			math.floor(map.size.y*3/4),
-			math.floor(map.size.z/2) + houseSize.z)
-
-		-- copied in game's init
-		local npcPos = vec3f(
-			map.size.x*.95,
-			map.size.y*.5,
-			map.size.z-.5)
 
 		-- simplex noise resolution
 		local blockSize = 8
@@ -348,9 +349,8 @@ void main() {
 
 	--print"building draw arrays"
 		map:buildDrawArrays()
-
+		map:buildAlts()
 	--print'init done'
-
 	end
 
 	self.objs = table()
@@ -454,18 +454,6 @@ void main() {
 		end,
 	}
 
-	local houseSize = vec3f(3, 3, 2)
-	local houseCenter = vec3f(
-		math.floor(self.map.size.x/2),
-		math.floor(self.map.size.y*3/4),
-		math.floor(self.map.size.z/2) + houseSize.z)
-
-	-- copied in game's init
-	local npcPos = vec3f(
-		self.map.size.x*.95,
-		self.map.size.y*.5,
-		self.map.size.z-.5)
-	
 	self:newObj{
 		class = require 'zelda.obj.bed',
 		pos = houseCenter + vec3f(houseSize.x-1, -(houseSize.y-1), -(houseSize.z-1)) + .5,

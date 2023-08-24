@@ -14,6 +14,7 @@ local GLProgram = require 'gl.program'
 local GLArrayBuffer = require 'gl.arraybuffer'
 local GLSceneObject = require 'gl.sceneobject'
 local GLGeometry = require 'gl.geometry'
+local GLTex2D = require 'gl.tex2d'
 local Tile = require 'zelda.tile'
 local sides = require 'zelda.sides'
 
@@ -23,7 +24,14 @@ ffi.cdef[[
 typedef struct {
 	uint8_t type;
 	uint8_t tex;
-} maptype_t;
+} voxel_t;
+
+typedef struct {
+	int16_t lumAlt;		//tallest tile that is opaque
+	int16_t solidAlt;	//tallest tile that is solid
+	float minAngle;
+	float maxAngle;
+} surface_t;
 ]]
 
 local Chunk = class()
@@ -39,11 +47,10 @@ function Chunk:init(args)
 	self.map = map
 	self.pos = vec3i(assert(args.pos))
 	
-	self.v = ffi.new('maptype_t[?]', self.volume)
-	ffi.fill(self.v, 0, ffi.sizeof'maptype_t' * self.volume)	-- 0 = empty
+	self.v = ffi.new('voxel_t[?]', self.volume)
+	ffi.fill(self.v, 0, ffi.sizeof'voxel_t' * self.volume)	-- 0 = empty
 
-	-- height of highest block that occludes light
-	self.lumAlt = ffi.new('int16_t', self.size.x * self.size.y)
+	self.surface = ffi.new('surface_t[?]', self.size.x * self.size.y)
 
 	-- geometry
 	self.vtxs = vector'vec3f_t'
@@ -236,12 +243,122 @@ function Chunk:draw(app, game)
 	self.sceneObj.uniforms.mvMat = app.view.mvMat.ptr
 	self.sceneObj.uniforms.projMat = app.view.projMat.ptr
 	self.sceneObj.uniforms.useSeeThru = 1
-	self.sceneObj.texs[1] = game.texpack
+	-- angle 0 = midnight
+	local timeOfDay = (game.time / game.secondsPerDay) % 1
+	self.sceneObj.uniforms.sunAngle = 2 * math.pi * timeOfDay
+	-- just bind as we go, not in sceneObj
+	--self.sceneObj.texs[1] = game.texpack
+	--self.sceneObj.texs[2] = self.sunAngleTex
 	self.sceneObj:draw()
+end
+
+function Chunk:buildAlts()
+	local baseAlt = self.pos.z * self.size.z
+	for j=0,self.size.y-1 do
+		for i=0,self.size.x-1 do
+			local surface = self.surface + (i + self.size.x * j)
+			
+			local k=self.size.z-1
+			while k > 0 do
+				local tileInfo = self.v + (i + self.size.x * (j + self.size.y * k))
+				if tileInfo.type > 0 then
+					local tileClass = Tile.types[tileInfo.type]
+					if tileClass.solid then
+						surface.solidAlt = k
+						break
+					end
+				end
+				k = k - 1
+			end
+		
+			local k=self.size.z-1
+			while k > 0 do
+				local tileInfo = self.v + (i + self.size.x * (j + self.size.y * k))
+				if tileInfo.type > 0 then
+					local tileClass = Tile.types[tileInfo.type]
+					if not tileClass.transparent then
+						surface.lumAlt = k + baseAlt 
+						break
+					end
+				end
+				k = k - 1
+			end
+		end
+	end
+end
+
+function Chunk:calcSunAngles()
+	local map = self.map
+
+	-- now that we have all altitudes, check sun light
+	-- TODO a better lighting model, but meh lazy
+	for j=0,self.size.y-1 do
+		local y = j + bit.lshift(self.pos.y, self.bitsize.y)
+		for i=0,self.size.x-1 do
+			local x = i + bit.lshift(self.pos.x, self.bitsize.x)
+			local surface = self.surface + (i + self.size.x * j)
+if x == 44 and y == 44 then
+print(i,j ,surface.lumAlt)
+end
+			local alt = surface.lumAlt
+			surface.minAngle = 0
+			surface.maxAngle = 2 *math.pi
+			for x2=0,map.size.x-1 do
+				if x2 ~= x then
+					local dx = x2 - x
+					local ci2 = bit.rshift(x2, self.bitsize.x)
+					local di2 = bit.band(x2, self.bitmask.x)
+					local chunk2 = map.chunks[ci2 + map.sizeInChunks.x * (self.pos.y + map.sizeInChunks.y * (map.sizeInChunks.z-1))]
+					assert(chunk2)
+					local alt2 = chunk2.surface[di2 + self.size.x * j].lumAlt
+					local dz = alt2 - alt
+					local angle = (math.atan2(dx, -dz) + 2 * math.pi) % (2 * math.pi)
+if x == 44 and y == 44 then
+print('x2', x2, 'alt2', alt2, 'dx', dx, 'dz', dz, 'angle', angle)
+end					
+					if x2 < x then
+						-- west = setting sun, pick the minimum maxAngle
+						surface.maxAngle = math.min(surface.maxAngle, angle)
+					else
+						-- east = rising sun, pick the maximum minAngle
+						surface.minAngle = math.max(surface.minAngle, angle)
+					end
+				end
+			end
+if x == 44 and y == 44 then
+print('result minAngle', surface.minAngle, 'maxAngle', surface.maxAngle)
+end		
+		end
+	end
+
+	-- now turn it into a texture because i'm really lazy and sloppy
+	print("building sun angle tex. don't do this too often.")
+	local Image = require 'image'
+	self.sunAngleTex = GLTex2D{
+		image = Image(self.size.x, self.size.y, 4, 'float', function(i,j)
+			local minAngle = self.surface[i + self.size.x * j].minAngle
+			local maxAngle = self.surface[i + self.size.x * j].maxAngle
+			return
+				minAngle,
+				maxAngle,
+				0, 1
+		end),
+		internalFormat = assert(gl.GL_RGBA32F),
+		format = gl.GL_RGBA,
+		type = gl.GL_FLOAT,
+		minFilter = gl.GL_NEAREST,
+		magFilter = gl.GL_NEAREST,
+		wrap = {
+			s = gl.GL_REPEAT,
+			t = gl.GL_REPEAT,
+		},
+	}:unbind()
 end
 
 
 local Map = class()
+
+Map.Chunk = Chunk
 
 -- voxel-based
 function Map:init(args)	-- vec3i
@@ -265,6 +382,7 @@ in vec3 vertex;
 in vec2 texcoord;
 in vec4 color;
 
+out vec3 worldPosv;
 out vec3 viewPosv;
 out vec2 texcoordv;
 out vec4 colorv;
@@ -278,6 +396,7 @@ void main() {
 	texcoordv = texcoord;
 	colorv = color;
 	
+	worldPosv = vertex;
 	vec4 viewPos = mvMat * vec4(vertex, 1.);
 	viewPosv = viewPos.xyz;
 	
@@ -285,13 +404,22 @@ void main() {
 }
 ]],
 		fragmentCode = app.glslHeader..[[
+in vec3 worldPosv;
 in vec3 viewPosv;
 in vec2 texcoordv;
 in vec4 colorv;
 
 out vec4 fragColor;
 
+//tile texture
 uniform sampler2D tex;
+
+//cheap sunlighting
+uniform float sunAngle;
+uniform sampler2D sunAngleTex;
+uniform vec3 chunkSize;
+
+// map view clipping
 uniform bool useSeeThru;
 uniform vec3 playerViewPos;
 
@@ -302,6 +430,17 @@ const float cosClipAngle = .9;	// = cone with 25 degree from axis
 void main() {
 	fragColor = texture(tex, texcoordv);
 	fragColor.xyz *= colorv.xyz;
+
+	// technically I should also subtract the chunkPos
+	// but texcoords are fraational part, so the integer part is thrown away anyways ...
+	vec2 sunTc = worldPosv.xy / chunkSize.xy;
+	vec2 sunAngles = texture(sunAngleTex, sunTc).xy;
+	const float sunWidthInRadians = .1;
+	float sunlight = (
+		smoothstep(sunAngles.x - sunWidthInRadians, sunAngles.x + sunWidthInRadians, sunAngle)
+		- smoothstep(sunAngles.y - sunWidthInRadians, sunAngles.y + sunWidthInRadians, sunAngle)
+	) * .9 + .1;
+	fragColor.xyz *= sunlight;
 
 	// keep the dx dy outside the if block to prevent errors.
 	if (useSeeThru) {
@@ -321,6 +460,8 @@ void main() {
 ]],
 		uniforms = {
 			tex = 0,
+			sunAngleTex = 1,
+			chunkSize = {Chunk.size:unpack()},
 		},
 	}:useNone()
 
@@ -357,12 +498,24 @@ end
 function Map:draw()
 	local game = self.game
 	local app = game.app
-
+	game.texpack:bind(0)
 	for chunkIndex=0,self.chunkVolume-1 do
-		self.chunks[chunkIndex]:draw(app, game)
+		local chunk = self.chunks[chunkIndex]
+		chunk.sunAngleTex:bind(1)
+		chunk:draw(app, game)
 	end
-
+	GLTex2D:unbind(1)
+	GLTex2D:unbind(0)
 	glreport'here'
+end
+
+function Map:buildAlts()
+	for chunkIndex=0,self.chunkVolume-1 do
+		self.chunks[chunkIndex]:buildAlts()
+	end
+	for chunkIndex=0,self.chunkVolume-1 do
+		self.chunks[chunkIndex]:calcSunAngles()
+	end
 end
 
 -- return the ptr to the map tile

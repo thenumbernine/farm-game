@@ -29,9 +29,13 @@ function PlayingMenu:updateGUI()
 		ig.ImGuiWindowFlags_NoDecoration,
 		ig.ImGuiWindowFlags_NoBackground
 	))
+	
 	ig.igSetWindowFontScale(.5)
+	
 	ig.igText('$'..player.money)
 	ig.igText(game:timeToStr())
+	ig.igText(tostring(playerObj.pos))
+
 	ig.igSetWindowFontScale(1)
 
 	ig.igEnd()

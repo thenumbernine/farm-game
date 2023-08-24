@@ -11,6 +11,12 @@ local anim = require 'zelda.anim'
 local Tile = require 'zelda.tile'
 local sides = require 'zelda.sides'
 
+local math = require 'ext.math'
+local function smoothstep(edge0,edge1,x)
+	local t = math.clamp((x - edge0) / (edge1 - edge0), 0, 1)
+	return t * t * (3 - 2 * t)
+end
+
 local Obj = class()
 
 -- default
@@ -331,6 +337,7 @@ function Obj:draw()
 	local game = self.game
 	local app = game.app
 	local view = app.view
+	local map = game.map
 
 --[[
 	gl.glColor3f(1,1,1)
@@ -401,7 +408,39 @@ gl.glEnable(gl.GL_DEPTH_TEST)
 						gl.glUniform2f(shader.uniforms.drawSize.loc, self.drawSize:unpack()) 
 						gl.glUniform2f(shader.uniforms.drawAngleDir.loc, math.cos(self.drawAngle), math.sin(self.drawAngle))
 						gl.glUniform3f(shader.uniforms.pos.loc, self.pos.x, self.pos.y, self.pos.z + .1) 
-						gl.glUniform4f(shader.uniforms.color.loc, self.color:unpack())
+						
+						local cr, cg, cb, ca = self.color:unpack()
+						-- cheap hack
+						local x = math.floor(self.pos.x)
+						local y = math.floor(self.pos.y)
+						local z = math.floor(self.pos.z)
+						if x >= 0 and x < map.size.x
+						and y >= 0 and y < map.size.y
+						then
+							local cx = bit.rshift(x, map.Chunk.bitsize.x)
+							local dx = bit.band(x, map.Chunk.bitmask.x)
+							local cy = bit.rshift(y, map.Chunk.bitsize.y)
+							local dy = bit.band(y, map.Chunk.bitmask.y)
+							local cz = map.sizeInChunks.z-1
+							local chunk = map.chunks[cx + map.sizeInChunks.x * (cy + map.sizeInChunks.y * cz)]
+							local surface = chunk.surface[dx + map.Chunk.size.x * dy]
+							local sunAngle = 2 * math.pi * ((game.time / game.secondsPerDay) % 1)
+							local sunlight = sunAngle > surface.minAngle and sunAngle < surface.maxAngle and 1 or .2
+							
+							local sunWidthInRadians = .1	-- also in map shader
+							local sunlight = (
+								smoothstep(surface.minAngle - sunWidthInRadians, surface.minAngle + sunWidthInRadians, sunAngle)
+								- smoothstep(surface.maxAngle - sunWidthInRadians, surface.maxAngle + sunWidthInRadians, sunAngle)
+							) * .9 + .1
+						
+							if sunlight < 1 then
+								cr = cr * sunlight
+								cg = cg * sunlight
+								cb = cb * sunlight
+							end
+						end
+						gl.glUniform4f(shader.uniforms.color.loc, cr, cg, cb, ca)
+						
 						gl.glUniform3fv(shader.uniforms.playerViewPos.loc, 1, game.playerViewPos.s)
 						gl.glUniform1i(shader.uniforms.useSeeThru.loc, self == game.viewFollow and 0 or 1)
 
