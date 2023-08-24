@@ -251,7 +251,7 @@ void main() {
 		player = assert(app.players[1]),
 	}
 					
-	local ItemSeeds = require 'zelda.obj.item.seeds'
+	local ItemSeeds = require 'zelda.item.seeds'
 	app.players[1].obj:addItem(ItemSeeds:makeSubclass'test')
 
 	local game = self
@@ -355,7 +355,7 @@ void main() {
 		self.map.size.z-.5)
 	
 	self:newObj{
-		class = require 'zelda.obj.item.bed',
+		class = require 'zelda.obj.bed',
 		pos = houseCenter + vec3f(houseSize.x-1, -(houseSize.y-1), -(houseSize.z-1)) + .5,
 	}
 

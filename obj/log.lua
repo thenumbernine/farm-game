@@ -1,6 +1,6 @@
 local vec3f = require 'vec-ffi.vec3f'
 local Tile = require 'zelda.tile'
-local Item = require 'zelda.obj.item.item'
+local Item = require 'zelda.item.item'
 
 -- TODO move to obj/item/ ?
 -- or ... no need for obj/item/ at all?

@@ -1,13 +1,14 @@
 local vec3f = require 'vec-ffi.vec3f'
 local Tile = require 'zelda.tile'
-local Item = require 'zelda.obj.item.item'
+local HoedGround = require 'zelda.obj.hoedground'
+local Item = require 'zelda.item.item'
 
-local ItemAxe = Item:subclass()
+local ItemShovel = Item:subclass()
 
-ItemAxe.name = 'axe'
+ItemShovel.name = 'shovel'
 
 -- static method
-function ItemAxe:useInInventory(player)
+function ItemShovel:useInInventory(player)
 	local game = player.game
 	local map = game.map
 
@@ -17,37 +18,26 @@ function ItemAxe:useInInventory(player)
 	player.attackTime = game.time
 	player.attackEndTime = game.time + player.attackDuration
 
-	-- TODO traceline
 	local x,y,z = (player.pos + vec3f(
 		math.cos(player.angle),
 		math.sin(player.angle),
 		0
 	)):map(math.floor):unpack()
-
+	
 	for dz=0,-1,-1 do
 		local tile = map:getTile(x,y,z+dz)
-		if tile 
-		and tile.type == Tile.typeValues.Wood
+		if tile
+		and tile.type == Tile.typeValues.Grass
 		then
 			tile.type = Tile.typeValues.Empty
-			map:buildDrawArrays()
-			player:addItem(require 'zelda.obj.log')
-			return
-		end
+			-- TODO here remove all the hoe and water and seeds and stuff somehow ...
+			-- in fact, seeds => pick-up-able seeds?
 
-		local objs = map:getTileObjs(x,y,z)
-		if objs then
-			for _,obj in ipairs(objs) do
-				if not obj.removeFlag
-				and obj ~= player
-				and obj.takesDamage
-				and not obj.dead
-				then
-					obj:damage(1, player, self)
-				end
-			end
+			map:buildDrawArrays()
+			player:addItem(require 'zelda.obj.dirt')
+			return
 		end
 	end
 end
 
-return ItemAxe 
+return ItemShovel 

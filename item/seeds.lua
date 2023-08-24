@@ -1,8 +1,11 @@
+--[[
+TODO merge this with obj/seededground
+--]]
 local vec3f = require 'vec-ffi.vec3f'
 local Tile = require 'zelda.tile'
 local HoedGround = require 'zelda.obj.hoedground'
 local SeededGround = require 'zelda.obj.seededground'
-local Item = require 'zelda.obj.item.item'
+local Item = require 'zelda.item.item'
 
 local ItemSeeds = Item:subclass()
 

@@ -33,11 +33,11 @@ function Player:init(args, ...)
 	self.selectedItem = 1
 	-- TODO array-of-stacks
 	self.items = table{
-		require 'zelda.obj.item.sword',
-		require 'zelda.obj.item.shovel',
-		require 'zelda.obj.item.axe',
-		require 'zelda.obj.item.hoe',
-		require 'zelda.obj.item.wateringcan',
+		require 'zelda.item.sword',
+		require 'zelda.item.shovel',
+		require 'zelda.item.axe',
+		require 'zelda.item.hoe',
+		require 'zelda.item.wateringcan',
 	}:mapi(function(cl)
 		return {
 			class = cl,

@@ -1,17 +1,17 @@
 local vec3f = require 'vec-ffi.vec3f'
 local Tile = require 'zelda.tile'
-local WateredGround = require 'zelda.obj.wateredground'
-local Item = require 'zelda.obj.item.item'
+local HoedGround = require 'zelda.obj.hoedground'
+local Item = require 'zelda.item.item'
 
-local ItemWateringCan = Item:subclass()
+local ItemHoe = Item:subclass()
 
-ItemWateringCan.name = 'watering can'
+ItemHoe.name = 'hoe'
 
 -- static method
-function ItemWateringCan:useInInventory(player)
+function ItemHoe:useInInventory(player)
 	local game = player.game
 	local map = game.map
-
+	
 	local x,y,z = (player.pos + vec3f(
 		math.cos(player.angle),
 		math.sin(player.angle),
@@ -21,13 +21,13 @@ function ItemWateringCan:useInInventory(player)
 	local groundTile = map:get(x,y,z-1)
 	if groundTile == Tile.typeValues.Grass
 	and topTile == Tile.typeValues.Empty
-	and not map:hasObjType(x,y,z, WateredGround)
+	and not map:hasObjType(x,y,z,HoedGround)
 	then
 		game:newObj{
-			class = WateredGround,
+			class = HoedGround,
 			pos = vec3f(x+.5, y+.5, z + .002),
 		}
 	end
 end
 
-return ItemWateringCan 
+return ItemHoe 
