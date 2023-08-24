@@ -3,6 +3,16 @@ local GameAppPlayingMenu = require 'gameapp.menu.playing'
 
 local PlayingMenu = GameAppPlayingMenu:subclass()
 
+function PlayingMenu:startNewGame()
+	local app = self.app
+	-- sets app.paused = false
+	PlayingMenu.super.startNewGame(self)
+
+	-- TODO app.Game
+	local Game = require 'zelda.game'
+	app.game = Game{app=app}
+end
+
 function PlayingMenu:updateGUI()
 	local app = self.app
 	local game = app.game

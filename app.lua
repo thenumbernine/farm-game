@@ -67,18 +67,6 @@ function MainMenu:update()
 -- why does this hide the gui?
 --	self.app.splashMenu:update()
 end
-assert(MainMenu.menuOptions[1].name == 'New Game')
-MainMenu.menuOptions[1].click = function(self)
-	local app = self.app
-	app.cfg.numPlayers = 1
-	app.menu = app.playingMenu
-	
-	app.game = Game{app=app}
-	app.paused = false
-
-	-- temp hack for filling out default keys
-	PlayerKeysEditor(app)
-end
 assert(MainMenu.menuOptions:remove(4).name == 'High Scores')
 assert(MainMenu.menuOptions:remove(2).name == 'New Game Co-op')
 
@@ -87,7 +75,7 @@ MainMenu.menuOptions:insert(1, {
 	click = function(self)
 		local app = self.app
 		app.menu = app.playingMenu
-		app.paused = false
+		app.playingMenu:resumeGame()
 	end,
 	visible = function(self)
 		return self.app.game ~= nil
@@ -190,6 +178,9 @@ precision highp float;
 	end)
 
 	--self.game = Game{app=self}
+
+	-- TODO put this in parent class
+	self.rng = self.RNG(self.playcfg.randseed)
 
 	self.lastTime = getTime()
 	self.updateTime = 0
