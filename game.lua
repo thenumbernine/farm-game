@@ -626,13 +626,15 @@ function Game:update(dt)
 	self.time = self.time + dt
 end
 
--- TODO only call this from a
+-- TODO only call this from a thread
 function Game:sleep(seconds)
 	assert(coroutine.isyieldable(coroutine.running()))
 	local endTime = self.time + seconds
 	while self.time < endTime do
 		coroutine.yield()
 	end
+	-- final yield?
+	--coroutine.yield()
 end
 
 function Game:fade(seconds, callback)
@@ -644,7 +646,25 @@ function Game:fade(seconds, callback)
 		callback(alpha)
 		coroutine.yield()
 	end
+	-- final callback(1) ?
+	callback(1)
 end
+
+function Game:fadeAppTime(seconds, callback)
+	assert(coroutine.isyieldable(coroutine.running()))
+	local app = self.app
+	-- TODO rename app.thisTime to app.time?
+	local startTime = app.thisTime
+	local endTime = startTime + seconds
+	while app.thisTime < endTime do
+		local alpha = (app.thisTime - startTime) / (endTime - startTime)
+		callback(alpha)
+		coroutine.yield()
+	end
+	-- final callback(1) ?
+	callback(1)
+end
+
 
 function Game:event(event, ...)
 	local app = self.app

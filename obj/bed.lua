@@ -26,22 +26,22 @@ not as long as I have .use() ...
 - as a behavior?
 --]]
 
-local ItemBed = Obj:subclass()
+local Bed = Obj:subclass()
 
-ItemBed.name = 'bed'
-ItemBed.sprite = 'bed'
+Bed.name = 'bed'
+Bed.sprite = 'bed'
 
 -- TODO eventually dont do this 
-ItemBed.useGravity = false
-ItemBed.collidesWithTiles = false
+Bed.useGravity = false
+Bed.collidesWithTiles = false
 
-ItemBed.bbox = box3f{
+Bed.bbox = box3f{
 	min = {-.5, -.5, 0},
 	max = {.5, .5, .5},
 }
 
 -- static method
-function ItemBed:useInInventory(player)
+function Bed:useInInventory(player)
 	local game = player.game
 	local map = game.map
 
@@ -63,29 +63,38 @@ function ItemBed:useInInventory(player)
 		}
 	end
 end
+		
+Bed.sleepTime = 3
 
 --[[
 here's the beginning of item-state vs game-state
 --]]
-function ItemBed:interactInWorld(player)
+function Bed:interactInWorld(player)
 	if player.sleeping then return end
 	player.sleeping = true
-	
+
+	player.drawAngle = .5 * math.pi
+	player.drawCenter:set(.5, .5)
 	player:setPos(self.pos:unpack())
 	
 	local game = self.game
 	game.threads:add(function()
-		game:sleep(1)
+		local startTime = game.time
+		local day = math.floor((startTime / game.secondsPerHour - game.wakeHour) / game.hoursPerDay) + 1
 		-- offst to the next cycle of 6am
-		local day = math.floor((game.time / game.secondsPerHour - game.wakeHour) / game.hoursPerDay) + 1
-		game.time = (day * game.hoursPerDay + game.wakeHour) * game.secondsPerHour
+		local endTime = (day * game.hoursPerDay + game.wakeHour) * game.secondsPerHour
+		game:fadeAppTime(self.sleepTime, function(x)
+			game.time = startTime * (1 - x) + endTime * x
+		end)
 		player.sleeping = false
+		player.drawAngle = 0
+		player.drawCenter:set(player.class.drawCenter:unpack())
 	end)
 end
 
-ItemBed.takesDamage = true
-function ItemBed:damage(amount, attacker, inflicter)
-	if not (inflicter and inflicter.name == 'axe') then return end
+Bed.takesDamage = true
+function Bed:damage(amount, attacker, inflicter)
+	if not (inflicter and (inflicter.name == 'axe' or inflicter.name == 'pickaxe')) then return end
 
 	self.game:newObj{
 		class = require 'zelda.obj.item',
@@ -95,4 +104,4 @@ function ItemBed:damage(amount, attacker, inflicter)
 	self:remove()
 end
 
-return ItemBed 
+return Bed 

@@ -28,14 +28,19 @@ Obj.bbox = box3f{
 	max = {.49, .49, .98},
 }
 
+-- model rotation or sprite billboard direction chooser
+Obj.angle = 0
+
+-- d/dt of angle
+Obj.rotation = 0
+
+-- sprite rotation, not model rotation
 Obj.drawAngle = 0
 
 Obj.drawCenter = vec2f(.5, 1)
 
 -- TODO spriteScale?
 Obj.drawSize = vec2f(1,1)
-
-Obj.rotation = 0
 
 function Obj:init(args)
 	assert(args)
