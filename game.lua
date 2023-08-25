@@ -375,6 +375,7 @@ void main() {
 			self.map.size.z-.5),
 		interactInWorld = function(interactObj, playerObj)
 			local player = playerObj.player
+--print('setting gamePrompt')
 			playerObj.gamePrompt = function()
 				local function buy(opt, amount)
 					assert(amount > 0)
@@ -395,6 +396,11 @@ void main() {
 				))
 			
 				ig.igText"want to buy something?"
+				
+				if ig.igButton'Ok###Ok2' then
+					playerObj.gamePrompt = nil
+--print('clearing gamePrompt')
+				end
 			
 				local options = table{
 					{name='blackberry seeds', cost=10},
@@ -443,11 +449,12 @@ void main() {
 						if ig.igButton('x'..x..'###'..i..'x'..x) then buy(opt, x) end
 						ig.igSameLine()
 					end
-					ig.igText(opt.name)
+					ig.igText('$'..opt.cost..': '..opt.name)
 				end
 
 				if ig.igButton'Ok' then
 					playerObj.gamePrompt = nil
+--print('clearing gamePrompt')
 				end
 				ig.igEnd()		
 			end

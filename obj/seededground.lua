@@ -12,4 +12,11 @@ SeededGround.bbox = box3f{
 	max = {.3, .3, .001},
 }
 
+function SeededGround:init(args)
+	SeededGround.super.init(self, args)
+
+	-- is a class, subclass of item/seeds
+	self.seedType = args.seedType
+end
+
 return SeededGround 

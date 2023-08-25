@@ -43,8 +43,10 @@ function ItemSeeds:useInInventory(player)
 	then
 		game:newObj{
 			-- TODO SeededGround vs ItemSeeds ...
+			-- and ItemSeeds vs Plant ...
+			-- and Plant vs Fruit ...
 			class = SeededGround,
-			--player:removeSelectedItem(),
+			seedType = player:removeSelectedItem(),
 			pos = vec3f(x+.5, y+.5, z + .002),
 		}
 	end

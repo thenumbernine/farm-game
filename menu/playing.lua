@@ -132,7 +132,9 @@ function PlayingMenu:updateGUI()
 				ig.ImGuiWindowFlags_NoCollapse,
 
 				ig.ImGuiWindowFlags_NoBackground,
-				ig.ImGuiWindowFlags_Tooltip
+				ig.ImGuiWindowFlags_Tooltip,
+
+				ig.ImGuiWindowFlags_NoNav	-- nav is bad for my app capturing sdl input
 			))
 			ig.igSetWindowFontScale(.5)
 			--[[

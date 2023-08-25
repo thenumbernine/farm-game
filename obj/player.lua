@@ -104,7 +104,9 @@ function Player:update(dt)
 			end
 		end
 
-		if appPlayer.keyPress.interact then
+		if appPlayer.keyPress.interact
+		and not appPlayer.keyPressLast.interact
+		then
 			do
 				-- TODO
 				-- traceline ...

@@ -42,6 +42,11 @@ Obj.drawCenter = vec2f(.5, 1)
 -- TODO spriteScale?
 Obj.drawSize = vec2f(1,1)
 
+-- whether we use see-thru
+-- default to no
+-- yes for not-so-interactable sprites like plants
+Obj.useSeeThru = false
+
 function Obj:init(args)
 	assert(args)
 	self.game = assert(args.game)
@@ -447,7 +452,7 @@ gl.glEnable(gl.GL_DEPTH_TEST)
 						gl.glUniform4f(shader.uniforms.color.loc, cr, cg, cb, ca)
 						
 						gl.glUniform3fv(shader.uniforms.playerViewPos.loc, 1, game.playerViewPos.s)
-						gl.glUniform1i(shader.uniforms.useSeeThru.loc, self == game.viewFollow and 0 or 1)
+						gl.glUniform1i(shader.uniforms.useSeeThru.loc, self.useSeeThru and 1 or 0)
 
 						game.spriteSceneObj.texs[1] = frame.tex
 						game.spriteSceneObj:draw()
