@@ -47,6 +47,8 @@ Obj.drawSize = vec2f(1,1)
 -- yes for not-so-interactable sprites like plants
 Obj.useSeeThru = false
 
+Obj.color = vec4f(1,1,1,1)
+
 function Obj:init(args)
 	assert(args)
 	self.game = assert(args.game)
@@ -71,7 +73,7 @@ function Obj:init(args)
 	self.bbox = box3f(self.class.bbox)
 	if args.bbox then self.bbox = box3f(args.bbox) end
 
-	self.color = vec4f(1,1,1,1)
+	self.color = vec4f(self.class.color)
 	if args.color then self.color:set(args.color:unpack()) end
 
 	self.sprite = args.sprite
@@ -420,7 +422,7 @@ gl.glEnable(gl.GL_DEPTH_TEST)
 						gl.glUniform3f(shader.uniforms.pos.loc, self.pos.x, self.pos.y, self.pos.z + .1) 
 						
 						local cr, cg, cb, ca = self.color:unpack()
-						-- cheap hack
+						-- cheap hack for cheap lighting
 						local x = math.floor(self.pos.x)
 						local y = math.floor(self.pos.y)
 						local z = math.floor(self.pos.z)
@@ -483,6 +485,7 @@ gl.glEnable(gl.GL_DEPTH_TEST)
 						gl.glUniformMatrix4fv(shader.uniforms.projectionMatrix.loc, 1, gl.GL_FALSE, view.projMat.ptr)
 						--shader:useNone()	-- why does shader need to be :use()'d here?
 						--]]
+						local cr, cg, cb, ca = self.color:unpack()
 						frame.mesh:draw{
 							shader = shader,
 							beginGroup = function(g)
@@ -492,7 +495,7 @@ gl.glEnable(gl.GL_DEPTH_TEST)
 									useLighting = 0,
 									useTextures = g.tex_Kd and 1 or 0,
 									Ka = {0,0,0,0},
-									Kd = g.Kd and g.Kd.s or {1,1,1,1},
+									Kd = g.Kd and {g.Kd.x*cr, g.Kd.y*cg, g.Kd.z*cb, ca} or {cr,cg,cb,ca},
 									Ks = g.Ks and g.Ks.s or {1,1,1,1},
 									Ns = g.Ns or 10,
 									

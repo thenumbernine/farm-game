@@ -16,6 +16,7 @@ function SeededGround:init(args)
 	SeededGround.super.init(self, args)
 
 
+--[=[ I don't need custom-shader just yet ... 
 	-- static-init
 	if not SeededGround.shader then
 		local GLProgram = require 'gl.program'
@@ -47,11 +48,15 @@ void main() {
 	
 		}
 	end
+--]=]
+	-- TODO some kind of shader for drawing dif kinds per-seed ?
+	-- maybe just dif colors for now
 
 	-- is a class, subclass of item/seeds
-	self.seedType = args.seedType
+	self.seedType = assert(args.seedType)
+	
+	self.color:set(self.seedType.plant.color:unpack())
 
-	-- TODO some kind of shader for drawing dif kinds per-seed 
 end
 
 return SeededGround 
