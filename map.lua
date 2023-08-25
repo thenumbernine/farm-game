@@ -347,8 +347,8 @@ end
 		format = gl.GL_RGBA,
 		type = gl.GL_FLOAT,
 		minFilter = gl.GL_NEAREST,
-		--magFilter = gl.GL_NEAREST,
-		magFilter = gl.GL_LINEAR,
+		magFilter = gl.GL_NEAREST,
+		--magFilter = gl.GL_LINEAR,	-- looks nice but bad at edges ... unless i manually add a border and copy ghost cells between chunks ... maybe ...
 		wrap = {
 			s = gl.GL_REPEAT,
 			t = gl.GL_REPEAT,

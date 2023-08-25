@@ -15,8 +15,43 @@ SeededGround.bbox = box3f{
 function SeededGround:init(args)
 	SeededGround.super.init(self, args)
 
+
+	-- static-init
+	if not SeededGround.shader then
+		local GLProgram = require 'gl.program'
+		local app = self.game.app
+		SeededGround.shader = GLProgram{
+			vertexCode = app.glslHeader..[[
+in vec3 pos;
+in vec3 texcoord;
+
+uniform mat4 modelMatrix;
+uniform mat4 viewMatrix;
+uniform mat4 projectionMatrix;
+
+out vec2 texcoordv;
+
+void main() {
+	texcoordv = texcoord.xy;
+	gl_Position = projectionMatrix * (viewMatrix * (modelMatrix * vec4(pos, 1.)));
+}
+]],
+		fragmentCode = app.glslHeader..[[
+in vec2 texcoordv;
+out vec4 fragColor;
+uniform sampler2D tex;
+void main() {
+	fragColor = texture(tex, texcoordv.xy);
+}
+]],
+	
+		}
+	end
+
 	-- is a class, subclass of item/seeds
 	self.seedType = args.seedType
+
+	-- TODO some kind of shader for drawing dif kinds per-seed 
 end
 
 return SeededGround 

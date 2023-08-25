@@ -403,7 +403,7 @@ gl.glEnable(gl.GL_DEPTH_TEST)
 				if seq and self.frame then
 					local frame = seq[self.frame]
 					if frame.tex then
-						local shader = game.spriteShader
+						local shader = self.shader or game.spriteShader
 
 						local uscale = -1
 						local vscale = 1
@@ -454,15 +454,18 @@ gl.glEnable(gl.GL_DEPTH_TEST)
 						gl.glUniform3fv(shader.uniforms.playerViewPos.loc, 1, game.playerViewPos.s)
 						gl.glUniform1i(shader.uniforms.useSeeThru.loc, self.useSeeThru and 1 or 0)
 
+						game.spriteSceneObj.shader = shader
 						game.spriteSceneObj.texs[1] = frame.tex
 						game.spriteSceneObj:draw()
+						-- reset
+						game.spriteSceneObj.shader = game.spriteShader
 
 						glreport'here'
 					elseif frame.mesh then
 						modelMat:setTranslate(self.pos:unpack())
 							:applyScale(self.drawSize.x, self.drawSize.x, self.drawSize.y)
 							:applyRotate(self.angle, 0, 0, 1)
-						local shader = assert(game.meshShader)
+						local shader = self.shader or game.meshShader
 						--[[
 						shader
 							:use()
