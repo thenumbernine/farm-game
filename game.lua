@@ -665,6 +665,9 @@ function Game:fadeAppTime(seconds, callback)
 	callback(1)
 end
 
+function Game:reset()
+	self.app.game = Game{app=self.app}
+end
 
 function Game:event(event, ...)
 	local app = self.app
@@ -674,12 +677,12 @@ function Game:event(event, ...)
 	or event.type == sdl.SDL_KEYUP
 	then
 		local down = event.type == sdl.SDL_KEYDOWN
-		
-		-- reset
-		if event.key.keysym.sym == ('r'):byte() then
-			self.app.game = Game{app=self.app}
-		end
 
+		-- menu items 1-12
+		-- how about another two buttons for switching active menu left + right?
+		-- or how about press a button to open menu, then in-menu arrow-keys switch current selected item
+		-- and whatver that is among the top 12 is whatver you're selected on when you close menu
+		-- and that way console controls work.
 		if down then
 			if event.key.keysym.sym >= ('1'):byte()
 			and event.key.keysym.sym <= ('9'):byte()
