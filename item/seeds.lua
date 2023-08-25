@@ -14,13 +14,14 @@ ItemSeeds.name = 'seeds'
 -- TODO instead make this all part of Plant
 ItemSeeds.subclasses = {}
 
-function ItemSeeds:makeSubclass(name)
-	local subcl = ItemSeeds.subclasses[name]
+function ItemSeeds:makeSubclass(plant)
+	local subcl = ItemSeeds.subclasses[plant.name]
 	if subcl then return subcl end
 	subcl = ItemSeeds:subclass{
-		name = name,
+		name = plant.name..' '..plant.growType,
+		plant = plant,
 	}
-	ItemSeeds.subclasses[name] = subcl
+	ItemSeeds.subclasses[plant.name] = subcl
 	return subcl
 end
 

@@ -364,7 +364,6 @@ void main() {
 	}
 					
 	local ItemSeeds = require 'zelda.item.seeds'
-	app.players[1].obj:addItem(ItemSeeds:makeSubclass'test')
 
 	local game = self
 	self:newObj{
@@ -377,12 +376,12 @@ void main() {
 			local player = playerObj.player
 --print('setting gamePrompt')
 			playerObj.gamePrompt = function()
-				local function buy(opt, amount)
+				local function buy(plant, amount)
 					assert(amount > 0)
-					local cost = opt.cost * amount
+					local cost = plant.cost * amount
 					if cost <= player.money then
 						player.money = player.money - cost
-						playerObj:addItem(ItemSeeds:makeSubclass(opt.name), amount)
+						playerObj:addItem(ItemSeeds:makeSubclass(plant), amount)
 					end
 				end
 
@@ -394,6 +393,7 @@ void main() {
 					ig.ImGuiWindowFlags_NoResize,
 					ig.ImGuiWindowFlags_NoCollapse
 				))
+				ig.igSetWindowFontScale(.5)
 			
 				ig.igText"want to buy something?"
 				
@@ -402,60 +402,21 @@ void main() {
 --print('clearing gamePrompt')
 				end
 			
-				local options = table{
-					{name='blackberry seeds', cost=10},
-					{name='acacia sapling', cost=10},
-					{name='almond seeds', cost=10},
-					{name='anise seeds', cost=10},
-					{name='dill seeds', cost=10},
-					{name='apple seeds', cost=10},
-					{name='citrus seeds', cost=10},
-					{name='barley seeds', cost=10},
-					{name='bay seeds', cost=10},
-					{name='greenbeans seeds', cost=10},
-					{name='cinnamon seeds', cost=10},
-					{name='corriander seeds', cost=10},
-					{name='cotton seeds', cost=10},
-					{name='cucumber seeds', cost=10},
-					{name='cumin seeds', cost=10},
-					{name='black cumin seeds', cost=10},
-					{name='date seeds', cost=10},
-					{name='fig sapling', cost=10},
-					{name='flax seeds', cost=10},
-					{name='garlic seeds', cost=10},
-					{name='grape seeds', cost=10},
-					{name='hemlock seeds', cost=10},
-					{name='jujube seeds', cost=10},
-					{name='leek seeds', cost=10},
-					{name='lentil seeds', cost=10},
-					{name='lily-of-the-valley seeds', cost=10},
-					{name='linen seeds', cost=10},
-					{name='mint seeds', cost=10},
-					{name='mustard seeds', cost=10},
-					{name='nettle seeds', cost=10},
-					{name='pistachio seeds', cost=10},
-					{name='oak sapling', cost=10},
-					{name='olive sapling', cost=10},
-					{name='onion seeds', cost=10},
-					{name='pomegranate sapling', cost=10},
-					{name='saffron seeds', cost=10},
-					{name='walnut sapling', cost=10},
-					{name='watermelon seeds', cost=10},
-					{name='wheat seeds', cost=10},
-					{name='wormwood seeds', cost=10},
-				}
-				for i,opt in ipairs(options) do
+				local plants = require 'zelda.plants'
+				for i,plant in ipairs(plants) do
 					for _,x in ipairs{1, 10, 100} do
-						if ig.igButton('x'..x..'###'..i..'x'..x) then buy(opt, x) end
+						if ig.igButton('x'..x..'###'..i..'x'..x) then buy(plant, x) end
 						ig.igSameLine()
 					end
-					ig.igText('$'..opt.cost..': '..opt.name)
+					ig.igText('$'..plant.cost..': '..plant.name)
 				end
 
 				if ig.igButton'Ok' then
 					playerObj.gamePrompt = nil
 --print('clearing gamePrompt')
 				end
+	
+				ig.igSetWindowFontScale(1)
 				ig.igEnd()		
 			end
 		end,
