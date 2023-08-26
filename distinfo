@@ -11,25 +11,10 @@ files = {
 		'splash.png',
 		'sprites',
 		'plants.csv',
+		'zelda',
 	},
 	-- other paths go here
 	['..'] = table{
-		-- TODO how about recursive wildcards?
-		-- how about also moving all scripts into a subfolder? like zelda/zelda?  thn just copy that folder *here*
-		-- 'zelda/*.lua'
-		'zelda/anim.lua',
-		'zelda/app.lua',
-		'zelda/game.lua',
-		'zelda/map.lua',
-		'zelda/plants.lua',
-		'zelda/sides.lua',
-		'zelda/splash.png',
-		'zelda/texpack.png',
-		'zelda/tile.lua',
-		'zelda/item',
-		'zelda/menu',
-		'zelda/obj',
-
 		'template',
 		'ext',
 		'ffi',
