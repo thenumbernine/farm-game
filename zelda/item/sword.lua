@@ -17,6 +17,7 @@ function ItemSword:useInInventory(player)
 	-- see if we hit anyone
 	-- TODO iterate through all blocks within some range around us ...
 	-- then iterate over their objs ...
+	-- TODO TODO just do traceline
 	for _,obj in ipairs(game.objs) do
 		if not obj.removeFlag
 		and obj ~= player 

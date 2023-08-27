@@ -466,9 +466,9 @@ void main() {
 						-- drawSize = vec2f(tex.width, tex.height) / 16,
 						--]]
 						-- [[ new
-						{sprite='faketree', weight=2, numLogs=10, hpMax=5},
-						{sprite='fakebush', weight=12, numLogs=2},
-						{sprite='fakeplant', weight=24},
+						{sprite='faketree', weight=2, numLogs=10, hpMax=5, inflictTypes={axe=true}, shakeOnHit=true, tipOnDie=true},
+						{sprite='fakebush', weight=12, numLogs=2, inflictTypes={axe=true}, shakeOnHit=true, tipOnDie=true},
+						{sprite='fakeplant', weight=24, inflictTypes={axe=true, sword=true}},
 						--]]
 					}):setmetatable(nil)
 					local sprite = anim[objInfo.sprite]

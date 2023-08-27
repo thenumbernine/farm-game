@@ -1,6 +1,7 @@
 local vec3f = require 'vec-ffi.vec3f'
 local Tile = require 'zelda.tile'
 local HoedGround = require 'zelda.obj.hoedground'
+local Plant = require 'zelda.obj.plant'
 local Item = require 'zelda.item.item'
 
 local ItemHoe = Item:subclass()
@@ -22,6 +23,9 @@ function ItemHoe:useInInventory(player)
 	if groundTile == Tile.typeValues.Grass
 	and topTile == Tile.typeValues.Empty
 	and not map:hasObjType(x,y,z,HoedGround)
+	-- TODO any kind of solid object
+	--  a better classification would be only allow watered/hoedground/seededground types (which should all have a common parent class / flag)
+	and not map:hasObjType(x,y,z,Plant)
 	then
 		game:newObj{
 			class = HoedGround,

@@ -51,49 +51,6 @@ local anim = {
 		},
 	},
 	--]]
-
-	-- [[ plants
-	tree1 = {
-		stand = {
-			{filename = 'sprites/tree1/stand.png'},
-		},
-	},
-	tree2 = {
-		stand = {
-			{filename = 'sprites/tree2/stand.png'},
-		},
-	},
-	bush1 = {
-		stand = {
-			{filename = 'sprites/bush1/stand.png'},
-		},
-	},
-	bush2 = {
-		stand = {
-			{filename = 'sprites/bush2/stand.png'},
-		},
-	},
-	bush3 = {
-		stand = {
-			{filename = 'sprites/bush3/stand.png'},
-		},
-	},
-	plant1 = {
-		stand = {
-			{filename = 'sprites/plant1/stand.png'},
-		},
-	},
-	plant2 = {
-		stand = {
-			{filename = 'sprites/plant2/stand.png'},
-		},
-	},
-	plant3 = {
-		stand = {
-			{filename = 'sprites/plant3/stand.png'},
-		},
-	},
-	--]]
 }
 
 -- auto-add.  i think this was below but below also had udlr stuff meh.

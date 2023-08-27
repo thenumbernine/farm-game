@@ -35,5 +35,4 @@ function vector:resize(newsize)
 	self.size = newsize
 end
 
-
 return require 'zelda.app'():run()

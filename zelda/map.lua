@@ -297,9 +297,7 @@ function Chunk:calcSunAngles()
 		for i=0,self.size.x-1 do
 			local x = i + bit.lshift(self.pos.x, self.bitsize.x)
 			local surface = self.surface + (i + self.size.x * j)
-if x == 44 and y == 44 then
-print(i,j ,surface.lumAlt)
-end
+--print(i,j ,surface.lumAlt)
 			local alt = surface.lumAlt
 			surface.minAngle = 0
 			surface.maxAngle = 2 *math.pi
@@ -313,9 +311,7 @@ end
 					local alt2 = chunk2.surface[di2 + self.size.x * j].lumAlt
 					local dz = alt2 - alt
 					local angle = (math.atan2(dx, -dz) + 2 * math.pi) % (2 * math.pi)
-if x == 44 and y == 44 then
-print('x2', x2, 'alt2', alt2, 'dx', dx, 'dz', dz, 'angle', angle)
-end					
+--print('x2', x2, 'alt2', alt2, 'dx', dx, 'dz', dz, 'angle', angle)
 					if x2 < x then
 						-- west = setting sun, pick the minimum maxAngle
 						surface.maxAngle = math.min(surface.maxAngle, angle)
@@ -325,9 +321,7 @@ end
 					end
 				end
 			end
-if x == 44 and y == 44 then
-print('result minAngle', surface.minAngle, 'maxAngle', surface.maxAngle)
-end		
+--print('result minAngle', surface.minAngle, 'maxAngle', surface.maxAngle)
 		end
 	end
 

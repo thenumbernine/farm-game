@@ -41,55 +41,82 @@ Plant.collidesWithTiles = false	-- this slows things down a lot.  so just turn o
 Plant.collidesWithObjects = false --?
 Plant.useSeeThru = true
 
--- default
---Obj.box = box3f(vec3f(-.49, -.49, 0), vec3f(.49, .49, .98))
+-- TODO instead of 'numLogs', how about some kind of num-resources-dropped
+Plant.numLogs = 0
+
+--[[ default
+Plant.box = box3f{
+	min={-.49, -.49, 0},
+	max={.49, .49, .98},
+}
+--]]
+-- but TODO dif sizes for dif stages in life and for dif types of plants
 
 function Plant:init(args, ...)
 	Plant.super.init(self, args, ...)
-	
-	-- TODO instead of 'numLogs', how about some kind of num-resources-dropped
+
+	self.shakeOnHit = args.shakeOnHit
+	self.tipOnDie = args.tipOnDie
 	self.numLogs = args.numLogs
 end
 
 function Plant:damage(amount, attacker, inflicter)
-	if not (inflicter and inflicter.name == 'axe') then return end
-
-	local game = self.game
-	game.threads:add(function()
-		game:fade(1, function(x)
-			-- TODO stack modifiers on attributes?
-			self.drawAngle = math.rad(10) * math.sin(-x*30) * math.exp(-5*x)
-		end)
-	end)
-	
-	return Plant.super.damage(self, amount, attacker, inflicter)
+	if Plant.super.damage(self, amount, attacker, inflicter) then
+		if self.shakeOnHit 
+		and not self.dead
+		then
+			-- shake plant angle ... for trees chopping down.
+			local game = self.game
+			game.threads:add(function()
+				game:fade(1, function(x)
+					-- TODO stack modifiers on attributes?
+					self.drawAngle = math.rad(10) * math.sin(-x*30) * math.exp(-5*x)
+				end)
+			end)
+		end
+		return true
+	end
 end
 
 function Plant:die()
+	-- hmm, move this to takesdamage? or keep it specilized here?
+	-- takesdamage already has the goomba death in it ....
+	-- maybe put a bunch of canned deaths in takesdamage and have an arg to pick which one
 	local game = self.game
-	game.threads:add(function()
-		game:fade(1, function(x)
-			-- TODO 3d model?
-			self.drawAngle = -x * math.pi * .5
+	if not self.tipOnDie then 
+		-- fade out and remove
+		game.threads:add(function()
+			game:fade(1, function(alpha)
+				self.color.w = 1 - alpha
+			end)
+			self:remove()
 		end)
-		self:remove()
-	
-		-- and then add a bunch of wood items
-		print('fell tree spawning', self.numLogs, 'logs')
-		for i=1,(self.numLogs or 0) do
-			local r = math.random() * 2
-			local theta = math.random() * 2 * math.pi
-			game:newObj{
-				class = require 'zelda.obj.item',
-				itemClass = require 'zelda.obj.log',
-				pos = self.pos + vec3f(
-					math.cos(theta) * r,
-					math.sin(theta) * r,
-					0
-				)
-			}
-		end
-	end)
+	else
+		game.threads:add(function()
+			-- TODO is this not working with sprites anymore?
+			game:fade(1, function(x)
+				-- TODO 3d model?
+				self.drawAngle = -x * math.pi * .5
+			end)
+			self:remove()
+		
+			-- and then add a bunch of wood items
+			print('fell tree spawning', self.numLogs, 'logs')
+			for i=1,self.numLogs do
+				local r = math.random() * 2
+				local theta = math.random() * 2 * math.pi
+				game:newObj{
+					class = require 'zelda.obj.item',
+					itemClass = require 'zelda.obj.log',
+					pos = self.pos + vec3f(
+						math.cos(theta) * r,
+						math.sin(theta) * r,
+						0
+					)
+				}
+			end
+		end)
+	end
 end
 
 return Plant 
