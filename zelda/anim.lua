@@ -96,6 +96,24 @@ local anim = {
 	--]]
 }
 
+-- auto-add.  i think this was below but below also had udlr stuff meh.
+local path = require 'ext.path'
+for _,dir in ipairs{
+	'faketree',
+	'fakeplant',
+	'fakebush',
+} do
+	local sprite = {}
+	for f in (path'sprites'/dir):dir() do
+		local fbase = path(f):getext()
+		sprite[fbase] = {
+			{filename = tostring(path'sprites'/dir/f)},
+		}
+	end
+	anim[dir] = sprite
+end
+
+
 -- TODO use the filesystem for the whole thing? and no table?
 -- or TODO use spritesheets?
 --[[

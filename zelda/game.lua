@@ -450,20 +450,37 @@ void main() {
 				end
 				if r < .7 then
 					local anim = require 'zelda.anim'
-					local objInfo = pickWeighted{
+					local objInfo = table(pickWeighted{
+						--[[ old
+						-- 120 pixels
 						{sprite='tree1', weight=1, numLogs=10, hpMax=5},
 						{sprite='tree2', weight=1, numLogs=10, hpMax=5},
+						-- 39 pixels
 						{sprite='bush1', weight=4, numLogs=2},
 						{sprite='bush2', weight=4, numLogs=2},
 						{sprite='bush3', weight=4, numLogs=2},
+						-- 18 pixels
 						{sprite='plant1', weight=8},
 						{sprite='plant2', weight=8},
 						{sprite='plant3', weight=8},
-					}
-					local tex = anim[objInfo.sprite].stand[1].tex
+						-- drawSize = vec2f(tex.width, tex.height) / 16,
+						--]]
+						-- [[ new
+						{sprite='faketree', weight=2, numLogs=10, hpMax=5},
+						{sprite='fakebush', weight=12, numLogs=2},
+						{sprite='fakeplant', weight=24},
+						--]]
+					}):setmetatable(nil)
+					local sprite = anim[objInfo.sprite]
+					local seqnames = table.keys(sprite)
+					local seqname = seqnames:pickRandom()
+					objInfo.seq = seqname
+					local seq = assert(sprite[seqname])
+					local frame = seq[1]
+					local tex = frame.tex
 					self:newObj(table(objInfo, {
 						class = require 'zelda.obj.plant',
-						drawSize = vec2f(tex.width, tex.height) / 16,
+						drawSize = vec2f(tex.width, tex.height) / 20,
 						pos = vec3f(i + .5, j + .5, k + 1),
 					}):setmetatable(nil))
 				end

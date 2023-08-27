@@ -77,6 +77,7 @@ function Obj:init(args)
 	if args.color then self.color:set(args.color:unpack()) end
 
 	self.sprite = args.sprite
+	self.seq = args.seq
 
 	self.interactInWorld = args.interactInWorld
 

@@ -76,7 +76,8 @@ function PlayingMenu:updateGUI()
 		or ig.igButton('run code')
 		then
 			print('executing...\n'..self.consoleBuffer)
-			local f, err = load(self.consoleBuffer, nil, nil, {app=app, game=game, player=player})
+			local env = setmetatable({app=app, game=game, player=player}, {__index=_G})
+			local f, err = load(self.consoleBuffer, nil, nil, env)
 			if not f then
 				print(err)
 			else

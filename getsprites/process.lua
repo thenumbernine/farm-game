@@ -94,9 +94,14 @@ for f in srcdir:dir() do
 
 
 	local targetsize = 64
-	if tostring(src):sub(1,4) == 'tree' then
-		targetsize = 128
+	local planttype = 'plant'
+	if tostring(src):find'tree' then
+		targetsize = 256
+		planttype = 'tree'
+	elseif tostring(src):find'bush' then
+		planttype = 'bush'
 	end
+print('targetsize', targetsize)
 
 	dstimg = dstimg:resize(math.ceil(targetsize*w/s), math.ceil(targetsize*h/s))
 --]=]
@@ -104,4 +109,8 @@ for f in srcdir:dir() do
 	dstimg:save(tostring(dst))
 	--]]
 	
+	-- last, copy it into its dst live folder ... ?
+	local dst2 = path('../sprites/fake'..planttype..'/'..f):setext'png'
+	print('also saving to', dst2)
+	dstimg:save(tostring(dst2))
 end
