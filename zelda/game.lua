@@ -436,26 +436,12 @@ void main() {
 				end
 				if r < .7 then
 					local anim = require 'zelda.anim'
+					-- TODO pick plants based on biome
+					-- and move the rest of these stats into the plantType
 					local objInfo = table{
-						--[[ old
-						-- 120 pixels
-						{sprite='tree1', weight=1, numLogs=10, hpMax=5},
-						{sprite='tree2', weight=1, numLogs=10, hpMax=5},
-						-- 39 pixels
-						{sprite='bush1', weight=4, numLogs=2},
-						{sprite='bush2', weight=4, numLogs=2},
-						{sprite='bush3', weight=4, numLogs=2},
-						-- 18 pixels
-						{sprite='plant1', weight=8},
-						{sprite='plant2', weight=8},
-						{sprite='plant3', weight=8},
-						-- drawSize = vec2f(tex.width, tex.height) / 16,
-						--]]
-						-- [[ new
 						{plantType=plantTypes:pickRandom(), weight=1, numLogs=10, hpMax=5, inflictTypes={axe=true}, shakeOnHit=true, tipOnDie=true},
 						{plantType=plantTypes:pickRandom(), weight=6, numLogs=2, inflictTypes={axe=true}, shakeOnHit=true, tipOnDie=true},
 						{plantType=plantTypes:pickRandom(), weight=12, inflictTypes={axe=true, sword=true}},
-						--]]
 					}:pickWeighted()
 					local sprite = assert(anim[objInfo.plantType.sprite])
 					local seqnames = table.keys(sprite)
