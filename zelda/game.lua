@@ -449,7 +449,7 @@ void main() {
 					objInfo.seq = seqname
 					local seq = assert(sprite[seqname])
 					local frame = seq[1]
-					local tex = frame.tex
+					local tex = assert(frame.tex, "failed to find frame for sprite "..objInfo.plantType.sprite.." seq "..seqname)
 					self:newObj(table(objInfo, {
 						class = require 'zelda.obj.plant',
 						drawSize = vec2f(tex.width, tex.height) / 20,

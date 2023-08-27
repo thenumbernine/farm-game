@@ -38,6 +38,8 @@ files = {
 		'imguiapp',
 		'gameapp',
 		'audio',
+		'csv',
+		'lfs_ffi',
 	},
 }
 
