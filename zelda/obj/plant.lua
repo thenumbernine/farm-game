@@ -41,7 +41,6 @@ Plant.collidesWithTiles = false	-- this slows things down a lot.  so just turn o
 Plant.collidesWithObjects = false --?
 Plant.useSeeThru = true
 
--- TODO instead of 'numLogs', how about some kind of num-resources-dropped
 Plant.numLogs = 0
 
 --[[ default
@@ -55,9 +54,31 @@ Plant.box = box3f{
 function Plant:init(args, ...)
 	Plant.super.init(self, args, ...)
 
+	self.plantedTime = args.plantTime or self.game.time
+
+	-- TODO maybe move these to takesdamage
 	self.shakeOnHit = args.shakeOnHit
 	self.tipOnDie = args.tipOnDie
+	
+	-- TODO instead of 'numLogs', how about some kind of num-resources-dropped
 	self.numLogs = args.numLogs
+
+	self.plantType = assert(args.plantType)
+	self.color:set(self.plantType.color:unpack())
+end
+
+function Plant:update(...)
+	local game = self.game
+
+	if game.time - self.plantedTime < game.secondsPerDay then
+		self.sprite = 'seededground'
+		-- TODO bbox as well
+		--self.bbox = box3f{min = {-.3, -.3, -.001}, max = {.3, .3, .001},}
+	else
+		self.sprite = self.plantType.sprite
+	end
+
+	Plant.super.update(self, ...)
 end
 
 function Plant:damage(amount, attacker, inflicter)

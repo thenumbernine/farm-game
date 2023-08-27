@@ -35,4 +35,22 @@ function vector:resize(newsize)
 	self.size = newsize
 end
 
+
+-- hack ext.table
+-- t = table of {.weight=...}
+local table = require 'ext.table'
+function table.pickWeighted(t)
+	local totalWeight = 0
+	for _,p in ipairs(t) do
+		totalWeight = totalWeight + p.weight
+	end
+	local pickWeight = totalWeight * math.random()
+	for _,p in ipairs(t) do
+		pickWeight = pickWeight - p.weight
+		if pickWeight <= 0 then return p end
+	end
+	error"here"
+end
+
+
 return require 'zelda.app'():run()

@@ -4,7 +4,7 @@ TODO merge this with obj/seededground
 local vec3f = require 'vec-ffi.vec3f'
 local Tile = require 'zelda.tile'
 local HoedGround = require 'zelda.obj.hoedground'
-local SeededGround = require 'zelda.obj.seededground'
+local Plant = require 'zelda.obj.plant'
 local Item = require 'zelda.item.item'
 
 local ItemSeeds = Item:subclass()
@@ -14,14 +14,14 @@ ItemSeeds.name = 'seeds'
 -- TODO instead make this all part of Plant
 ItemSeeds.subclasses = {}
 
-function ItemSeeds:makeSubclass(plant)
-	local subcl = ItemSeeds.subclasses[plant.name]
+function ItemSeeds:makeSubclass(plantType)
+	local subcl = ItemSeeds.subclasses[plantType.name]
 	if subcl then return subcl end
 	subcl = ItemSeeds:subclass{
-		name = plant.name..' '..plant.growType,
-		plant = plant,
+		name = plantType.name..' '..plantType.growType,
+		plantType = plantType,
 	}
-	ItemSeeds.subclasses[plant.name] = subcl
+	ItemSeeds.subclasses[plantType.name] = subcl
 	return subcl
 end
 
@@ -40,14 +40,12 @@ function ItemSeeds:useInInventory(player)
 	if groundTile == Tile.typeValues.Grass
 	and topTile == Tile.typeValues.Empty
 	and map:hasObjType(x,y,z, HoedGround)
-	and not map:hasObjType(x,y,z, SeededGround)
+	and not map:hasObjType(x,y,z, Plant)
 	then
+		assert(player:removeSelectedItem() == self)
 		game:newObj{
-			-- TODO SeededGround vs ItemSeeds ...
-			-- and ItemSeeds vs Plant ...
-			-- and Plant vs Fruit ...
-			class = SeededGround,
-			seedType = player:removeSelectedItem(),
+			class = Plant,
+			plantType = self.plantType,
 			pos = vec3f(x+.5, y+.5, z + .002),
 		}
 	end

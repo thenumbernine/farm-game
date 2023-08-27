@@ -17,6 +17,7 @@ local Map = require 'zelda.map'
 local Tile = require 'zelda.tile'
 local Obj = require 'zelda.obj.obj'
 local ThreadManager = require 'threadmanager'
+local plantTypes = require 'zelda.plants'
 
 -- put this somewhere as to not give it a require loop
 assert(not Obj.classes)
@@ -28,20 +29,6 @@ local function hexcolor(i)
 		bit.band(0xff, bit.rshift(i,8))/255,
 		bit.band(0xff, i)/255,
 		1
-end
-
--- t = table of {.weight=...}
-local function pickWeighted(t)
-	local totalWeight = 0
-	for _,p in ipairs(t) do
-		totalWeight = totalWeight + p.weight
-	end
-	local pickWeight = totalWeight * math.random()
-	for _,p in ipairs(t) do
-		pickWeight = pickWeight - p.weight
-		if pickWeight <= 0 then return p end
-	end
-	error"here"
 end
 
 local Game = class()
@@ -376,12 +363,12 @@ void main() {
 			local player = playerObj.player
 --print('setting gamePrompt')
 			playerObj.gamePrompt = function()
-				local function buy(plant, amount)
+				local function buy(plantType, amount)
 					assert(amount > 0)
-					local cost = plant.cost * amount
+					local cost = plantType.cost * amount
 					if cost <= player.money then
 						player.money = player.money - cost
-						playerObj:addItem(ItemSeeds:makeSubclass(plant), amount)
+						playerObj:addItem(ItemSeeds:makeSubclass(plantType), amount)
 					end
 				end
 
@@ -402,13 +389,12 @@ void main() {
 --print('clearing gamePrompt')
 				end
 			
-				local plants = require 'zelda.plants'
-				for i,plant in ipairs(plants) do
+				for i,plantType in ipairs(plantTypes) do
 					for _,x in ipairs{1, 10, 100} do
-						if ig.igButton('x'..x..'###'..i..'x'..x) then buy(plant, x) end
+						if ig.igButton('x'..x..'###'..i..'x'..x) then buy(plantType, x) end
 						ig.igSameLine()
 					end
-					ig.igText('$'..plant.cost..': '..plant.name)
+					ig.igText('$'..plantType.cost..': '..plantType.name)
 				end
 
 				if ig.igButton'Ok' then
@@ -450,7 +436,7 @@ void main() {
 				end
 				if r < .7 then
 					local anim = require 'zelda.anim'
-					local objInfo = table(pickWeighted{
+					local objInfo = table{
 						--[[ old
 						-- 120 pixels
 						{sprite='tree1', weight=1, numLogs=10, hpMax=5},
@@ -466,12 +452,12 @@ void main() {
 						-- drawSize = vec2f(tex.width, tex.height) / 16,
 						--]]
 						-- [[ new
-						{sprite='faketree', weight=2, numLogs=10, hpMax=5, inflictTypes={axe=true}, shakeOnHit=true, tipOnDie=true},
-						{sprite='fakebush', weight=12, numLogs=2, inflictTypes={axe=true}, shakeOnHit=true, tipOnDie=true},
-						{sprite='fakeplant', weight=24, inflictTypes={axe=true, sword=true}},
+						{plantType=plantTypes:pickRandom(), weight=1, numLogs=10, hpMax=5, inflictTypes={axe=true}, shakeOnHit=true, tipOnDie=true},
+						{plantType=plantTypes:pickRandom(), weight=6, numLogs=2, inflictTypes={axe=true}, shakeOnHit=true, tipOnDie=true},
+						{plantType=plantTypes:pickRandom(), weight=12, inflictTypes={axe=true, sword=true}},
 						--]]
-					}):setmetatable(nil)
-					local sprite = anim[objInfo.sprite]
+					}:pickWeighted()
+					local sprite = assert(anim[objInfo.plantType.sprite])
 					local seqnames = table.keys(sprite)
 					local seqname = seqnames:pickRandom()
 					objInfo.seq = seqname
@@ -482,6 +468,8 @@ void main() {
 						class = require 'zelda.obj.plant',
 						drawSize = vec2f(tex.width, tex.height) / 20,
 						pos = vec3f(i + .5, j + .5, k + 1),
+						-- TODO random?
+						plantTime = self.time - 2 * self.secondsPerDay,
 					}):setmetatable(nil))
 				end
 			end
