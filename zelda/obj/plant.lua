@@ -76,10 +76,16 @@ function Plant:update(...)
 
 	if game.time - self.createTime < game.secondsPerDay then
 		self.sprite = 'seededground'
-		-- TODO bbox as well
-		--self.bbox = box3f{min = {-.3, -.3, -.001}, max = {.3, .3, .001},}
+		self.seq = 'stand'
+		self.drawSize:set(1,1)
+		self.bbox.min:set(-.3, -.3, -.001)
+		self.bbox.max:set(.3, .3, .001)
 	else
 		self.sprite = self.plantType.sprite
+		self.seq = nil	-- fall back on class seq, generated class based on plantType
+		self.drawSize:set(self.plantType.drawSize:unpack())
+		self.bbox.min:set(-.49, -.49, 0)
+		self.bbox.max:set(.49, .49, .98)
 	end
 
 	Plant.super.update(self, ...)
