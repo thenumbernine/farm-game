@@ -9,9 +9,7 @@ function PlayingMenu:startNewGame()
 	-- sets app.paused = false
 	PlayingMenu.super.startNewGame(self)
 
-	-- TODO app.Game
-	local Game = require 'zelda.game'
-	app.game = Game{app=app}
+	app:resetGame()
 end
 
 function PlayingMenu:updateGUI()

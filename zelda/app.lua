@@ -113,10 +113,18 @@ precision highp float;
 		end
 	end
 	--]]
+	
+	gl.glEnable(gl.GL_DEPTH_TEST)
+	gl.glEnable(gl.GL_CULL_FACE)
 
+	self:resetGame(true)
+	
+	self.lastTime = getTime()
+	self.updateTime = 0
+end
 
-	-- TODO this in App:reset()
-
+-- called by menu.NewGame
+function App:resetGame(dontMakeGame)
 	-- in degrees
 	self.targetViewYaw = 0
 	self.viewYaw = 0
@@ -133,11 +141,9 @@ precision highp float;
 	-- TODO put this in parent class
 	self.rng = self.RNG(self.playcfg.randseed)
 
-	self.lastTime = getTime()
-	self.updateTime = 0
-
-	gl.glEnable(gl.GL_DEPTH_TEST)
-	gl.glEnable(gl.GL_CULL_FACE)
+	if not dontMakeGame then
+		self.game = Game{app = self}
+	end
 end
 
 App.updateDelta = 1/30

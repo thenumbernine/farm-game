@@ -110,6 +110,7 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 	-- then these would be baked into classes 
 	-- and not need to be set here
 
+	-- TODO plantType
 	plantType.growType = 'seeds'
 	plantType.cost = 10
 	
@@ -145,13 +146,21 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 	elseif plantType.sprite == 'fakebush' then
 		--plantType.drawSize = vec2f(64, 64)/20
 		plantType.numLogs = 2
-		plantType.inflictTypes = {axe=true}
+		plantType.inflictTypes = {axe=true, sword=true}
 		plantType.shakeOnHit = true
 		plantType.tipOnDie = true
 	else
 		--plantType.drawSize = vec2f(32, 32)/20
 		plantType.inflictTypes = {axe=true, sword=true}
 	end
+
+	plantType.objClass = require 'zelda.obj.plant':subclass(plantType)
+	plantType.objClass.plantType = plantType
+
+	plantType.seedClass = require 'zelda.item.seeds':subclass{
+		name = plantType.name..' '..plantType.growType,
+		plantType = plantType,
+	}
 
 	return plantType
 end)

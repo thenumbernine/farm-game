@@ -11,20 +11,6 @@ local ItemSeeds = Item:subclass()
 
 ItemSeeds.name = 'seeds'
 
--- TODO instead make this all part of Plant
-ItemSeeds.subclasses = {}
-
-function ItemSeeds:makeSubclass(plantType)
-	local subcl = ItemSeeds.subclasses[plantType.name]
-	if subcl then return subcl end
-	subcl = ItemSeeds:subclass{
-		name = plantType.name..' '..plantType.growType,
-		plantType = plantType,
-	}
-	ItemSeeds.subclasses[plantType.name] = subcl
-	return subcl
-end
-
 -- static method
 function ItemSeeds:useInInventory(player)
 	local game = player.game
@@ -40,12 +26,12 @@ function ItemSeeds:useInInventory(player)
 	if groundTile == Tile.typeValues.Grass
 	and topTile == Tile.typeValues.Empty
 	and map:hasObjType(x,y,z, HoedGround)
+	-- TODO how about a flag for objs whether they block seeds or not?
 	and not map:hasObjType(x,y,z, Plant)
 	then
 		assert(player:removeSelectedItem() == self)
 		game:newObj{
-			class = Plant,
-			plantType = self.plantType,
+			class = self.plantType.objClass,
 			pos = vec3f(x+.5, y+.5, z + .002),
 		}
 	end

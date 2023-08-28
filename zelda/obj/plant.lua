@@ -67,7 +67,8 @@ function Plant:init(args, ...)
 	-- TODO instead of 'numLogs', how about some kind of num-resources-dropped
 	self.numLogs = args.numLogs
 
-	self.plantType = assert(args.plantType)
+	self.plantType = args.plantType
+	assert(self.plantType)
 end
 
 function Plant:update(...)

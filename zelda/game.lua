@@ -349,7 +349,6 @@ void main() {
 		player = assert(app.players[1]),
 	}
 					
-	local ItemSeeds = require 'zelda.item.seeds'
 	local plantTypes = require 'zelda.plants'
 
 	local game = self
@@ -368,7 +367,7 @@ void main() {
 					local cost = plantType.cost * amount
 					if cost <= player.money then
 						player.money = player.money - cost
-						playerObj:addItem(ItemSeeds:makeSubclass(plantType), amount)
+						playerObj:addItem(plantType.seedClass, amount)
 					end
 				end
 
@@ -438,22 +437,10 @@ void main() {
 					-- TODO pick plants based on biome
 					-- and move the rest of these stats into the plantType
 					local plantType = plantTypes:pickRandom()
-					local Plant = require 'zelda.obj.plant'
 					self:newObj{
-						class = Plant,
+						class = plantType.objClass,
 						pos = vec3f(i + .5, j + .5, k + 1),
 						createTime = self.time - self.secondsPerDay * (math.random() * 10 + 1.1),
-						
-						plantType = plantType,
-
-						color = plantType.color,
-						drawSize = plantType.drawSize,
-						numLogs = plantType.numLogs,
-						hpMax = plantType.hpMax,
-						inflictTypes = plantType.inflictTypes,
-						shakeOnHit = plantType.shakeOnHit,
-						tipOnDie = plantType.tipOnDie,
-						seq = plantType.seq,
 					}
 				end
 			end
@@ -620,10 +607,6 @@ function Game:fadeAppTime(seconds, callback)
 	end
 	-- final callback(1) ?
 	callback(1)
-end
-
-function Game:reset()
-	self.app.game = Game{app=self.app}
 end
 
 function Game:event(event, ...)
