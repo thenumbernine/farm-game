@@ -1,6 +1,7 @@
--- plants table
+-- plantTypes table
 -- TODO planttypes.lua ?
 -- used with item/seeds .plant, obj/seededground .plant etc
+local vec2f = require 'vec-ffi.vec2f'
 local vec3f = require 'vec-ffi.vec3f'
 local vec4f = require 'vec-ffi.vec4f'
 local table = require 'ext.table'
@@ -66,7 +67,7 @@ TODO growType->plantType:
 			yam
 			pineapple
 			taro
-		SPRITES: seed-in-ground -> veg, seed
+		SPRITES: seed-in-ground -> veg, refine veg -> seed
 	
 	- leafs/grain/hay/wheat = grows to a veg, harvest with scythe
 		harvest via 
@@ -77,7 +78,7 @@ TODO growType->plantType:
 			rice
 			wheat
 			amaranth
-		SPRITES: seed-in-ground -> veg, seed (same as vegetable but scythe to harvest)
+		SPRITES: seed-in-ground -> veg, refine veg -> seed (same as vegetable but scythe to harvest)
 
 	- flower = grows to a flower
 		ex: jazz
@@ -86,7 +87,7 @@ TODO growType->plantType:
 			summer spangle
 			sunflower
 			fairy rose
-		SPRITES: seed-in-ground -> flower
+		SPRITES: seed-in-ground -> flower, refine flower -> seed
 
 cost = how much to buy/sell
 --]]
@@ -97,26 +98,63 @@ local plantcsv = require 'csv'.file'plants.csv'
 local fields = plantcsv.rows:remove(1)
 plantcsv:setColumnNames(fields)
 
-local plants = plantcsv.rows:mapi(function(row)
-	local plant = {}
+local plantTypes = plantcsv.rows:mapi(function(row)
+	local plantType = {}
 	for _,f in ipairs(fields) do
-		plant[f] = row[f]
+		plantType[f] = row[f]
 	end
-	
-	plant.growType = 'seeds'
-	plant.cost = 10
+
+	-- TODO
+	-- create the plant-obj-class and plant-fruit-class (and plant-seed-class)
+	-- ... in zelda/plants.lua
+	-- then these would be baked into classes 
+	-- and not need to be set here
+
+	plantType.growType = 'seeds'
+	plantType.cost = 10
 	
 	local color = vec3f(math.random(), math.random(), math.random()):normalize()
-	plant.color = vec4f(color.x, color.y, color.z, 1)
+	plantType.color = vec4f(color.x, color.y, color.z, 1)
 
-	plant.sprite = table{
+	plantType.sprite = table{
 		{weight=1, sprite='faketree'},
 		{weight=6, sprite='fakebush'},
 		{weight=12, sprite='fakeplant'},
 	}:pickWeighted().sprite
 
-	return plant
+	-- pick a random sequence <-> plant sub-type
+	local anim = require 'zelda.anim'
+	local sprite = assert(anim[plantType.sprite])
+	local seqnames = table.keys(sprite)
+	local seqname = seqnames:pickRandom()
+	plantType.seq = seqname
+
+	local seq = assert(sprite[seqname])
+	local frame = assert(seq[1])
+	local tex = assert(frame.tex, "failed to find frame for sprite "..plantType.sprite.." seq "..seqname)
+	plantType.drawSize = vec2f(tex.width, tex.height) / 20
+
+	-- TODO drawSize should be proportional to the sprite used
+	if plantType.sprite == 'faketree' then
+		--plantType.drawSize = vec2f(128, 128)/20
+		plantType.numLogs = 10
+		plantType.hpMax = 5
+		plantType.inflictTypes = {axe=true}
+		plantType.shakeOnHit = true
+		plantType.tipOnDie = true
+	elseif plantType.sprite == 'fakebush' then
+		--plantType.drawSize = vec2f(64, 64)/20
+		plantType.numLogs = 2
+		plantType.inflictTypes = {axe=true}
+		plantType.shakeOnHit = true
+		plantType.tipOnDie = true
+	else
+		--plantType.drawSize = vec2f(32, 32)/20
+		plantType.inflictTypes = {axe=true, sword=true}
+	end
+
+	return plantType
 end)
 
-print('got', #plants, 'plants')
-return plants
+print('got', #plantTypes, 'plantTypes')
+return plantTypes

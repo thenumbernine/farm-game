@@ -53,6 +53,10 @@ function Obj:init(args)
 	assert(args)
 	self.game = assert(args.game)
 
+	-- what was the game clock when the object was created?
+	-- this will need to be explicitly set for objects being loaded from save games etc 
+	self.createTime = args.createTime or self.game.time
+
 	self.angle = 1.5 * math.pi
 
 	self.rotation = args.rotation

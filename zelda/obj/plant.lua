@@ -33,6 +33,11 @@ local Obj = require 'zelda.obj.obj'
 
 local Plant = require 'zelda.obj.takesdamage'(Obj):subclass()
 
+-- TODO makeSubclass based on plantType
+-- just like item/seeds
+-- and then again for item/fruit
+-- in fact maybe plantType should just generate per-plant a seed, a plant, and (optionlly) a fruit
+
 Plant.name = 'Plant'
 
 Plant.sprite = 'plant1'
@@ -54,9 +59,8 @@ Plant.box = box3f{
 function Plant:init(args, ...)
 	Plant.super.init(self, args, ...)
 
-	self.plantedTime = args.plantTime or self.game.time
-
 	-- TODO maybe move these to takesdamage
+	-- have objects pick their own custom on-damage and on-death
 	self.shakeOnHit = args.shakeOnHit
 	self.tipOnDie = args.tipOnDie
 	
@@ -64,13 +68,12 @@ function Plant:init(args, ...)
 	self.numLogs = args.numLogs
 
 	self.plantType = assert(args.plantType)
-	self.color:set(self.plantType.color:unpack())
 end
 
 function Plant:update(...)
 	local game = self.game
 
-	if game.time - self.plantedTime < game.secondsPerDay then
+	if game.time - self.createTime < game.secondsPerDay then
 		self.sprite = 'seededground'
 		-- TODO bbox as well
 		--self.bbox = box3f{min = {-.3, -.3, -.001}, max = {.3, .3, .001},}

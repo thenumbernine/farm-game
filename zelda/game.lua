@@ -17,7 +17,6 @@ local Map = require 'zelda.map'
 local Tile = require 'zelda.tile'
 local Obj = require 'zelda.obj.obj'
 local ThreadManager = require 'threadmanager'
-local plantTypes = require 'zelda.plants'
 
 -- put this somewhere as to not give it a require loop
 assert(not Obj.classes)
@@ -351,6 +350,7 @@ void main() {
 	}
 					
 	local ItemSeeds = require 'zelda.item.seeds'
+	local plantTypes = require 'zelda.plants'
 
 	local game = self
 	self:newObj{
@@ -435,28 +435,26 @@ void main() {
 					r = 1
 				end
 				if r < .7 then
-					local anim = require 'zelda.anim'
 					-- TODO pick plants based on biome
 					-- and move the rest of these stats into the plantType
-					local objInfo = table{
-						{plantType=plantTypes:pickRandom(), weight=1, numLogs=10, hpMax=5, inflictTypes={axe=true}, shakeOnHit=true, tipOnDie=true},
-						{plantType=plantTypes:pickRandom(), weight=6, numLogs=2, inflictTypes={axe=true}, shakeOnHit=true, tipOnDie=true},
-						{plantType=plantTypes:pickRandom(), weight=12, inflictTypes={axe=true, sword=true}},
-					}:pickWeighted()
-					local sprite = assert(anim[objInfo.plantType.sprite])
-					local seqnames = table.keys(sprite)
-					local seqname = seqnames:pickRandom()
-					objInfo.seq = seqname
-					local seq = assert(sprite[seqname])
-					local frame = seq[1]
-					local tex = assert(frame.tex, "failed to find frame for sprite "..objInfo.plantType.sprite.." seq "..seqname)
-					self:newObj(table(objInfo, {
-						class = require 'zelda.obj.plant',
-						drawSize = vec2f(tex.width, tex.height) / 20,
+					local plantType = plantTypes:pickRandom()
+					local Plant = require 'zelda.obj.plant'
+					self:newObj{
+						class = Plant,
 						pos = vec3f(i + .5, j + .5, k + 1),
-						-- TODO random?
-						plantTime = self.time - 2 * self.secondsPerDay,
-					}):setmetatable(nil))
+						createTime = self.time - self.secondsPerDay * (math.random() * 10 + 1.1),
+						
+						plantType = plantType,
+
+						color = plantType.color,
+						drawSize = plantType.drawSize,
+						numLogs = plantType.numLogs,
+						hpMax = plantType.hpMax,
+						inflictTypes = plantType.inflictTypes,
+						shakeOnHit = plantType.shakeOnHit,
+						tipOnDie = plantType.tipOnDie,
+						seq = plantType.seq,
+					}
 				end
 			end
 		end
