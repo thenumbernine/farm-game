@@ -50,7 +50,8 @@ local anim = {
 	-- [[ 3D
 	bed = {
 		stand = {
-			{filename = 'sprites/bed/stand.obj'},
+			--{filename = 'sprites/bed/stand.obj'},
+			{filename = 'sprites/bed/stand.png'},
 		},
 	},
 	--]]

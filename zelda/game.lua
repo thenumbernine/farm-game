@@ -471,6 +471,10 @@ void main() {
 		end
 	end
 --]]
+	
+	-- collect per-texture of sprites
+	self.spriteDrawList = table()
+	self.meshDrawList = table()
 end
 
 function Game:timeToStr()
@@ -555,9 +559,50 @@ function Game:draw()
 
 	self.map:draw()
 
+-- with zero sprite rendering whatsoever i'm getting 30fps
+-- so sprite rendering might not be our bottleneck ...
+-- [=[
+	-- collect per-texture of sprites
+	for k in pairs(self.spriteDrawList) do
+		self.spriteDrawList[k] = nil
+	end
+	for k in pairs(self.meshDrawList) do
+		self.meshDrawList[k] = nil
+	end
+
+	-- accumulate draw lists
 	for _,obj in ipairs(self.objs) do
 		obj:draw()
 	end
+
+	self.spriteShader:use()
+	self.spriteSceneObj:enableAndSetAttrs()
+--[[
+	for _,obj in ipairs(self.spriteDrawList) do
+		obj.currentFrame.tex:bind(0)
+		obj:drawSprite()
+	end
+--]]
+-- [[
+	for tex,objs in pairs(self.spriteDrawList) do
+		tex:bind()
+		for _,obj in ipairs(objs) do
+			obj:drawSprite()
+		end
+	end
+--]]
+	self.spriteSceneObj:disableAttrs()
+	self.spriteShader:useNone()
+	
+	GLTex2D:unbind()
+
+	for _,obj in ipairs(self.meshDrawList) do
+		obj:drawMesh()
+	end
+
+	GLProgram:useNone()
+	GLTex2D:unbind()
+--]=]
 end
 
 function Game:update(dt)

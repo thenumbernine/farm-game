@@ -413,115 +413,29 @@ gl.glEnable(gl.GL_DEPTH_TEST)
 --print('seqname', seqname, 'seq', seq)
 				if seq and self.frame then
 					local frame = seq[self.frame]
+					self.currentFrame = frame
 					if frame.tex then
-						local shader = self.shader or game.spriteShader
-
-						local uscale = -1
-						local vscale = 1
-						if frame.hflip then uscale = uscale * -1 end
-						if self.vflip then vscale = vscale * -1 end
-						
-						shader:use()
-						gl.glUniformMatrix4fv(shader.uniforms.viewMat.loc, 1, gl.GL_FALSE, view.mvMat.ptr)
-						gl.glUniformMatrix4fv(shader.uniforms.projMat.loc, 1, gl.GL_FALSE, view.projMat.ptr)
-						gl.glUniform2f(shader.uniforms.uvscale.loc, uscale, vscale)
-						gl.glUniform2f(shader.uniforms.drawCenter.loc, self.drawCenter:unpack()) 
-						gl.glUniform2f(shader.uniforms.drawSize.loc, self.drawSize:unpack()) 
-						gl.glUniform1f(shader.uniforms.disableBillboard.loc, self.disableBillboard and 1 or 0)
-						
-						-- angle to apply relative to billboard in view space
-						gl.glUniform2f(shader.uniforms.drawAngleDir.loc, math.cos(self.drawAngle), math.sin(self.drawAngle))
-						
-						gl.glUniform3f(shader.uniforms.pos.loc, self.pos.x, self.pos.y, self.pos.z + .1) 
-						
-						local cr, cg, cb, ca = self.color:unpack()
-						-- cheap hack for cheap lighting
-						local x = math.floor(self.pos.x)
-						local y = math.floor(self.pos.y)
-						local z = math.floor(self.pos.z)
-						if x >= 0 and x < map.size.x
-						and y >= 0 and y < map.size.y
-						then
-							local cx = bit.rshift(x, map.Chunk.bitsize.x)
-							local dx = bit.band(x, map.Chunk.bitmask.x)
-							local cy = bit.rshift(y, map.Chunk.bitsize.y)
-							local dy = bit.band(y, map.Chunk.bitmask.y)
-							local cz = map.sizeInChunks.z-1
-							local chunk = map.chunks[cx + map.sizeInChunks.x * (cy + map.sizeInChunks.y * cz)]
-							local surface = chunk.surface[dx + map.Chunk.size.x * dy]
-							local sunAngle = 2 * math.pi * ((game.time / game.secondsPerDay) % 1)
-							local sunlight = sunAngle > surface.minAngle and sunAngle < surface.maxAngle and 1 or .2
-							
-							local sunWidthInRadians = .1	-- also in map shader
-							local sunlight = (
-								smoothstep(surface.minAngle - sunWidthInRadians, surface.minAngle + sunWidthInRadians, sunAngle)
-								- smoothstep(surface.maxAngle - sunWidthInRadians, surface.maxAngle + sunWidthInRadians, sunAngle)
-							) * .9 + .1
-						
-							if sunlight < 1 then
-								cr = cr * sunlight
-								cg = cg * sunlight
-								cb = cb * sunlight
-							end
-						end
-						gl.glUniform4f(shader.uniforms.color.loc, cr, cg, cb, ca)
-						
-						gl.glUniform3fv(shader.uniforms.playerViewPos.loc, 1, game.playerViewPos.s)
-						gl.glUniform1i(shader.uniforms.useSeeThru.loc, self.useSeeThru and 1 or 0)
-
-						game.spriteSceneObj.shader = shader
-						game.spriteSceneObj.texs[1] = frame.tex
-						game.spriteSceneObj:draw()
-						-- reset
-						game.spriteSceneObj.shader = game.spriteShader
-
-						glreport'here'
-					elseif frame.mesh then
-						modelMat:setTranslate(self.pos:unpack())
-							:applyScale(self.drawSize.x, self.drawSize.x, self.drawSize.y)
-							:applyRotate(self.angle, 0, 0, 1)
-						local shader = self.shader or game.meshShader
 						--[[
-						shader
-							:use()
-							:setUniforms{
-								modelMatrix = modelMat.ptr,
-								viewMatrix = view.mvMat.ptr,
-								projectionMatrix = view.projMat.ptr,
-							}
-							:useNone()
+						self:drawSprite()
+						--]]
+						--[[
+						game.spriteDrawList:insert(self)
+						--]]
+						-- [[ group per tex to bind
+						local objsForTex = game.spriteDrawList[frame.tex]
+						if not objsForTex then
+							objsForTex = {}
+							game.spriteDrawList[frame.tex] = objsForTex 
+						end
+						table.insert(objsForTex, self)
+						--]]
+					elseif frame.mesh then
+						--[[
+						self:drawMesh()
 						--]]
 						-- [[
-						shader:use()
-						gl.glUniformMatrix4fv(shader.uniforms.modelMatrix.loc, 1, gl.GL_FALSE, modelMat.ptr)
-						gl.glUniformMatrix4fv(shader.uniforms.viewMatrix.loc, 1, gl.GL_FALSE, view.mvMat.ptr)
-						gl.glUniformMatrix4fv(shader.uniforms.projectionMatrix.loc, 1, gl.GL_FALSE, view.projMat.ptr)
-						--shader:useNone()	-- why does shader need to be :use()'d here?
+						game.meshDrawList:insert(self)
 						--]]
-						local cr, cg, cb, ca = self.color:unpack()
-						frame.mesh:draw{
-							shader = shader,
-							beginGroup = function(g)
-								if g.tex_Kd then g.tex_Kd:bind() end
-								shader:setUniforms{
-									useFlipTexture = 0,
-									useLighting = 0,
-									useTextures = g.tex_Kd and 1 or 0,
-									Ka = {0,0,0,0},
-									Kd = g.Kd and {g.Kd.x*cr, g.Kd.y*cg, g.Kd.z*cb, ca} or {cr,cg,cb,ca},
-									Ks = g.Ks and g.Ks.s or {1,1,1,1},
-									Ns = g.Ns or 10,
-									
-									objCOM = vec3f().s,
-									groupCOM = vec3f().s,
-									groupExplodeDist = 0,
-									triExplodeDist = 0,
-								}
-							end,
-						}
-						shader:useNone()
-						GLTex2D:unbind()
-						glreport'here'
 					else
 						error("hmm error in frame table")
 					end
@@ -529,6 +443,125 @@ gl.glEnable(gl.GL_DEPTH_TEST)
 			end
 		end
 	end
+end
+
+function Obj:drawSprite()
+	local frame = self.currentFrame
+	local game = self.game
+	local app = game.app
+	local view = app.view
+	local map = game.map
+
+	local shader = game.spriteShader
+	local uscale = -1
+	local vscale = 1
+	if frame.hflip then uscale = uscale * -1 end
+	if self.vflip then vscale = vscale * -1 end
+	
+	gl.glUniformMatrix4fv(shader.uniforms.viewMat.loc, 1, gl.GL_FALSE, view.mvMat.ptr)
+	gl.glUniformMatrix4fv(shader.uniforms.projMat.loc, 1, gl.GL_FALSE, view.projMat.ptr)
+	gl.glUniform2f(shader.uniforms.uvscale.loc, uscale, vscale)
+	gl.glUniform2f(shader.uniforms.drawCenter.loc, self.drawCenter:unpack()) 
+	gl.glUniform2f(shader.uniforms.drawSize.loc, self.drawSize:unpack()) 
+	gl.glUniform1f(shader.uniforms.disableBillboard.loc, self.disableBillboard and 1 or 0)
+	
+	-- angle to apply relative to billboard in view space
+	gl.glUniform2f(shader.uniforms.drawAngleDir.loc, math.cos(self.drawAngle), math.sin(self.drawAngle))
+	
+	gl.glUniform3f(shader.uniforms.pos.loc, self.pos.x, self.pos.y, self.pos.z + .1) 
+	
+	local cr, cg, cb, ca = self.color:unpack()
+--[[ cheap hack for cheap lighting
+	local x = math.floor(self.pos.x)
+	local y = math.floor(self.pos.y)
+	local z = math.floor(self.pos.z)
+	if x >= 0 and x < map.size.x
+	and y >= 0 and y < map.size.y
+	then
+		local cx = bit.rshift(x, map.Chunk.bitsize.x)
+		local dx = bit.band(x, map.Chunk.bitmask.x)
+		local cy = bit.rshift(y, map.Chunk.bitsize.y)
+		local dy = bit.band(y, map.Chunk.bitmask.y)
+		local cz = map.sizeInChunks.z-1
+		local chunk = map.chunks[cx + map.sizeInChunks.x * (cy + map.sizeInChunks.y * cz)]
+		local surface = chunk.surface[dx + map.Chunk.size.x * dy]
+		local sunAngle = 2 * math.pi * ((game.time / game.secondsPerDay) % 1)
+		local sunlight = sunAngle > surface.minAngle and sunAngle < surface.maxAngle and 1 or .2
+		
+		local sunWidthInRadians = .1	-- also in map shader
+		local sunlight = (
+			smoothstep(surface.minAngle - sunWidthInRadians, surface.minAngle + sunWidthInRadians, sunAngle)
+			- smoothstep(surface.maxAngle - sunWidthInRadians, surface.maxAngle + sunWidthInRadians, sunAngle)
+		) * .9 + .1
+	
+		if sunlight < 1 then
+			cr = cr * sunlight
+			cg = cg * sunlight
+			cb = cb * sunlight
+		end
+	end
+--]]	
+	gl.glUniform4f(shader.uniforms.color.loc, cr, cg, cb, ca)
+	
+	gl.glUniform3fv(shader.uniforms.playerViewPos.loc, 1, game.playerViewPos.s)
+	gl.glUniform1i(shader.uniforms.useSeeThru.loc, self.useSeeThru and 1 or 0)
+
+	-- TODO buffer all these?
+	-- or store positions (or 4x for vertexes) in a GL buffer?
+	game.spriteSceneObj.geometry:draw()
+
+	--glreport'here'
+end
+
+function Obj:drawMesh()
+	local frame = self.currentFrame
+	local game = self.game
+	local app = game.app
+	local view = app.view
+	local map = game.map
+	
+	modelMat:setTranslate(self.pos:unpack())
+		:applyScale(self.drawSize.x, self.drawSize.x, self.drawSize.y)
+		:applyRotate(self.angle, 0, 0, 1)
+	local shader = self.shader or game.meshShader
+	--[[
+	shader
+		:use()
+		:setUniforms{
+			modelMatrix = modelMat.ptr,
+			viewMatrix = view.mvMat.ptr,
+			projectionMatrix = view.projMat.ptr,
+		}
+		:useNone()
+	--]]
+	-- [[
+	shader:use()
+	gl.glUniformMatrix4fv(shader.uniforms.modelMatrix.loc, 1, gl.GL_FALSE, modelMat.ptr)
+	gl.glUniformMatrix4fv(shader.uniforms.viewMatrix.loc, 1, gl.GL_FALSE, view.mvMat.ptr)
+	gl.glUniformMatrix4fv(shader.uniforms.projectionMatrix.loc, 1, gl.GL_FALSE, view.projMat.ptr)
+	--shader:useNone()	-- why does shader need to be :use()'d here?
+	--]]
+	local cr, cg, cb, ca = self.color:unpack()
+	frame.mesh:draw{
+		shader = shader,
+		beginGroup = function(g)
+			if g.tex_Kd then g.tex_Kd:bind() end
+			shader:setUniforms{
+				useFlipTexture = 0,
+				useLighting = 0,
+				useTextures = g.tex_Kd and 1 or 0,
+				Ka = {0,0,0,0},
+				Kd = g.Kd and {g.Kd.x*cr, g.Kd.y*cg, g.Kd.z*cb, ca} or {cr,cg,cb,ca},
+				Ks = g.Ks and g.Ks.s or {1,1,1,1},
+				Ns = g.Ns or 10,
+				
+				objCOM = vec3f().s,
+				groupCOM = vec3f().s,
+				groupExplodeDist = 0,
+				triExplodeDist = 0,
+			}
+		end,
+	}
 end
 
 return Obj

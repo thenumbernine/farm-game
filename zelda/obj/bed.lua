@@ -1,3 +1,4 @@
+local vec2f = require 'vec-ffi.vec2f'
 local vec3f = require 'vec-ffi.vec3f'
 local box3f = require 'vec-ffi.box3f'
 local Tile = require 'zelda.tile'
@@ -30,11 +31,12 @@ local Bed = Obj:subclass()
 
 Bed.name = 'bed'
 Bed.sprite = 'bed'
+Bed.drawSize = vec2f(2, 2)
+Bed.drawCenter = vec2f(.5, .5)
 
 -- TODO eventually dont do this 
 Bed.useGravity = false
 Bed.collidesWithTiles = false
-
 Bed.bbox = box3f{
 	min = {-.5, -.5, 0},
 	max = {.5, .5, .5},
