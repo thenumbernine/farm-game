@@ -5,7 +5,6 @@ local sdl = require 'ffi.req' 'sdl'
 local ig = require 'imgui'
 local quatd = require 'vec-ffi.quatd'
 local gl = require 'gl'
-local anim = require 'zelda.anim'
 local Game = require 'zelda.game'
 local getTime = require 'ext.timer'.getTime
 local OBJLoader = require 'mesh.objloader'
@@ -92,17 +91,27 @@ precision highp float;
 
 	-- [[ load tex2ds for anim
 	local GLTex2D = require 'gl.tex2d'
+	local anim = require 'zelda.anim'
+	local totalPixels  = 0	
 	for _,sprite in pairs(anim) do
 		for seqname,seq in pairs(sprite) do
 			if seqname ~= 'useDirs' then	-- skip properties
 				for _,frame in pairs(seq) do
 					local fn = frame.filename
 					if fn:sub(-4) == '.png' then
+						-- [[
 						frame.tex = GLTex2D{
 							filename = frame.filename,
 							magFilter = gl.GL_LINEAR,
 							minFilter = gl.GL_NEAREST,
 						}
+						--]]
+						-- [[
+						local image = require 'image'(frame.filename)
+						local thisPixels = image.width * image.height
+print(frame.filename, 'has', thisPixels , 'pixels')						
+						totalPixels = totalPixels + thisPixels 
+						--]]
 					elseif fn:sub(-4) == '.obj' then
 						frame.mesh = OBJLoader():load(fn)
 					else
@@ -112,6 +121,8 @@ precision highp float;
 			end
 		end
 	end
+print('total pixels', totalPixels)	
+print('sqrt', math.sqrt(totalPixels))
 	--]]
 	
 	gl.glEnable(gl.GL_DEPTH_TEST)

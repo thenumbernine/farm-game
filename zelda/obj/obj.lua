@@ -267,72 +267,73 @@ function Obj:update(dt)
 	local game = self.game
 	local map = game.map
 
-	self:unlink()
-
-	self.angle = self.angle + self.rotation * dt
-
-	self.oldpos:set(self.pos:unpack())
-
--- [[
-	self.pos.x = self.pos.x + self.vel.x * dt
-	self.pos.y = self.pos.y + self.vel.y * dt
-	self.pos.z = self.pos.z + self.vel.z * dt
---]]
-
-	if self.useGravity then
-		self.vel.z = self.vel.z + self.gravity * dt
-	end
-
-	self.collideFlags = 0
-
-	if self.collidesWithTiles
-	or self.collidesWithObjects
+	if self.vel.x ~= 0
+	or self.vel.y ~= 0
+	or self.vel.z ~= 0
 	then
-		local omin = vec3f()
-		local omax = vec3f()
-		for k = 
-			math.floor(math.min(self.pos.z, self.oldpos.z) + self.bbox.min.z - 1.5),
-			math.floor(math.max(self.pos.z, self.oldpos.z) + self.bbox.max.z + .5)
-		do
-			for j =
-				math.floor(math.min(self.pos.y, self.oldpos.y) + self.bbox.min.y - 1.5),
-				math.floor(math.max(self.pos.y, self.oldpos.y) + self.bbox.max.y + .5)
+		self:unlink()
+
+		self.angle = self.angle + self.rotation * dt
+
+		self.oldpos:set(self.pos:unpack())
+
+	-- [[
+		self.pos.x = self.pos.x + self.vel.x * dt
+		self.pos.y = self.pos.y + self.vel.y * dt
+		self.pos.z = self.pos.z + self.vel.z * dt
+	--]]
+
+		self.collideFlags = 0
+
+		if self.collidesWithTiles
+		or self.collidesWithObjects
+		then
+			local omin = vec3f()
+			local omax = vec3f()
+			for k = 
+				math.floor(math.min(self.pos.z, self.oldpos.z) + self.bbox.min.z - 1.5),
+				math.floor(math.max(self.pos.z, self.oldpos.z) + self.bbox.max.z + .5)
 			do
-				for i =
-					math.floor(math.min(self.pos.x, self.oldpos.x) + self.bbox.min.x - 1.5),
-					math.floor(math.max(self.pos.x, self.oldpos.x) + self.bbox.max.x + .5)
+				for j =
+					math.floor(math.min(self.pos.y, self.oldpos.y) + self.bbox.min.y - 1.5),
+					math.floor(math.max(self.pos.y, self.oldpos.y) + self.bbox.max.y + .5)
 				do
-					if i >= 0 and i < map.size.x and j >= 0 and j < map.size.y and k >= 0 and k < map.size.z then
-						local tileIndex = i + map.size.x * (j + map.size.y * k)
-						local tiletype = map:get(i,j,k)
-						if 
-						self.collidesWithTiles
-						and tiletype > 0
-						then
-							local tile = Tile.types[tiletype]
-							if not tile then error("failed to find tile for type "..tostring(tiletype)) end
-							if tile.solid then
-								omin:set(i,j,k)
-								omax:set(i+1,j+1,k+1)
-								
-								-- TODO trace gravity fall downward separately
-								-- then move horizontall
-								-- if push fails then raise up, move, and go back down, to try and do steps
-								local collided = push(self.pos, self.bbox.min, self.bbox.max, omin, omax, self.vel)
-								self.collideFlags = bit.bor(self.collideFlags, collided)
+					for i =
+						math.floor(math.min(self.pos.x, self.oldpos.x) + self.bbox.min.x - 1.5),
+						math.floor(math.max(self.pos.x, self.oldpos.x) + self.bbox.max.x + .5)
+					do
+						if i >= 0 and i < map.size.x and j >= 0 and j < map.size.y and k >= 0 and k < map.size.z then
+							local tileIndex = i + map.size.x * (j + map.size.y * k)
+							local tiletype = map:get(i,j,k)
+							if 
+							self.collidesWithTiles
+							and tiletype > 0
+							then
+								local tile = Tile.types[tiletype]
+								if not tile then error("failed to find tile for type "..tostring(tiletype)) end
+								if tile.solid then
+									omin:set(i,j,k)
+									omax:set(i+1,j+1,k+1)
+									
+									-- TODO trace gravity fall downward separately
+									-- then move horizontall
+									-- if push fails then raise up, move, and go back down, to try and do steps
+									local collided = push(self.pos, self.bbox.min, self.bbox.max, omin, omax, self.vel)
+									self.collideFlags = bit.bor(self.collideFlags, collided)
+								end
 							end
-						end
-						local objs = map.objsPerTileIndex[tileIndex]
-						if objs then
-							for _, obj in ipairs(objs) do
-								if not obj.removeFlag then
-									if obj.collidesWithObjects then
-										local collided = push(self.pos, self.bbox.min, self.bbox.max, obj.pos + obj.bbox.min, obj.pos + obj.bbox.max, self.vel)
-										self.collideFlags = bit.bor(self.collideFlags, collided)
-										if collided ~= 0 
-										and obj.touch
-										then
-											obj:touch(self)
+							local objs = map.objsPerTileIndex[tileIndex]
+							if objs then
+								for _, obj in ipairs(objs) do
+									if not obj.removeFlag then
+										if obj.collidesWithObjects then
+											local collided = push(self.pos, self.bbox.min, self.bbox.max, obj.pos + obj.bbox.min, obj.pos + obj.bbox.max, self.vel)
+											self.collideFlags = bit.bor(self.collideFlags, collided)
+											if collided ~= 0 
+											and obj.touch
+											then
+												obj:touch(self)
+											end
 										end
 									end
 								end
@@ -342,9 +343,13 @@ function Obj:update(dt)
 				end
 			end
 		end
+
+		self:link()
 	end
 
-	self:link()
+	if self.useGravity then
+		self.vel.z = self.vel.z + self.gravity * dt
+	end
 end
 
 -- ccw start at 0' (with 45' spread)
