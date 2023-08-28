@@ -42,6 +42,10 @@ Obj.drawCenter = vec2f(.5, 1)
 -- TODO spriteScale?
 Obj.drawSize = vec2f(1,1)
 
+-- false = use map x y basis
+-- true = use view x y basis
+Obj.disableBillboard = false
+
 -- whether we use see-thru
 -- default to no
 -- yes for not-so-interactable sprites like plants
@@ -423,7 +427,11 @@ gl.glEnable(gl.GL_DEPTH_TEST)
 						gl.glUniform2f(shader.uniforms.uvscale.loc, uscale, vscale)
 						gl.glUniform2f(shader.uniforms.drawCenter.loc, self.drawCenter:unpack()) 
 						gl.glUniform2f(shader.uniforms.drawSize.loc, self.drawSize:unpack()) 
+						gl.glUniform1f(shader.uniforms.disableBillboard.loc, self.disableBillboard and 1 or 0)
+						
+						-- angle to apply relative to billboard in view space
 						gl.glUniform2f(shader.uniforms.drawAngleDir.loc, math.cos(self.drawAngle), math.sin(self.drawAngle))
+						
 						gl.glUniform3f(shader.uniforms.pos.loc, self.pos.x, self.pos.y, self.pos.z + .1) 
 						
 						local cr, cg, cb, ca = self.color:unpack()

@@ -32,7 +32,7 @@ function ItemSeeds:useInInventory(player)
 		assert(player:removeSelectedItem() == self)
 		game:newObj{
 			class = self.plantType.objClass,
-			pos = vec3f(x+.5, y+.5, z + .002),
+			pos = vec3f(x+.5, y+.5, z + .003),
 		}
 	end
 end

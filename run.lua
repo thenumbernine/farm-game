@@ -1,4 +1,5 @@
 #!/usr/bin/env luajit
+require 'jit.opt'.start(2)
 
 -- setup before running
 -- configure your luajit ffi library locations here

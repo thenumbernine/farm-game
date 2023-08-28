@@ -22,20 +22,23 @@ local anim = {
 		},
 	},
 	
-	-- [[ ground sprites ... TODO instead use a dif rendering system for these ...
+	-- [[ ground sprites
 	hoed = {
 		stand = {
-			{filename = 'sprites/hoed/stand.obj'},
+			--{filename = 'sprites/hoed/stand.obj'},
+			{filename = 'sprites/hoed/stand.png'},
 		},
 	},
 	watered = {
 		stand = {
-			{filename = 'sprites/watered/stand.obj'},
+			--{filename = 'sprites/watered/stand.obj'},
+			{filename = 'sprites/watered/stand.png'},
 		},
 	},
 	seededground = {
 		stand = {
-			{filename = 'sprites/seededground/stand.obj'},
+			--{filename = 'sprites/seededground/stand.obj'},
+			{filename = 'sprites/seededground/stand.png'},
 		},
 	},
 	log = {

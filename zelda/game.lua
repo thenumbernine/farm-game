@@ -124,10 +124,17 @@ out vec2 texcoordv;
 out vec3 viewPosv;
 
 uniform vec2 uvscale;
+
+//what uv coordinates to center the sprite at (y=1 is bottom)
 uniform vec2 drawCenter;
+
 uniform vec2 drawSize;
 uniform vec2 drawAngleDir;
 uniform vec3 pos;
+
+// 0 = use world xy axis
+// 1 = use view xy axis
+uniform float disableBillboard;
 
 uniform mat4 viewMat;
 uniform mat4 projMat;
@@ -141,8 +148,9 @@ void main() {
 		c.x * drawAngleDir.y + c.y * drawAngleDir.x
 	);
 	vec4 worldpos = vec4(pos, 1.);
-	vec3 ex = vec3(viewMat[0].x, viewMat[1].x, viewMat[2].x);
-	vec3 ey = vec3(viewMat[0].y, viewMat[1].y, viewMat[2].y);
+	
+	vec3 ex = mix(vec3(viewMat[0].x, viewMat[1].x, viewMat[2].x), vec3(1., 0., 0.), disableBillboard);
+	vec3 ey = mix(vec3(viewMat[0].y, viewMat[1].y, viewMat[2].y), vec3(0., 1., 0.), disableBillboard);
 	worldpos.xyz += ex * c.x;
 	worldpos.xyz += ey * c.y;
 	
@@ -348,7 +356,8 @@ void main() {
 			self.map.size.z-.5),
 		player = assert(app.players[1]),
 	}
-					
+	
+	-- don't require until app.game is created
 	local plantTypes = require 'zelda.plants'
 
 	local game = self
@@ -440,7 +449,8 @@ void main() {
 					self:newObj{
 						class = plantType.objClass,
 						pos = vec3f(i + .5, j + .5, k + 1),
-						createTime = self.time - self.secondsPerDay * (math.random() * 10 + 1.1),
+						-- TODO scale by plant life
+						createTime = self.time - self.secondsPerDay * (math.random() * 10),
 					}
 				end
 			end

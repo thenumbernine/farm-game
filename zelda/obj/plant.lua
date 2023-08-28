@@ -27,6 +27,7 @@ bushes
 	- ex: hay, straw, grains ...
 
 --]]
+local vec2f = require 'vec-ffi.vec2f'
 local vec3f = require 'vec-ffi.vec3f'
 local box3f = require 'vec-ffi.box3f'
 local Obj = require 'zelda.obj.obj'
@@ -75,17 +76,23 @@ function Plant:update(...)
 	local game = self.game
 
 	if game.time - self.createTime < game.secondsPerDay then
+		-- seed-form:
 		self.sprite = 'seededground'
 		self.seq = 'stand'
 		self.drawSize:set(1,1)
 		self.bbox.min:set(-.3, -.3, -.001)
 		self.bbox.max:set(.3, .3, .001)
+		self.disableBillboard = true
+		self.drawCenter:set(.5, .5)
 	else
+		-- plant-form:
 		self.sprite = self.plantType.sprite
 		self.seq = nil	-- fall back on class seq, generated class based on plantType
 		self.drawSize:set(self.plantType.drawSize:unpack())
 		self.bbox.min:set(-.49, -.49, 0)
 		self.bbox.max:set(.49, .49, .98)
+		self.disableBillboard = nil
+		self.drawCenter:set(.5, 1)
 	end
 
 	Plant.super.update(self, ...)
