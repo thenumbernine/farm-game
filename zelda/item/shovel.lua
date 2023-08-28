@@ -34,6 +34,8 @@ function ItemShovel:useInInventory(player)
 			-- in fact, seeds => pick-up-able seeds?
 
 			map:buildDrawArrays()
+			-- TODO instead of addItem, have it plop out an item object first ...
+			-- in case the player's inventory is full
 			player:addItem(require 'zelda.obj.dirt')
 			return
 		end

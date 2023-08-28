@@ -50,8 +50,9 @@ function Item:touch(other)
 	and not other.dead
 	and not other.removeFlag
 	then
-		other:addItem(self.itemClass, self.itemCount)
-		self:remove()
+		if other:addItem(self.itemClass, self.itemCount) then
+			self:remove()
+		end
 	end
 end
 

@@ -31,6 +31,8 @@ function ItemAxe:useInInventory(player)
 		then
 			tile.type = Tile.typeValues.Empty
 			map:buildDrawArrays()
+			-- TODO instead of addItem, have it plop out an item object first ...
+			-- in case the player's inventory is full
 			player:addItem(require 'zelda.obj.log')
 			return
 		end

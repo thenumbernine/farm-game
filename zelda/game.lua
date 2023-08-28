@@ -51,7 +51,7 @@ function Game:init(args)
 
 	-- start at 6am on the first day
 	self.time = self.wakeHour * self.secondsPerHour
-	
+
 	self.threads = ThreadManager()
 
 	self.quadVtxBuf = app.quadVertexBuf
@@ -141,21 +141,21 @@ uniform mat4 projMat;
 
 void main() {
 	texcoordv = (vertex - .5) * uvscale + .5;
-	
+
 	vec2 c = (drawCenter - vertex) * drawSize;
 	c = vec2(
 		c.x * drawAngleDir.x - c.y * drawAngleDir.y,
 		c.x * drawAngleDir.y + c.y * drawAngleDir.x
 	);
 	vec4 worldpos = vec4(pos, 1.);
-	
+
 	vec3 ex = mix(vec3(viewMat[0].x, viewMat[1].x, viewMat[2].x), vec3(1., 0., 0.), disableBillboard);
 	vec3 ey = mix(vec3(viewMat[0].y, viewMat[1].y, viewMat[2].y), vec3(0., 1., 0.), disableBillboard);
 	worldpos.xyz += ex * c.x;
 	worldpos.xyz += ey * c.y;
-	
+
 	vec4 viewPos = viewMat * worldpos;
-	
+
 	viewPosv = viewPos.xyz;
 
 	gl_Position = projMat * viewPos;
@@ -173,7 +173,7 @@ uniform vec4 color;
 uniform bool useSeeThru;
 uniform vec3 playerViewPos;
 
-const float cosClipAngle = .9;	// = cone with 25 degree from axis 
+const float cosClipAngle = .9;	// = cone with 25 degree from axis
 
 // gl_FragCoord is in pixel coordinates with origin at lower-left
 void main() {
@@ -231,7 +231,7 @@ void main() {
 
 	self.swordSwingNumDivs = 20
 	self.swordSwingVtxBufCPU = ffi.new('vec3f_t[?]', 2 * self.swordSwingNumDivs)
-	
+
 	-- build the map
 
 	self.texpack = GLTex2D{
@@ -258,7 +258,7 @@ void main() {
 		self.map.size.x*.95,
 		self.map.size.y*.5,
 		self.map.size.z-.5)
-	
+
 	do
 		local simplexnoise = require 'simplexnoise.3d'
 	--print'generating map'
@@ -356,7 +356,7 @@ void main() {
 			self.map.size.z-.5),
 		player = assert(app.players[1]),
 	}
-	
+
 	-- don't require until app.game is created
 	local plantTypes = require 'zelda.plants'
 
@@ -369,18 +369,31 @@ void main() {
 			self.map.size.z-.5),
 		interactInWorld = function(interactObj, playerObj)
 			local player = playerObj.player
---print('setting gamePrompt')
+			local ig = require 'imgui'
 			playerObj.gamePrompt = function()
 				local function buy(plantType, amount)
 					assert(amount > 0)
 					local cost = plantType.cost * amount
 					if cost <= player.money then
-						player.money = player.money - cost
-						playerObj:addItem(plantType.seedClass, amount)
+						if playerObj:addItem(plantType.seedClass, amount) then
+							player.money = player.money - cost
+						else
+							playerObj.gamePrompt = function()
+								ig.igBegin('sorry', nil, bit.bor(
+									ig.ImGuiWindowFlags_NoMove,
+									ig.ImGuiWindowFlags_NoResize,
+									ig.ImGuiWindowFlags_NoCollapse
+								))
+								ig.igText"no room in inventory"
+								if ig.igButton'Ok' then
+									playerObj.gamePrompt = nil
+								end
+								ig.igEnd()
+							end
+						end
 					end
 				end
 
-				local ig = require 'imgui'
 				local size = ig.igGetMainViewport().WorkSize
 				ig.igSetNextWindowPos(ig.ImVec2(size.x/2, 0), ig.ImGuiCond_Appearing, ig.ImVec2(.5, 0));
 				ig.igBegin('Store Guy', nil, bit.bor(
@@ -389,17 +402,18 @@ void main() {
 					ig.ImGuiWindowFlags_NoCollapse
 				))
 				ig.igSetWindowFontScale(.5)
-			
+
 				ig.igText"want to buy something?"
-				
+
 				if ig.igButton'Ok###Ok2' then
 					playerObj.gamePrompt = nil
---print('clearing gamePrompt')
 				end
-			
+
 				for i,plantType in ipairs(plantTypes) do
 					for _,x in ipairs{1, 10, 100} do
-						if ig.igButton('x'..x..'###'..i..'x'..x) then buy(plantType, x) end
+						if ig.igButton('x'..x..'###'..i..'x'..x) then
+							buy(plantType, x)
+						end
 						ig.igSameLine()
 					end
 					ig.igText('$'..plantType.cost..': '..plantType.name)
@@ -407,11 +421,10 @@ void main() {
 
 				if ig.igButton'Ok' then
 					playerObj.gamePrompt = nil
---print('clearing gamePrompt')
 				end
-	
+
 				ig.igSetWindowFontScale(1)
-				ig.igEnd()		
+				ig.igEnd()
 			end
 		end,
 	}
@@ -457,7 +470,7 @@ void main() {
 		end
 	end
 	--]]
-	
+
 -- [[
 	for k=1,5 do
 		local i = math.random(tonumber(self.map.size.x))-1
@@ -471,7 +484,7 @@ void main() {
 		end
 	end
 --]]
-	
+
 	-- collect per-texture of sprites
 	self.spriteDrawList = table()
 	self.meshDrawList = table()
@@ -479,7 +492,7 @@ end
 
 function Game:timeToStr()
 	-- time scale?  1 second = 1 minute?
-	local tm = math.floor(self.time) 
+	local tm = math.floor(self.time)
 	local m = tm % self.minutesPerHour
 	local th = (tm - m) / self.minutesPerHour
 	local h = th % self.hoursPerDay
@@ -593,7 +606,7 @@ function Game:draw()
 --]]
 	self.spriteSceneObj:disableAttrs()
 	self.spriteShader:useNone()
-	
+
 	GLTex2D:unbind()
 
 	for _,obj in ipairs(self.meshDrawList) do

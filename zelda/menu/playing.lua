@@ -106,14 +106,20 @@ function PlayingMenu:updateGUI()
 		playerObj.gamePrompt()
 	else
 
-		local maxItems = playerObj.maxItems
-		local bw = math.floor(app.width / maxItems)
+		local maxItems = player.invOpen
+			and playerObj.numInvItems
+			or playerObj.numSelectableItems
+
+		local bw = math.floor(app.width / playerObj.numSelectableItems)
 		local bh = bw
 		local x = 0
-		local y = app.height - bh - 4
+		local y = player.invOpen
+			and (app.height - bh * 4 - 4)
+			or (app.height - bh - 4)
 		ig.igPushStyleVar_Vec2(ig.ImGuiStyleVar_ButtonTextAlign, ig.ImVec2(0,0))
 
-		for i=1,maxItems do
+		for iMinus1=0,maxItems-1 do
+			local i = iMinus1 + 1
 			local itemInfo = playerObj.items[i]
 
 			local selected = playerObj.selectedItem == i
@@ -149,7 +155,9 @@ function PlayingMenu:updateGUI()
 					name = itemInfo.class.name..'\nx'..itemInfo.count..name
 				end
 			end
-			ig.igButton(name, ig.ImVec2(bw,bh))
+			if ig.igButton(name, ig.ImVec2(bw,bh)) then
+				playerObj.selectedItem = i
+			end
 
 
 			--[[
@@ -163,7 +171,12 @@ function PlayingMenu:updateGUI()
 				ig.igPopStyleColor(1)
 			end
 
-			x = x + bw
+			if iMinus1 % playerObj.numSelectableItems == playerObj.numSelectableItems-1 then
+				x = 0
+				y = y + bh
+			else
+				x = x + bw
+			end
 		end
 		ig.igPopStyleVar(1)
 	end

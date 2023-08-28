@@ -19,6 +19,11 @@ Player.gameKeyNames = table{
 	'jump',
 	'useItem',
 	'interact',
+	'openInventory',
+	-- quick cycle inventory
+	'invLeft',
+	'invRight',
+	-- rotate view
 	'rotateLeft',
 	'rotateRight',
 }
@@ -46,4 +51,4 @@ function Player:init(args)
 	self.money = 1000
 end
 
-return Player 
+return Player

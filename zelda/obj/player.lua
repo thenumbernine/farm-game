@@ -25,13 +25,31 @@ Player.bbox = box3f{
 	max = {.3, .3, 1.5},
 }
 
+Player.jumpVel = 5
+
+-- how many items?
+-- minecraft inventory: 9x4 = 36
+-- stardew valley: 12x3 = 36
+-- D2: 4x10 = 40
+Player.numSelectableItems = 12
+Player.numInvItems = 48	-- including the selectable row
+
+-- how much to turn the view when you press the rotate-view left/right buttons
+-- 90°:
+--Player.rotateViewAmount = .5 * math.pi
+-- 45°:
+Player.rotateViewAmount = .25 * math.pi
+
 function Player:init(args, ...)
 	Player.super.init(self, args, ...)
 
 	self.player = assert(args.player)
 
+	--[[
+	how should inventory work?
+	for key based
+	--]]
 	self.selectedItem = 1
-	-- TODO array-of-stacks
 	self.items = table{
 		require 'zelda.item.sword',
 		require 'zelda.item.shovel',
@@ -43,7 +61,7 @@ function Player:init(args, ...)
 			class = cl,
 			count = 1,
 		}
-	end)
+	end):setmetatable(nil)
 end
 
 function Player:update(dt)
@@ -56,40 +74,62 @@ function Player:update(dt)
 
 	-- if a prompt is open then don't handle buttons
 	if not self.gamePrompt then
-		local dx = 0
-		local dy = 0
-		if appPlayer.keyPress.right then dx = dx + 1 end
-		if appPlayer.keyPress.left then dx = dx - 1 end
-		if appPlayer.keyPress.up then dy = dy + 1 end
-		if appPlayer.keyPress.down then dy = dy - 1 end
-		local l = dx*dx + dy*dy
-		if l > 0 then
-			l = self.walkSpeed / math.sqrt(l)
+
+		if appPlayer.invOpen then
+			if appPlayer.keyPress.right and not appPlayer.keyPressLast.right then
+				self.selectedItem = self.selectedItem + 1
+				self.selectedItem = (self.selectedItem - 1) % self.numInvItems + 1
+			end
+			if appPlayer.keyPress.left and not appPlayer.keyPressLast.left then
+				self.selectedItem = self.selectedItem - 1 
+				self.selectedItem = (self.selectedItem - 1) % self.numInvItems + 1
+			end
+			if appPlayer.keyPress.up and not appPlayer.keyPressLast.up then
+				self.selectedItem = self.selectedItem - self.numSelectableItems
+				self.selectedItem = (self.selectedItem - 1) % self.numInvItems + 1
+			end
+			if appPlayer.keyPress.down and not appPlayer.keyPressLast.down then
+				self.selectedItem = self.selectedItem + self.numSelectableItems
+				self.selectedItem = (self.selectedItem - 1) % self.numInvItems + 1
+			end	
+		else
+			self.selectedItem = (self.selectedItem-1) % self.numSelectableItems + 1
+			
+			local dx = 0
+			local dy = 0
+			if appPlayer.keyPress.right then dx = dx + 1 end
+			if appPlayer.keyPress.left then dx = dx - 1 end
+			if appPlayer.keyPress.up then dy = dy + 1 end
+			if appPlayer.keyPress.down then dy = dy - 1 end
+			local l = dx*dx + dy*dy
+			if l > 0 then
+				l = self.walkSpeed / math.sqrt(l)
+			end
+			local localAngle
+			if dx ~= 0 or dy ~= 0 then
+				localAngle = math.atan2(dy, dx)
+			end
+			dx = dx * l
+			dy = dy * l
+
+			local zDir = app.view.angle:zAxis()	-- down dir
+			local xDir = app.view.angle:xAxis()	-- right dir
+			
+			if localAngle then
+				self.angle = localAngle + math.atan2(xDir.y, xDir.x)
+			end
+
+			--local x2Dir = vec2f(1,0)
+			local x2Dir = vec2f(xDir.x, xDir.y)
+			x2Dir = x2Dir:normalize()
+
+			--local y2Dir = vec2f(0,1)
+			local y2Dir = vec2f(-zDir.x, -zDir.y)
+			y2Dir = y2Dir:normalize()
+
+			self.vel.x = x2Dir.x * dx + y2Dir.x * dy
+			self.vel.y = x2Dir.y * dx + y2Dir.y * dy
 		end
-		local localAngle
-		if dx ~= 0 or dy ~= 0 then
-			localAngle = math.atan2(dy, dx)
-		end
-		dx = dx * l
-		dy = dy * l
-
-		local zDir = app.view.angle:zAxis()	-- down dir
-		local xDir = app.view.angle:xAxis()	-- right dir
-		
-		if localAngle then
-			self.angle = localAngle + math.atan2(xDir.y, xDir.x)
-		end
-
-		--local x2Dir = vec2f(1,0)
-		local x2Dir = vec2f(xDir.x, xDir.y)
-		x2Dir = x2Dir:normalize()
-
-		--local y2Dir = vec2f(0,1)
-		local y2Dir = vec2f(-zDir.x, -zDir.y)
-		y2Dir = y2Dir:normalize()
-
-		self.vel.x = x2Dir.x * dx + y2Dir.x * dy
-		self.vel.y = x2Dir.y * dx + y2Dir.y * dy
 
 		-- use = use currently selected inventory item
 		if appPlayer.keyPress.useItem then
@@ -107,35 +147,33 @@ function Player:update(dt)
 		if appPlayer.keyPress.interact
 		and not appPlayer.keyPressLast.interact
 		then
-			do
-				-- TODO
-				-- traceline ...
-				-- see if it hits an obj or a map block
-				-- run a 'onPickUp' function on it
+			-- TODO
+			-- traceline ...
+			-- see if it hits an obj or a map block
+			-- run a 'onPickUp' function on it
 
-				local x,y,z = (self.pos + vec3f(
-					math.cos(self.angle),
-					math.sin(self.angle),
-					0
-				)):map(math.floor):unpack()
+			local x,y,z = (self.pos + vec3f(
+				math.cos(self.angle),
+				math.sin(self.angle),
+				0
+			)):map(math.floor):unpack()
 
-				local found
-				local tileObjs = map:getTileObjs(x,y,z)
-				if tileObjs then
-					-- TODO custom iterator for only the non-removed objects
-					for _,obj in ipairs(tileObjs) do
-						if not obj.removeFlag then
-							if obj.interactInWorld then
-								obj:interactInWorld(self)
-								found = true
-								break
-							end
+			local found
+			local tileObjs = map:getTileObjs(x,y,z)
+			if tileObjs then
+				-- TODO custom iterator for only the non-removed objects
+				for _,obj in ipairs(tileObjs) do
+					if not obj.removeFlag then
+						if obj.interactInWorld then
+							obj:interactInWorld(self)
+							found = true
+							break
 						end
 					end
 				end
-				if not found then
-					-- TODO check map for pick up based on tile type
-				end
+			end
+			if not found then
+				-- TODO check map for pick up based on tile type
 			end
 		end
 
@@ -143,11 +181,21 @@ function Player:update(dt)
 		local turnRight = appPlayer.keyPress.rotateRight and not appPlayer.keyPressLast.rotateRight 
 		if turnLeft or turnRight then
 			if turnLeft then
-				app.targetViewYaw = app.targetViewYaw + math.pi*.5
+				app.targetViewYaw = app.targetViewYaw + self.rotateViewAmount
 			end
 			if turnRight then
-				app.targetViewYaw = app.targetViewYaw - math.pi*.5
+				app.targetViewYaw = app.targetViewYaw - self.rotateViewAmount 
 			end
+		end
+		if appPlayer.keyPress.invLeft and not appPlayer.keyPressLast.invLeft then
+			self.selectedItem = ((self.selectedItem-1 - 1)%self.numSelectableItems)+1
+		end
+		if appPlayer.keyPress.invRight and not appPlayer.keyPressLast.invRight then
+			self.selectedItem = ((self.selectedItem-1 + 1)%self.numSelectableItems)+1
+		end
+		if appPlayer.keyPress.openInventory and not appPlayer.keyPressLast.openInventory then
+			-- TODO put all clientside stuff in appPlayer
+			appPlayer.invOpen = not appPlayer.invOpen
 		end
 	end
 
@@ -159,9 +207,6 @@ function Player:update(dt)
 		appPlayer.keyPressLast[k] = v
 	end
 end
-
-Player.jumpVel = 4
-Player.maxItems = 12
 
 function Player:useItem()
 	local itemInfo = self.items[self.selectedItem]
@@ -175,16 +220,25 @@ end
 
 function Player:addItem(cl, count)
 	count = count or 1
-	for _,itemInfo in ipairs(self.items) do
-		if itemInfo.class == cl then
+	for i=1,self.numInvItems do
+		local itemInfo = self.items[i]
+		if itemInfo 
+		and itemInfo.class == cl 
+		then
 			itemInfo.count = itemInfo.count + count
-			return
+			return true
 		end
 	end
-	self.items:insert{
-		class = cl,
-		count = count,
-	}
+	for i=1,self.numInvItems do
+		if not self.items[i] then
+			self.items[i] = {
+				class = cl,
+				count = count,
+			}
+			return true
+		end
+	end
+	return false
 end
 
 function Player:removeSelectedItem()

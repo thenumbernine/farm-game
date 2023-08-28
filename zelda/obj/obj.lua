@@ -347,7 +347,9 @@ function Obj:update(dt)
 		self:link()
 	end
 
-	if self.useGravity then
+	if self.useGravity
+	and 0 == bit.band(self.collideFlags, sides.flags.zm)
+	then
 		self.vel.z = self.vel.z + self.gravity * dt
 	end
 end

@@ -26,8 +26,9 @@ Dirt.min = box3f{
 
 function Dirt:touch(other)
 	if other.addItem then
-		other:addItem(Dirt)
-		self:remove()
+		if other:addItem(Dirt) then
+			self:remove()
+		end
 	end
 end
 

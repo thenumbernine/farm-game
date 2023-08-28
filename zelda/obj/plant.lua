@@ -3,7 +3,7 @@ ok plants ...
 
 trees
 	- start as saplings
-	- grow up - gives you 2 logs 
+	- grow up - gives you 2 logs
 	- once they're full - gives you 5 logs
 		- also you can periodically pick stuff from them
 			- ex: fruit?
@@ -11,7 +11,7 @@ trees
 			- ex: seeds?
 	- then loses leafs + branches - deadwood - gives you 4 logs?
 	- then naturally falls over ... and blits with world ... to create deadwood?
-	
+
 
 bushes
 	- no logs?
@@ -19,7 +19,7 @@ bushes
 		- berries
 		- seeds?  or seeds == berries ...
 
-- gather-plants 
+- gather-plants
 	- grab them and get them
 	- ex: ferns, roots, ...
 
@@ -64,7 +64,7 @@ function Plant:init(args, ...)
 	-- have objects pick their own custom on-damage and on-death
 	self.shakeOnHit = args.shakeOnHit
 	self.tipOnDie = args.tipOnDie
-	
+
 	-- TODO instead of 'numLogs', how about some kind of num-resources-dropped
 	self.numLogs = args.numLogs
 
@@ -95,12 +95,13 @@ function Plant:update(...)
 		self.drawCenter:set(.5, 1)
 	end
 
-	Plant.super.update(self, ...)
+	-- don't do physics update
+	--Plant.super.update(self, ...)
 end
 
 function Plant:damage(amount, attacker, inflicter)
 	if Plant.super.damage(self, amount, attacker, inflicter) then
-		if self.shakeOnHit 
+		if self.shakeOnHit
 		and not self.dead
 		then
 			-- shake plant angle ... for trees chopping down.
@@ -121,7 +122,7 @@ function Plant:die()
 	-- takesdamage already has the goomba death in it ....
 	-- maybe put a bunch of canned deaths in takesdamage and have an arg to pick which one
 	local game = self.game
-	if not self.tipOnDie then 
+	if not self.tipOnDie then
 		-- fade out and remove
 		game.threads:add(function()
 			game:fade(1, function(alpha)
@@ -137,7 +138,7 @@ function Plant:die()
 				self.drawAngle = -x * math.pi * .5
 			end)
 			self:remove()
-		
+
 			-- and then add a bunch of wood items
 			print('fell tree spawning', self.numLogs, 'logs')
 			for i=1,self.numLogs do
@@ -157,4 +158,4 @@ function Plant:die()
 	end
 end
 
-return Plant 
+return Plant

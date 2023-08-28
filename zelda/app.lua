@@ -35,6 +35,9 @@ keyPress.s:
 		... or I could get rid of this and have objects change to a touch-to-pick-up state like they do in minecraft and stardew valley
 	- talk/interact
 		... this could be same as pick-up, but for NPCs ...
+
+TODO in gameapp put these in Player
+and then have zelda/player subclass them
 --]]
 local PlayerKeysEditor = require 'gameapp.menu.playerkeys'
 PlayerKeysEditor.defaultKeys = {
@@ -46,8 +49,11 @@ PlayerKeysEditor.defaultKeys = {
 		jump = {sdl.SDL_KEYDOWN, ('x'):byte()},
 		useItem = {sdl.SDL_KEYDOWN, ('z'):byte()},
 		interact = {sdl.SDL_KEYDOWN, ('c'):byte()},
-		rotateLeft = {sdl.SDL_KEYDOWN, ('a'):byte()},
-		rotateRight = {sdl.SDL_KEYDOWN, ('s'):byte()},
+		invLeft = {sdl.SDL_KEYDOWN, ('a'):byte()},
+		invRight = {sdl.SDL_KEYDOWN, ('s'):byte()},
+		openInventory = {sdl.SDL_KEYDOWN, ('d'):byte()},
+		rotateLeft = {sdl.SDL_KEYDOWN, ('q'):byte()},
+		rotateRight = {sdl.SDL_KEYDOWN, ('w'):byte()},
 		pause = {sdl.SDL_KEYDOWN, sdl.SDLK_ESCAPE},
 	},
 	{
@@ -92,7 +98,7 @@ precision highp float;
 	-- [[ load tex2ds for anim
 	local GLTex2D = require 'gl.tex2d'
 	local anim = require 'zelda.anim'
-	local totalPixels  = 0	
+	local totalPixels  = 0
 	for _,sprite in pairs(anim) do
 		for seqname,seq in pairs(sprite) do
 			if seqname ~= 'useDirs' then	-- skip properties
@@ -109,8 +115,8 @@ precision highp float;
 						-- [[
 						local image = require 'image'(frame.filename)
 						local thisPixels = image.width * image.height
-print(frame.filename, 'has', thisPixels , 'pixels')						
-						totalPixels = totalPixels + thisPixels 
+--print(frame.filename, 'has', thisPixels , 'pixels')
+						totalPixels = totalPixels + thisPixels
 						--]]
 					elseif fn:sub(-4) == '.obj' then
 						frame.mesh = OBJLoader():load(fn)
@@ -121,15 +127,15 @@ print(frame.filename, 'has', thisPixels , 'pixels')
 			end
 		end
 	end
-print('total pixels', totalPixels)	
-print('sqrt', math.sqrt(totalPixels))
+--print('total pixels', totalPixels)
+--print('sqrt', math.sqrt(totalPixels))
 	--]]
-	
+
 	gl.glEnable(gl.GL_DEPTH_TEST)
 	gl.glEnable(gl.GL_CULL_FACE)
 
 	self:resetGame(true)
-	
+
 	self.lastTime = getTime()
 	self.updateTime = 0
 end
@@ -162,7 +168,7 @@ App.updateDelta = 1/30
 App.needsResortSprites = true
 function App:updateGame()
 	local game = self.game
-	
+
 	local thisTime = getTime()
 	local deltaTime = thisTime - self.lastTime
 	self.lastTime = thisTime
@@ -170,7 +176,7 @@ function App:updateGame()
 	-- in degrees:
 	self.lastViewYaw = self.viewYaw
 	self.viewYaw = self.viewYaw + .1 * (self.targetViewYaw - self.viewYaw)
-	
+
 	self.view.angle = quatd():fromAngleAxis(0, 0, 1, math.deg(self.viewYaw))
 					* quatd():fromAngleAxis(1,0,0,30)
 	self.view.pos = self.view.angle:zAxis() * (self.view.pos - self.view.orbit):length() + self.view.orbit
@@ -192,7 +198,7 @@ function App:updateGame()
 		self.needsResortSprites = false
 print('updating sprite z order')
 		local v = self.view.angle:zAxis()
-print('dir', v)	
+print('dir', v)
 		game.objs:sort(function(a,b)
 			return a.pos:dot(v) < b.pos:dot(v)
 		end)
