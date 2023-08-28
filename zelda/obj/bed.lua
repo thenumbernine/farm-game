@@ -17,7 +17,7 @@ TODO
 	touch to pick up.
 either way i need states for pick-up-able and for world-interact-able
 
-pick-up-able should be its own thing 'item' 
+pick-up-able should be its own thing 'item'
 ... which holds a container to the object it represents.
 
 while some things don't have world-interactable objects (tools etc)
@@ -34,7 +34,7 @@ Bed.sprite = 'bed'
 Bed.drawSize = vec2f(2, 2)
 Bed.drawCenter = vec2f(.5, .5)
 
--- TODO eventually dont do this 
+-- TODO eventually dont do this
 Bed.useGravity = false
 Bed.collidesWithTiles = false
 Bed.bbox = box3f{
@@ -56,7 +56,7 @@ function Bed:useInInventory(player)
 
 	-- TODO also make sure no objects exist here
 	local tileType = map:get(dst:unpack())
-	if tileType == Tile.typeValues.Empty 
+	if tileType == Tile.typeValues.Empty
 	-- TODO and no solid object exists on this tile
 	then
 		game:newObj{
@@ -65,7 +65,7 @@ function Bed:useInInventory(player)
 		}
 	end
 end
-		
+
 Bed.sleepTime = 3
 
 --[[
@@ -73,14 +73,32 @@ here's the beginning of item-state vs game-state
 --]]
 function Bed:interactInWorld(player)
 	if player.sleeping then return end
-	player.sleeping = true
 
-	player.drawAngle = .5 * math.pi
-	player.drawCenter:set(.5, .5)
-	player:setPos(self.pos:unpack())
-	
 	local game = self.game
 	game.threads:add(function()
+		local startPos = player.pos:clone()
+		local endPos = self.pos + vec3f(0, 0, .5)
+
+		--player.seq = 'handsup'
+
+		game:fade(.5, function(x)
+			player.pos = startPos * (1 - x) + endPos * x + vec3f(0,0,1) * (4 * x * (1 - x))
+		end)
+
+		player:setPos(player.pos:unpack())
+
+		-- TODO at this point, if the player used the bed, have it cancel the sleep?
+		-- idk maybe maybe not
+
+		game:sleep(.3)
+
+		--player.seq = 'kneel'
+		--game:sleep(.5)
+
+		player.drawAngle = .5 * math.pi
+		player.drawCenter:set(.5, .5)
+		player.sleeping = true
+
 		local startTime = game.time
 		local day = math.floor((startTime / game.secondsPerHour - game.wakeHour) / game.hoursPerDay) + 1
 		-- offst to the next cycle of 6am
@@ -106,4 +124,4 @@ function Bed:damage(amount, attacker, inflicter)
 	self:remove()
 end
 
-return Bed 
+return Bed
