@@ -40,6 +40,17 @@ Game.secondsPerHour = Game.secondsPerMinute * Game.minutesPerHour
 Game.hoursPerDay = 24
 Game.secondsPerDay = Game.secondsPerHour * Game.hoursPerDay
 
+Game.daysPerWeek = 7
+Game.secondsPerWeek = Game.secondsPerDay * Game.daysPerWeek
+
+Game.weeksPerMonth = 4
+Game.secondsPerMonth = Game.secondsPerWeek * Game.weeksPerMonth
+
+Game.monthsPerYear = 4
+Game.secondsPerYear = Game.secondsPerMonth * Game.monthsPerYear
+
+print('Game.secondsPerYear', Game.secondsPerYear)
+
 -- when to start / wake up
 Game.wakeHour = 6
 
@@ -463,7 +474,7 @@ void main() {
 						class = plantType.objClass,
 						pos = vec3f(i + .5, j + .5, k + 1),
 						-- TODO scale by plant life
-						createTime = self.time - self.secondsPerDay * (math.random() * 10),
+						createTime = self.time - math.random() * plantType.growDuration * 2,
 					}
 				end
 			end

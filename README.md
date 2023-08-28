@@ -59,6 +59,7 @@
 	- more monsters in caves than on surface.
 - rodents, crop fungus, hurricaines... goblin raiding party.
 - tag logs with plant-type. shader for them too.  and add all those trees to the plant list.
+- Better separate game-player from game-obj-player.  move all the UI stuff / clientside-only to game-player, all serverside to game-obj-player.
 
 ## Right Now Plant Sprites Are Courtesy Of:
 

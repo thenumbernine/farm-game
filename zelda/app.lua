@@ -175,7 +175,16 @@ function App:updateGame()
 
 	-- in degrees:
 	self.lastViewYaw = self.viewYaw
-	self.viewYaw = self.viewYaw + .1 * (self.targetViewYaw - self.viewYaw)
+	local dyaw = .1 * (self.targetViewYaw - self.viewYaw)
+	if math.abs(dyaw) > .001 then
+		self.viewYaw = self.viewYaw + dyaw
+	else
+		-- TODO this might fix some flickering, but there still is some more
+		-- probably due to player vel being nonzero
+		-- so TODO the same trick with player vel ?  only update camera follow target if it moves past some epsilon?
+		self.targetViewYaw = self.targetViewYaw % (2 * math.pi)
+		self.viewYaw = self.targetViewYaw
+	end
 
 	self.view.angle = quatd():fromAngleAxis(0, 0, 1, math.deg(self.viewYaw))
 					* quatd():fromAngleAxis(1,0,0,30)

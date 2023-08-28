@@ -14,9 +14,6 @@ growType
 	- seeds = grow to a vine
 	- seeds = grow to a grain/hay/wheat
 
-TODO growType->plantType:
-	
-
 	- tree = produces fruit, seeds, leaves
 		apricot
 		cherry
@@ -135,23 +132,24 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 	local tex = assert(frame.tex, "failed to find frame for sprite "..plantType.sprite.." seq "..seqname)
 	plantType.drawSize = vec2f(tex.width, tex.height) / 20
 
-	-- TODO drawSize should be proportional to the sprite used
+	local Game = require 'zelda.game'
+
 	if plantType.sprite == 'faketree' then
-		--plantType.drawSize = vec2f(128, 128)/20
 		plantType.numLogs = 10
 		plantType.hpMax = 5
 		plantType.inflictTypes = {axe=true}
 		plantType.shakeOnHit = true
 		plantType.tipOnDie = true
+		plantType.growDuration = Game.secondsPerYear
 	elseif plantType.sprite == 'fakebush' then
-		--plantType.drawSize = vec2f(64, 64)/20
 		plantType.numLogs = 2
 		plantType.inflictTypes = {axe=true, sword=true}
 		plantType.shakeOnHit = true
 		plantType.tipOnDie = true
+		plantType.growDuration = Game.secondsPerWeek
 	else
-		--plantType.drawSize = vec2f(32, 32)/20
 		plantType.inflictTypes = {axe=true, sword=true}
+		plantType.growDuration = Game.secondsPerWeek
 	end
 
 	plantType.objClass = require 'zelda.obj.plant':subclass(plantType)

@@ -75,7 +75,11 @@ end
 function Plant:update(...)
 	local game = self.game
 
-	if game.time - self.createTime < game.secondsPerDay then
+	-- TODO how about < some frac (like 1/7th) show the seed
+	local growTime = game.time - self.createTime
+	local growFrac = growTime / self.growDuration
+	
+	if growFrac < 1/7 then
 		-- seed-form:
 		self.sprite = 'seededground'
 		self.seq = 'stand'
@@ -88,7 +92,12 @@ function Plant:update(...)
 		-- plant-form:
 		self.sprite = self.plantType.sprite
 		self.seq = nil	-- fall back on class seq, generated class based on plantType
-		self.drawSize:set(self.plantType.drawSize:unpack())
+		local sx, sy = self.plantType.drawSize:unpack()
+		if growFrac < 1 then
+			sx = sx * growFrac
+			sy = sy * growFrac
+		end
+		self.drawSize:set(sx, sy)
 		self.bbox.min:set(-.49, -.49, 0)
 		self.bbox.max:set(.49, .49, .98)
 		self.disableBillboard = nil
