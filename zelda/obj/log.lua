@@ -13,8 +13,7 @@ Log.name = 'Log'
 Log.sprite = 'log'
 
 function Log:useInInventory(player)
-	local game = player.game
-	local map = game.map
+	local map = player.map
 
 	-- TODO traceline and then step back
 	local dst = (player.pos + vec3f(

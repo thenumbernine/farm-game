@@ -44,8 +44,7 @@ Bed.bbox = box3f{
 
 -- static method
 function Bed:useInInventory(player)
-	local game = player.game
-	local map = game.map
+	local map = self.map
 
 	-- TODO traceline and then step back
 	local dst = (player.pos + vec3f(
@@ -59,7 +58,7 @@ function Bed:useInInventory(player)
 	if tileType == Tile.typeValues.Empty
 	-- TODO and no solid object exists on this tile
 	then
-		game:newObj{
+		player.map:newObj{
 			class = player:removeSelectedItem(),
 			pos = dst+.5,
 		}
@@ -116,7 +115,7 @@ Bed.takesDamage = true
 function Bed:damage(amount, attacker, inflicter)
 	if not (inflicter and (inflicter.name == 'axe' or inflicter.name == 'pickaxe')) then return end
 
-	self.game:newObj{
+	self.map:newObj{
 		class = require 'zelda.obj.item',
 		itemClass = require 'zelda.obj.bed',
 		pos = self.pos,

@@ -13,8 +13,7 @@ ItemSeeds.name = 'seeds'
 
 -- static method
 function ItemSeeds:useInInventory(player)
-	local game = player.game
-	local map = game.map
+	local map = player.map
 	
 	local x,y,z = (player.pos + vec3f(
 		math.cos(player.angle),
@@ -30,7 +29,7 @@ function ItemSeeds:useInInventory(player)
 	and not map:hasObjType(x,y,z, Plant)
 	then
 		assert(player:removeSelectedItem() == self)
-		game:newObj{
+		player.map:newObj{
 			class = self.plantType.objClass,
 			pos = vec3f(x+.5, y+.5, z + .003),
 		}

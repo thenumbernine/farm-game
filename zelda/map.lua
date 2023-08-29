@@ -9,7 +9,6 @@ local vec3f = require 'vec-ffi.vec3f'
 local vec2f = require 'vec-ffi.vec2f'
 local vec4ub = require 'vec-ffi.vec4ub'
 local gl = require 'gl'
-local glreport = require 'gl.report'
 local GLProgram = require 'gl.program'
 local GLArrayBuffer = require 'gl.arraybuffer'
 local GLSceneObject = require 'gl.sceneobject'
@@ -360,6 +359,13 @@ function Map:init(args)	-- vec3i
 	self.game = assert(args.game)
 	local game = self.game
 	local app = game.app
+	
+	self.objs = table()
+	
+	-- key = index in map.objsPerTileIndex = offset of the tile in the map
+	-- value = list of all objects on that tile
+	self.objsPerTileIndex = {}
+
 
 	self.sizeInChunks = vec3i(assert(args.sizeInChunks))
 	self.chunkVolume = self.sizeInChunks:volume()
@@ -476,10 +482,6 @@ void main() {
 		end
 	end
 
-	-- key = index in map.objsPerTileIndex = offset of the tile in the map
-	-- value = list of all objects on that tile
-	self.objsPerTileIndex = {}
-
 	self.texpackSize = vec2i(2, 2)
 end
 
@@ -501,7 +503,13 @@ function Map:draw()
 	end
 	GLTex2D:unbind(1)
 	GLTex2D:unbind(0)
-	glreport'here'
+end
+
+function Map:drawObjs()
+	-- accumulate draw lists
+	for _,obj in ipairs(self.objs) do
+		obj:draw()
+	end
 end
 
 function Map:buildAlts()
@@ -582,6 +590,22 @@ function Map:hasObjType(x,y,z,cl)
 		end
 	end
 	return false
+end
+
+function Map:newObj(args)
+--print('new', args.class.name, 'at', args.pos)
+	local cl = assert(args.class)
+	args.game = self.game
+	args.map = self
+	local obj = cl(args)
+	self.objs:insert(obj)
+	return obj
+end
+
+function Map:update(dt)
+	for _,obj in ipairs(self.objs) do
+		if obj.update then obj:update(dt) end
+	end
 end
 
 return Map

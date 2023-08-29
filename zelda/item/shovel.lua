@@ -9,8 +9,8 @@ ItemShovel.name = 'shovel'
 
 -- static method
 function ItemShovel:useInInventory(player)
+	local map = player.map
 	local game = player.game
-	local map = game.map
 
 	-- TODO dif animation than sword
 	if player.attackEndTime >= game.time then return end

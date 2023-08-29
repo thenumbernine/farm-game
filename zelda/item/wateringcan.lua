@@ -9,8 +9,7 @@ ItemWateringCan.name = 'watering can'
 
 -- static method
 function ItemWateringCan:useInInventory(player)
-	local game = player.game
-	local map = game.map
+	local map = player.map
 
 	local x,y,z = (player.pos + vec3f(
 		math.cos(player.angle),
@@ -23,7 +22,7 @@ function ItemWateringCan:useInInventory(player)
 	and topTile == Tile.typeValues.Empty
 	and not map:hasObjType(x,y,z, WateredGround)
 	then
-		game:newObj{
+		player.map:newObj{
 			class = WateredGround,
 			pos = vec3f(x+.5, y+.5, z + .002),
 		}

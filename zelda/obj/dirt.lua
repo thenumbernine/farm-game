@@ -38,8 +38,7 @@ end
 -- except maybe that part where I have it place beneath you first ...
 -- or maybe wood should do that too?
 function Dirt:useInInventory(player)
-	local game = player.game
-	local map = game.map
+	local map = player.map
 
 	-- TODO traceline and then step back
 	for z=-1,0 do

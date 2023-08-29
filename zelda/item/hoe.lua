@@ -10,8 +10,7 @@ ItemHoe.name = 'hoe'
 
 -- static method
 function ItemHoe:useInInventory(player)
-	local game = player.game
-	local map = game.map
+	local map = player.map
 	
 	local x,y,z = (player.pos + vec3f(
 		math.cos(player.angle),
@@ -27,7 +26,7 @@ function ItemHoe:useInInventory(player)
 	--  a better classification would be only allow watered/hoedground/seededground types (which should all have a common parent class / flag)
 	and not map:hasObjType(x,y,z,Plant)
 	then
-		game:newObj{
+		player.map:newObj{
 			class = HoedGround,
 			pos = vec3f(x+.5, y+.5, z + .001),
 		}

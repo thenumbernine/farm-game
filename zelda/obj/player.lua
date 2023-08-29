@@ -65,9 +65,9 @@ function Player:init(args, ...)
 end
 
 function Player:update(dt)
+	local map = self.map
 	local game = self.game
 	local app = game.app
-	local map = game.map
 	local appPlayer = assert(self.player)
 
 	if self.sleeping then return end

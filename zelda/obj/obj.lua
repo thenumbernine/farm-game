@@ -56,6 +56,7 @@ Obj.color = vec4f(1,1,1,1)
 function Obj:init(args)
 	assert(args)
 	self.game = assert(args.game)
+	self.map = assert(args.map)
 
 	-- what was the game clock when the object was created?
 	-- this will need to be explicitly set for objects being loaded from save games etc 
@@ -96,7 +97,7 @@ function Obj:init(args)
 end
 
 function Obj:link()
-	local map = self.game.map
+	local map = self.map
 
 	-- always unlink before you link
 	assert(next(self.tiles) == nil)
@@ -130,7 +131,7 @@ function Obj:link()
 end
 
 function Obj:unlink()
-	local map = self.game.map
+	local map = self.map
 	-- self.tiles = list of tile-links that this obj is attached to ...
 	if self.tiles then
 		for tileIndex,tileObjs in pairs(self.tiles) do
@@ -264,8 +265,7 @@ Obj.collideFlags = 0
 
 local epsilon = 1e-5
 function Obj:update(dt)
-	local game = self.game
-	local map = game.map
+	local map = self.map
 
 	if self.vel.x ~= 0
 	or self.vel.y ~= 0
@@ -362,10 +362,9 @@ local matrix_ffi = require 'matrix.ffi'
 local modelMat = matrix_ffi({4,4},'float'):zeros():setIdent()
 
 function Obj:draw()
+	local map = self.map
 	local game = self.game
 	local app = game.app
-	local view = app.view
-	local map = game.map
 
 --[[
 	gl.glColor3f(1,1,1)
@@ -454,10 +453,10 @@ end
 
 function Obj:drawSprite()
 	local frame = self.currentFrame
+	local map = self.map
 	local game = self.game
 	local app = game.app
 	local view = app.view
-	local map = game.map
 
 	local shader = game.spriteShader
 	local uscale = -1
@@ -522,10 +521,10 @@ end
 
 function Obj:drawMesh()
 	local frame = self.currentFrame
+	local map = self.map
 	local game = self.game
 	local app = game.app
 	local view = app.view
-	local map = game.map
 	
 	modelMat:setTranslate(self.pos:unpack())
 		:applyScale(self.drawSize.x, self.drawSize.x, self.drawSize.y)

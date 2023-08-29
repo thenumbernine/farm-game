@@ -13,6 +13,7 @@ local GLProgram = require 'gl.program'
 local GLArrayBuffer = require 'gl.arraybuffer'
 local GLGeometry = require 'gl.geometry'
 local GLSceneObject = require 'gl.sceneobject'
+local glreport = require 'gl.report'
 local Map = require 'zelda.map'
 local Tile = require 'zelda.tile'
 local Obj = require 'zelda.obj.obj'
@@ -40,28 +41,26 @@ TODO how to handle multiple maps with objects-in-map ...
 - should I create all objs, and only update the ones in used maps?
 - should I store objs on disk in unused maps?
 --]]
-	game.map = Map{
+	local map = Map{
 		game = game,
 		sizeInChunks = vec3i(3, 2, 1),
 	}
 
-
 	local houseSize = vec3f(3, 3, 2)
 	local houseCenter = vec3f(
-		math.floor(game.map.size.x/2),
-		math.floor(game.map.size.y*3/4),
-		math.floor(game.map.size.z/2) + houseSize.z)
+		math.floor(map.size.x/2),
+		math.floor(map.size.y*3/4),
+		math.floor(map.size.z/2) + houseSize.z)
 
 	-- copied in game's init
 	local npcPos = vec3f(
-		game.map.size.x*.95,
-		game.map.size.y*.5,
-		game.map.size.z-.5)
+		map.size.x*.95,
+		map.size.y*.5,
+		map.size.z-.5)
 
 	do
 		local simplexnoise = require 'simplexnoise.3d'
 	--print'generating map'
-		local map = game.map
 		local maptexs = {
 			grass = 0,
 			stone = 1,
@@ -146,25 +145,15 @@ TODO how to handle multiple maps with objects-in-map ...
 	--print'init done'
 	end
 
-	game.objs = table()
-	app.players[1].obj = game:newObj{
-		class = Obj.classes.Player,
-		pos = vec3f(
-			game.map.size.x*.5,
-			game.map.size.y*.5,
-			game.map.size.z-.5),
-		player = assert(app.players[1]),
-	}
-
 	-- don't require until app.game is created
 	local plantTypes = require 'zelda.plants'
 
-	game:newObj{
+	map:newObj{
 		class = Obj.classes.NPC,
 		pos = vec3f(
-			game.map.size.x*.95,
-			game.map.size.y*.5,
-			game.map.size.z-.5),
+			map.size.x*.95,
+			map.size.y*.5,
+			map.size.z-.5),
 		interactInWorld = function(interactObj, playerObj)
 			local appPlayer = playerObj.player
 			local ig = require 'imgui'
@@ -216,17 +205,17 @@ TODO how to handle multiple maps with objects-in-map ...
 		end,
 	}
 
-	game:newObj{
+	map:newObj{
 		class = require 'zelda.obj.bed',
 		pos = houseCenter + vec3f(houseSize.x-1, -(houseSize.y-1), -(houseSize.z-1)) + .5,
 	}
 
 	-- [[ plants
-	for j=0,game.map.size.y-1 do
-		for i=0,game.map.size.x-1 do
-			local k = game.map.size.z-1
+	for j=0,map.size.y-1 do
+		for i=0,map.size.x-1 do
+			local k = map.size.z-1
 			while k >= 0 do
-				local tile = game.map:getTile(i,j,k)
+				local tile = map:getTile(i,j,k)
 				if tile.type ~= Tile.typeValues.Empty
 				and tile.tex == 0	-- grass tex
 				then
@@ -246,7 +235,7 @@ TODO how to handle multiple maps with objects-in-map ...
 					-- TODO pick plants based on biome
 					-- and move the rest of these stats into the plantType
 					local plantType = plantTypes:pickRandom()
-					game:newObj{
+					map:newObj{
 						class = plantType.objClass,
 						pos = vec3f(i + .5, j + .5, k + 1),
 						-- TODO scale by plant life
@@ -260,19 +249,19 @@ TODO how to handle multiple maps with objects-in-map ...
 
 -- [[
 	for k=1,5 do
-		local i = math.random(tonumber(game.map.size.x))-1
-		local j = math.random(tonumber(game.map.size.y))-1
+		local i = math.random(tonumber(map.size.x))-1
+		local j = math.random(tonumber(map.size.y))-1
 		for _,dir in ipairs{{1,0},{0,1},{-1,0},{0,-1}} do
 			local ux, uy = table.unpack(dir)
-			local g = game:newObj{
+			local g = map:newObj{
 				class = Obj.classes.Goomba,
-				pos = vec3f(ux + i, uy + j, game.map.size.z-1),
+				pos = vec3f(ux + i, uy + j, map.size.z-1),
 			}
 		end
 	end
 --]]
 
-
+	return map
 end
 
 
@@ -497,8 +486,23 @@ void main() {
 		minFilter = gl.GL_NEAREST,
 	}
 
-	makeFarmMap(self)
-	
+	self.maps = table()
+	local farmMap = makeFarmMap(self)
+	self.maps:insert(farmMap)
+
+	app.players[1].obj = farmMap:newObj{
+		class = Obj.classes.Player,
+		pos = vec3f(
+			farmMap.size.x*.5,
+			farmMap.size.y*.5,
+			farmMap.size.z-.5),
+		player = assert(app.players[1]),
+	}
+
+	self.viewFollow = app.players[1].obj
+	--self.viewFollow = self.goomba
+
+
 	-- collect per-texture of sprites
 	self.spriteDrawList = table()
 	self.meshDrawList = table()
@@ -517,21 +521,9 @@ function Game:timeToStr()
 	return ('%d %02d:%02d'):format(td,h,m)
 end
 
-function Game:newObj(args)
---print('new', args.class.name, 'at', args.pos)
-	local cl = assert(args.class)
-	args.game = self
-	local obj = cl(args)
-	self.objs:insert(obj)
-	return obj
-end
-
 function Game:draw()
 	local app = self.app
 	local view = app.view
-
-	self.viewFollow = app.players[1].obj
-	--self.viewFollow = self.goomba
 
 	-- before calling super.update and redoing the gl matrices, update view...
 	--self.view.angle:fromAngleAxis(1,0,0,20)
@@ -584,11 +576,10 @@ function Game:draw()
 		--]]
 	end
 
-	self.map:draw()
-
--- with zero sprite rendering whatsoever i'm getting 30fps
--- so sprite rendering might not be our bottleneck ...
--- [=[
+	
+	-- prep draw lists
+	-- with zero sprite rendering whatsoever i'm getting 30fps
+	-- so sprite rendering might not be our bottleneck ...
 	-- collect per-texture of sprites
 	for k in pairs(self.spriteDrawList) do
 		self.spriteDrawList[k] = nil
@@ -597,10 +588,18 @@ function Game:draw()
 		self.meshDrawList[k] = nil
 	end
 
-	-- accumulate draw lists
-	for _,obj in ipairs(self.objs) do
-		obj:draw()
+
+--[[ draw all maps
+	for _,map in ipairs(self.maps) do
+		map:draw()
+		map:drawObjs()
 	end
+--]]
+-- [[ only draw the player's map
+	self.viewFollow.map:draw()
+	self.viewFollow.map:drawObjs()
+--]]
+
 
 	self.spriteShader:use()
 	self.spriteSceneObj:enableAndSetAttrs()
@@ -618,6 +617,7 @@ function Game:draw()
 		end
 	end
 --]]
+	
 	self.spriteSceneObj:disableAttrs()
 	self.spriteShader:useNone()
 
@@ -630,22 +630,26 @@ function Game:draw()
 	GLProgram:useNone()
 	GLTex2D:unbind()
 --]=]
+
+	glreport'here'
 end
 
 function Game:update(dt)
-	for _,obj in ipairs(self.objs) do
-		if obj.update then obj:update(dt) end
+	for _,map in ipairs(self.maps) do
+		map:update(dt)
 	end
 
 	-- now threads
 	self.threads:update()
 
 	-- only after update do the removals
-	for i=#self.objs,1,-1 do
-		local obj = self.objs[i]
-		if obj.removeFlag then
-			obj:unlink()
-			table.remove(self.objs, i)
+	for _,map in ipairs(self.maps) do
+		for i=#map.objs,1,-1 do
+			local obj = map.objs[i]
+			if obj.removeFlag then
+				obj:unlink()
+				table.remove(map.objs, i)
+			end
 		end
 	end
 
