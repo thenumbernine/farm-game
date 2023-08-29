@@ -56,6 +56,7 @@ function Player:init(args, ...)
 		require 'zelda.item.axe',
 		require 'zelda.item.hoe',
 		require 'zelda.item.wateringcan',
+		require 'zelda.obj.chest',
 	}:mapi(function(cl)
 		return {
 			class = cl,
@@ -76,21 +77,28 @@ function Player:update(dt)
 	if not appPlayer.gamePrompt then
 
 		if appPlayer.invOpen then
+			
+			local chestOpen = appPlayer.chestOpen
+			local maxItems = self.numInvItems
+			if chestOpen then
+				maxItems = maxItems + chestOpen.numInvItems
+			end
+
 			if appPlayer.keyPress.right and not appPlayer.keyPressLast.right then
 				self.selectedItem = self.selectedItem + 1
-				self.selectedItem = (self.selectedItem - 1) % self.numInvItems + 1
+				self.selectedItem = (self.selectedItem - 1) % maxItems + 1
 			end
 			if appPlayer.keyPress.left and not appPlayer.keyPressLast.left then
 				self.selectedItem = self.selectedItem - 1 
-				self.selectedItem = (self.selectedItem - 1) % self.numInvItems + 1
+				self.selectedItem = (self.selectedItem - 1) % maxItems + 1
 			end
 			if appPlayer.keyPress.up and not appPlayer.keyPressLast.up then
-				self.selectedItem = self.selectedItem - self.numSelectableItems
-				self.selectedItem = (self.selectedItem - 1) % self.numInvItems + 1
+				self.selectedItem = self.selectedItem + self.numSelectableItems
+				self.selectedItem = (self.selectedItem - 1) % maxItems + 1
 			end
 			if appPlayer.keyPress.down and not appPlayer.keyPressLast.down then
-				self.selectedItem = self.selectedItem + self.numSelectableItems
-				self.selectedItem = (self.selectedItem - 1) % self.numInvItems + 1
+				self.selectedItem = self.selectedItem - self.numSelectableItems
+				self.selectedItem = (self.selectedItem - 1) % maxItems + 1
 			end	
 		else
 			self.selectedItem = (self.selectedItem-1) % self.numSelectableItems + 1
@@ -196,6 +204,10 @@ function Player:update(dt)
 		if appPlayer.keyPress.openInventory and not appPlayer.keyPressLast.openInventory then
 			-- TODO put all clientside stuff in appPlayer
 			appPlayer.invOpen = not appPlayer.invOpen
+			-- if we closed inventory and a chest was open then disconnect it too
+			if not appPlayer.invOpen then
+				appPlayer.chestOpen = nil
+			end
 		end
 	end
 

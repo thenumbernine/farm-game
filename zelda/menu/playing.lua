@@ -105,22 +105,32 @@ function PlayingMenu:updateGUI()
 		-- TODO put zindex of new windows over the items, and just leave the items up
 		appPlayer.gamePrompt()
 	else
-
-		local maxItems = appPlayer.invOpen
-			and playerObj.numInvItems
-			or playerObj.numSelectableItems
+		local chestOpen = appPlayer.chestOpen
+		-- TODO this matches what's in zelda.obj.player ...
+		local maxItems = playerObj.numSelectableItems
+		if appPlayer.invOpen then
+			maxItems = playerObj.numInvItems
+			if chestOpen then
+				maxItems = maxItems + chestOpen.numInvItems
+			end
+		end
 
 		local bw = math.floor(app.width / playerObj.numSelectableItems)
 		local bh = bw
 		local x = 0
-		local y = appPlayer.invOpen
-			and (app.height - bh * 4 - 4)
-			or (app.height - bh - 4)
+		local y = app.height - bh - 4
 		ig.igPushStyleVar_Vec2(ig.ImGuiStyleVar_ButtonTextAlign, ig.ImVec2(0,0))
 
 		for iMinus1=0,maxItems-1 do
 			local i = iMinus1 + 1
-			local itemInfo = playerObj.items[i]
+			local itemInfo
+			if i <= playerObj.numInvItems then
+				itemInfo = playerObj.items[i]
+			elseif i <= playerObj.numInvItems + chestOpen.numInvItems then
+				itemInfo = chestOpen.items[i - playerObj.numInvItems]
+			else
+				error("shouldn't be here")
+			end
 
 			local selected = playerObj.selectedItem == i
 			if selected then
@@ -173,7 +183,10 @@ function PlayingMenu:updateGUI()
 
 			if iMinus1 % playerObj.numSelectableItems == playerObj.numSelectableItems-1 then
 				x = 0
-				y = y + bh
+				y = y - bh
+				if i == playerObj.numInvItems then
+					y = y - math.floor(bh/2)
+				end
 			else
 				x = x + bw
 			end

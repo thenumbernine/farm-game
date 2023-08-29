@@ -46,12 +46,14 @@ local anim = {
 			{filename = 'sprites/log/stand.png'},
 		},
 	},
-	--]]
-	-- [[ 3D
 	bed = {
 		stand = {
-			--{filename = 'sprites/bed/stand.obj'},
 			{filename = 'sprites/bed/stand.png'},
+		},
+	},
+	chest = {
+		stand = {
+			{filename = 'sprites/chest/stand.png'},
 		},
 	},
 	--]]

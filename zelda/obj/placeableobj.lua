@@ -1,3 +1,6 @@
+local vec3f = require 'vec-ffi.vec3f'
+local Tile = require 'zelda.tile'
+
 -- to contrast 'placeableTile', which puts a tile at a position
 local function placeableObj(parent)
 	local cl = parent:subclass()
