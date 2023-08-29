@@ -6,6 +6,7 @@ player holds the client-specific stuff
 --]]
 local class = require 'ext.class'
 local table = require 'ext.table'
+local ig = require 'imgui'
 
 -- TODO instances should be a member of game?
 local Player = class()
@@ -49,6 +50,22 @@ function Player:init(args)
 	end
 
 	self.money = 1000
+end
+
+-- dialog prompt
+function Player:dialogPrompt(msg, title)
+	self.gamePrompt = function()
+		ig.igBegin(title..'###PlayerWindow', nil, bit.bor(
+			ig.ImGuiWindowFlags_NoMove,
+			ig.ImGuiWindowFlags_NoResize,
+			ig.ImGuiWindowFlags_NoCollapse
+		))
+		ig.igText(msg)
+		if ig.igButton'Ok###PlayerWindowOk' then
+			self.gamePrompt = nil
+		end
+		ig.igEnd()
+	end
 end
 
 return Player

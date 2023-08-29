@@ -30,6 +30,252 @@ local function hexcolor(i)
 		1
 end
 
+
+local function makeFarmMap(game)
+	local app = game.app
+
+--[[
+TODO how to handle multiple maps with objects-in-map ...
+- should I create all objs in mem, store them per-map, and update all objects?
+- should I create all objs, and only update the ones in used maps?
+- should I store objs on disk in unused maps?
+--]]
+	game.map = Map{
+		game = game,
+		sizeInChunks = vec3i(3, 2, 1),
+	}
+
+
+	local houseSize = vec3f(3, 3, 2)
+	local houseCenter = vec3f(
+		math.floor(game.map.size.x/2),
+		math.floor(game.map.size.y*3/4),
+		math.floor(game.map.size.z/2) + houseSize.z)
+
+	-- copied in game's init
+	local npcPos = vec3f(
+		game.map.size.x*.95,
+		game.map.size.y*.5,
+		game.map.size.z-.5)
+
+	do
+		local simplexnoise = require 'simplexnoise.3d'
+	--print'generating map'
+		local map = game.map
+		local maptexs = {
+			grass = 0,
+			stone = 1,
+			wood = 2,
+		}
+
+		-- simplex noise resolution
+		local blockSize = 8
+		local half = bit.rshift(map.size.z, 1)
+		--local step = vec3i(1, map.size.x, map.size.x * map.size.y)
+		--local ijk = vec3i()
+		local xyz = vec3f()
+		for k=0,map.size.z-1 do
+			--ijk.z = k
+			xyz.z = k / blockSize
+			for j=0,map.size.y-1 do
+				--ijk.y = j
+				xyz.y = j / blockSize
+				for i=0,map.size.x-1 do
+					--ijk.x = i
+					xyz.x = i / blockSize
+					local c = simplexnoise(xyz:unpack())
+					local maptype = Tile.typeValues.Empty
+					local maptex = k >= half-1
+						and maptexs.grass
+						or maptexs.stone
+					if k >= half then
+						c = c + (k - half) * .5
+					end
+
+					-- [[ make the top flat?
+					if k >= half
+					and (
+						(vec2f(i,j) - vec2f(houseCenter.x, houseCenter.y)):length() < 15
+						or (vec2f(i,j) - vec2f(npcPos.x, npcPos.y)):length() < 5
+					) then
+						c = k == half and 0 or 1
+					end
+					--]]
+
+					if c < .5 then
+						maptype =
+							maptex == maptexs.stone
+							and Tile.typeValues.Stone
+							or Tile.typeValues.Grass
+					end
+					--local index = ijk:dot(step)
+					local tile = assert(map:getTile(i,j,k))
+					tile.type = maptype
+					tile.tex = maptex
+				end
+			end
+		end
+
+		do
+			for x=houseCenter.x-houseSize.x,houseCenter.x+houseSize.x do
+				for y=houseCenter.y-houseSize.y, houseCenter.y+houseSize.y do
+					for z=houseCenter.z-houseSize.z, houseCenter.z+houseSize.z do
+						local adx = math.abs(x - houseCenter.x)
+						local ady = math.abs(y - houseCenter.y)
+						local adz = math.abs(z - houseCenter.z)
+						local linf = math.max(adx/houseSize.x, ady/houseSize.y, adz/houseSize.z)
+						if linf == 1 then
+							local tile = assert(map:getTile(x,y,z))
+							tile.type = Tile.typeValues.Wood
+							tile.tex = maptexs.wood
+						end
+					end
+				end
+				local t = assert(map:getTile(houseCenter.x, houseCenter.y - houseSize.y, houseCenter.z - houseSize.z + 1))
+				t.type = 0
+				t.tex = 0
+				local t = assert(map:getTile(houseCenter.x, houseCenter.y - houseSize.y, houseCenter.z - houseSize.z + 2))
+				t.type = 0
+				t.tex = 0
+			end
+		end
+
+	--print"building draw arrays"
+		map:buildDrawArrays()
+		map:buildAlts()
+	--print'init done'
+	end
+
+	game.objs = table()
+	app.players[1].obj = game:newObj{
+		class = Obj.classes.Player,
+		pos = vec3f(
+			game.map.size.x*.5,
+			game.map.size.y*.5,
+			game.map.size.z-.5),
+		player = assert(app.players[1]),
+	}
+
+	-- don't require until app.game is created
+	local plantTypes = require 'zelda.plants'
+
+	game:newObj{
+		class = Obj.classes.NPC,
+		pos = vec3f(
+			game.map.size.x*.95,
+			game.map.size.y*.5,
+			game.map.size.z-.5),
+		interactInWorld = function(interactObj, playerObj)
+			local appPlayer = playerObj.player
+			local ig = require 'imgui'
+			appPlayer.gamePrompt = function()
+				local function buy(plantType, amount)
+					assert(amount > 0)
+					local cost = plantType.cost * amount
+					if cost <= appPlayer.money then
+						if playerObj:addItem(plantType.seedClass, amount) then
+							appPlayer.money = appPlayer.money - cost
+						else
+							appPlayer:dialogPrompt("new room in inventory", "sorry")
+						end
+					end
+				end
+
+				local size = ig.igGetMainViewport().WorkSize
+				ig.igSetNextWindowPos(ig.ImVec2(size.x/2, 0), ig.ImGuiCond_Appearing, ig.ImVec2(.5, 0));
+				ig.igBegin('Store Guy', nil, bit.bor(
+					ig.ImGuiWindowFlags_NoMove,
+					ig.ImGuiWindowFlags_NoResize,
+					ig.ImGuiWindowFlags_NoCollapse
+				))
+				ig.igSetWindowFontScale(.5)
+
+				ig.igText"want to buy something?"
+
+				if ig.igButton'Ok###Ok2' then
+					appPlayer.gamePrompt = nil
+				end
+
+				for i,plantType in ipairs(plantTypes) do
+					for _,x in ipairs{1, 10, 100} do
+						if ig.igButton('x'..x..'###'..i..'x'..x) then
+							buy(plantType, x)
+						end
+						ig.igSameLine()
+					end
+					ig.igText('$'..plantType.cost..': '..plantType.name)
+				end
+
+				if ig.igButton'Ok' then
+					appPlayer.gamePrompt = nil
+				end
+
+				ig.igSetWindowFontScale(1)
+				ig.igEnd()
+			end
+		end,
+	}
+
+	game:newObj{
+		class = require 'zelda.obj.bed',
+		pos = houseCenter + vec3f(houseSize.x-1, -(houseSize.y-1), -(houseSize.z-1)) + .5,
+	}
+
+	-- [[ plants
+	for j=0,game.map.size.y-1 do
+		for i=0,game.map.size.x-1 do
+			local k = game.map.size.z-1
+			while k >= 0 do
+				local tile = game.map:getTile(i,j,k)
+				if tile.type ~= Tile.typeValues.Empty
+				and tile.tex == 0	-- grass tex
+				then
+					break
+				end
+				k = k - 1
+			end
+			if k >= 0 then
+				-- found a grass tile
+				local r = math.random()
+				if (vec2f(i,j) - vec2f(houseCenter.x, houseCenter.y)):length() < 7.5
+				or (vec2f(i,j) - vec2f(npcPos.x, npcPos.y)):length() < 5
+				then
+					r = 1
+				end
+				if r < .7 then
+					-- TODO pick plants based on biome
+					-- and move the rest of these stats into the plantType
+					local plantType = plantTypes:pickRandom()
+					game:newObj{
+						class = plantType.objClass,
+						pos = vec3f(i + .5, j + .5, k + 1),
+						-- TODO scale by plant life
+						createTime = game.time - math.random() * plantType.growDuration * 2,
+					}
+				end
+			end
+		end
+	end
+	--]]
+
+-- [[
+	for k=1,5 do
+		local i = math.random(tonumber(game.map.size.x))-1
+		local j = math.random(tonumber(game.map.size.y))-1
+		for _,dir in ipairs{{1,0},{0,1},{-1,0},{0,-1}} do
+			local ux, uy = table.unpack(dir)
+			local g = game:newObj{
+				class = Obj.classes.Goomba,
+				pos = vec3f(ux + i, uy + j, game.map.size.z-1),
+			}
+		end
+	end
+--]]
+
+
+end
+
+
 local Game = class()
 
 Game.secondsPerMinute = 1
@@ -251,251 +497,8 @@ void main() {
 		minFilter = gl.GL_NEAREST,
 	}
 
-	-- TODO chop into chunks for faster updates
-	self.map = Map{
-		game = self,
-		sizeInChunks = vec3i(3, 2, 1),
-	}
-
-
-	local houseSize = vec3f(3, 3, 2)
-	local houseCenter = vec3f(
-		math.floor(self.map.size.x/2),
-		math.floor(self.map.size.y*3/4),
-		math.floor(self.map.size.z/2) + houseSize.z)
-
-	-- copied in game's init
-	local npcPos = vec3f(
-		self.map.size.x*.95,
-		self.map.size.y*.5,
-		self.map.size.z-.5)
-
-	do
-		local simplexnoise = require 'simplexnoise.3d'
-	--print'generating map'
-		local map = self.map
-		local maptexs = {
-			grass = 0,
-			stone = 1,
-			wood = 2,
-		}
-
-		-- simplex noise resolution
-		local blockSize = 8
-		local half = bit.rshift(map.size.z, 1)
-		--local step = vec3i(1, map.size.x, map.size.x * map.size.y)
-		--local ijk = vec3i()
-		local xyz = vec3f()
-		for k=0,map.size.z-1 do
-			--ijk.z = k
-			xyz.z = k / blockSize
-			for j=0,map.size.y-1 do
-				--ijk.y = j
-				xyz.y = j / blockSize
-				for i=0,map.size.x-1 do
-					--ijk.x = i
-					xyz.x = i / blockSize
-					local c = simplexnoise(xyz:unpack())
-					local maptype = Tile.typeValues.Empty
-					local maptex = k >= half-1
-						and maptexs.grass
-						or maptexs.stone
-					if k >= half then
-						c = c + (k - half) * .5
-					end
-
-					-- [[ make the top flat?
-					if k >= half
-					and (
-						(vec2f(i,j) - vec2f(houseCenter.x, houseCenter.y)):length() < 15
-						or (vec2f(i,j) - vec2f(npcPos.x, npcPos.y)):length() < 5
-					) then
-						c = k == half and 0 or 1
-					end
-					--]]
-
-					if c < .5 then
-						maptype =
-							maptex == maptexs.stone
-							and Tile.typeValues.Stone
-							or Tile.typeValues.Grass
-					end
-					--local index = ijk:dot(step)
-					local tile = assert(map:getTile(i,j,k))
-					tile.type = maptype
-					tile.tex = maptex
-				end
-			end
-		end
-
-		do
-			for x=houseCenter.x-houseSize.x,houseCenter.x+houseSize.x do
-				for y=houseCenter.y-houseSize.y, houseCenter.y+houseSize.y do
-					for z=houseCenter.z-houseSize.z, houseCenter.z+houseSize.z do
-						local adx = math.abs(x - houseCenter.x)
-						local ady = math.abs(y - houseCenter.y)
-						local adz = math.abs(z - houseCenter.z)
-						local linf = math.max(adx/houseSize.x, ady/houseSize.y, adz/houseSize.z)
-						if linf == 1 then
-							local tile = assert(map:getTile(x,y,z))
-							tile.type = Tile.typeValues.Wood
-							tile.tex = maptexs.wood
-						end
-					end
-				end
-				local t = assert(map:getTile(houseCenter.x, houseCenter.y - houseSize.y, houseCenter.z - houseSize.z + 1))
-				t.type = 0
-				t.tex = 0
-				local t = assert(map:getTile(houseCenter.x, houseCenter.y - houseSize.y, houseCenter.z - houseSize.z + 2))
-				t.type = 0
-				t.tex = 0
-			end
-		end
-
-	--print"building draw arrays"
-		map:buildDrawArrays()
-		map:buildAlts()
-	--print'init done'
-	end
-
-	self.objs = table()
-	app.players[1].obj = self:newObj{
-		class = Obj.classes.Player,
-		pos = vec3f(
-			self.map.size.x*.5,
-			self.map.size.y*.5,
-			self.map.size.z-.5),
-		player = assert(app.players[1]),
-	}
-
-	-- don't require until app.game is created
-	local plantTypes = require 'zelda.plants'
-
-	local game = self
-	self:newObj{
-		class = Obj.classes.NPC,
-		pos = vec3f(
-			self.map.size.x*.95,
-			self.map.size.y*.5,
-			self.map.size.z-.5),
-		interactInWorld = function(interactObj, playerObj)
-			local player = playerObj.player
-			local ig = require 'imgui'
-			playerObj.gamePrompt = function()
-				local function buy(plantType, amount)
-					assert(amount > 0)
-					local cost = plantType.cost * amount
-					if cost <= player.money then
-						if playerObj:addItem(plantType.seedClass, amount) then
-							player.money = player.money - cost
-						else
-							playerObj.gamePrompt = function()
-								ig.igBegin('sorry', nil, bit.bor(
-									ig.ImGuiWindowFlags_NoMove,
-									ig.ImGuiWindowFlags_NoResize,
-									ig.ImGuiWindowFlags_NoCollapse
-								))
-								ig.igText"no room in inventory"
-								if ig.igButton'Ok' then
-									playerObj.gamePrompt = nil
-								end
-								ig.igEnd()
-							end
-						end
-					end
-				end
-
-				local size = ig.igGetMainViewport().WorkSize
-				ig.igSetNextWindowPos(ig.ImVec2(size.x/2, 0), ig.ImGuiCond_Appearing, ig.ImVec2(.5, 0));
-				ig.igBegin('Store Guy', nil, bit.bor(
-					ig.ImGuiWindowFlags_NoMove,
-					ig.ImGuiWindowFlags_NoResize,
-					ig.ImGuiWindowFlags_NoCollapse
-				))
-				ig.igSetWindowFontScale(.5)
-
-				ig.igText"want to buy something?"
-
-				if ig.igButton'Ok###Ok2' then
-					playerObj.gamePrompt = nil
-				end
-
-				for i,plantType in ipairs(plantTypes) do
-					for _,x in ipairs{1, 10, 100} do
-						if ig.igButton('x'..x..'###'..i..'x'..x) then
-							buy(plantType, x)
-						end
-						ig.igSameLine()
-					end
-					ig.igText('$'..plantType.cost..': '..plantType.name)
-				end
-
-				if ig.igButton'Ok' then
-					playerObj.gamePrompt = nil
-				end
-
-				ig.igSetWindowFontScale(1)
-				ig.igEnd()
-			end
-		end,
-	}
-
-	self:newObj{
-		class = require 'zelda.obj.bed',
-		pos = houseCenter + vec3f(houseSize.x-1, -(houseSize.y-1), -(houseSize.z-1)) + .5,
-	}
-
-	-- [[ plants
-	for j=0,self.map.size.y-1 do
-		for i=0,self.map.size.x-1 do
-			local k = self.map.size.z-1
-			while k >= 0 do
-				local tile = self.map:getTile(i,j,k)
-				if tile.type ~= Tile.typeValues.Empty
-				and tile.tex == 0	-- grass tex
-				then
-					break
-				end
-				k = k - 1
-			end
-			if k >= 0 then
-				-- found a grass tile
-				local r = math.random()
-				if (vec2f(i,j) - vec2f(houseCenter.x, houseCenter.y)):length() < 7.5
-				or (vec2f(i,j) - vec2f(npcPos.x, npcPos.y)):length() < 5
-				then
-					r = 1
-				end
-				if r < .7 then
-					-- TODO pick plants based on biome
-					-- and move the rest of these stats into the plantType
-					local plantType = plantTypes:pickRandom()
-					self:newObj{
-						class = plantType.objClass,
-						pos = vec3f(i + .5, j + .5, k + 1),
-						-- TODO scale by plant life
-						createTime = self.time - math.random() * plantType.growDuration * 2,
-					}
-				end
-			end
-		end
-	end
-	--]]
-
--- [[
-	for k=1,5 do
-		local i = math.random(tonumber(self.map.size.x))-1
-		local j = math.random(tonumber(self.map.size.y))-1
-		for _,dir in ipairs{{1,0},{0,1},{-1,0},{0,-1}} do
-			local ux, uy = table.unpack(dir)
-			local g = self:newObj{
-				class = Obj.classes.Goomba,
-				pos = vec3f(ux + i, uy + j, self.map.size.z-1),
-			}
-		end
-	end
---]]
-
+	makeFarmMap(self)
+	
 	-- collect per-texture of sprites
 	self.spriteDrawList = table()
 	self.meshDrawList = table()

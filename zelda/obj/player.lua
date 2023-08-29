@@ -73,7 +73,7 @@ function Player:update(dt)
 	if self.sleeping then return end
 
 	-- if a prompt is open then don't handle buttons
-	if not self.gamePrompt then
+	if not appPlayer.gamePrompt then
 
 		if appPlayer.invOpen then
 			if appPlayer.keyPress.right and not appPlayer.keyPressLast.right then

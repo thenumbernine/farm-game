@@ -15,8 +15,8 @@ end
 function PlayingMenu:updateGUI()
 	local app = self.app
 	local game = app.game
-	local player = app.players[1]
-	local playerObj = player.obj
+	local appPlayer = app.players[1]
+	local playerObj = appPlayer.obj
 
 	-- [[
 	ig.igSetNextWindowPos(ig.ImVec2(0, 0), 0, ig.ImVec2())
@@ -31,7 +31,7 @@ function PlayingMenu:updateGUI()
 	))
 	ig.igSetWindowFontScale(.5)
 
-	ig.igText('$'..player.money)
+	ig.igText('$'..appPlayer.money)
 	ig.igText(game:timeToStr())
 	ig.igText(tostring(playerObj.pos))
 
@@ -74,7 +74,7 @@ function PlayingMenu:updateGUI()
 		or ig.igButton('run code')
 		then
 			print('executing...\n'..self.consoleBuffer)
-			local env = setmetatable({app=app, game=game, player=player}, {__index=_G})
+			local env = setmetatable({app=app, game=game, player=appPlayer}, {__index=_G})
 			local f, err = load(self.consoleBuffer, nil, nil, env)
 			if not f then
 				print(err)
@@ -101,19 +101,19 @@ function PlayingMenu:updateGUI()
 	end
 
 
-	if playerObj.gamePrompt then
+	if appPlayer.gamePrompt then
 		-- TODO put zindex of new windows over the items, and just leave the items up
-		playerObj.gamePrompt()
+		appPlayer.gamePrompt()
 	else
 
-		local maxItems = player.invOpen
+		local maxItems = appPlayer.invOpen
 			and playerObj.numInvItems
 			or playerObj.numSelectableItems
 
 		local bw = math.floor(app.width / playerObj.numSelectableItems)
 		local bh = bw
 		local x = 0
-		local y = player.invOpen
+		local y = appPlayer.invOpen
 			and (app.height - bh * 4 - 4)
 			or (app.height - bh - 4)
 		ig.igPushStyleVar_Vec2(ig.ImGuiStyleVar_ButtonTextAlign, ig.ImVec2(0,0))

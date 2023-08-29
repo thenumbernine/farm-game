@@ -14,7 +14,7 @@ local function takesDamage(parent)
 		-- filter for what inflictor types are allowed
 		self.inflictTypes = args.inflictTypes
 
-		-- idk why you would want to start an enemy off at less than optimal HP but the feature is available ... 
+		-- idk why you would want to start an enemy off at less than optimal HP but the feature is available ...
 		self.hp = args.hp or self.hpMax
 	end
 
@@ -23,20 +23,20 @@ local function takesDamage(parent)
 	-- returns true if damage was taken, false otherwise
 	function cl:damage(amount, attacker, inflicter)
 		if self.dead then return end
-		
+
 		if self.inflictTypes then
 			if not (inflicter and self.inflictTypes[inflicter.name]) then
 				return
 			end
 		end
-		
+
 		self.hp = self.hp - amount
---print('lost', amount, 'now at', self.hp)	
+--print('lost', amount, 'now at', self.hp)
 		if self.hp <= 0 then
 			self.dead = true
 			self:die()
 		end
-		
+
 		return true
 	end
 
@@ -45,7 +45,7 @@ local function takesDamage(parent)
 		local game = self.game
 
 		-- flip over, fade out, float up in the air
-		
+
 		self.collidesWithTiles = false
 		self.vflip = true
 		self.vel.z = self.vel.z + 6

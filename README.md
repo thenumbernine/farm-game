@@ -10,23 +10,22 @@
 
 ## TODO:
 
-- button for opening inventory
-- keyboard/controller input for inventory selecting/cycling
-- if you dig ground, it should remove sprites on top of the ground (hoed, watered, seeded)
-- if you try to dig ground that has a bush/tree on it, it should fail to dig.
+- digging:
+	- if you dig ground, it should remove sprites on top of the ground (hoed, watered, seeded)
+	- if you try to dig ground that has a bush/tree on it, it should fail to dig.
+	- half-step voxels for grass and stone, and maybe some slope tiles, and maybe rotate them in any of the 4 directions, so I don't have to jump everywhere (stupid Minecraft, why did you make that a standard?)
 - make sure hoed / watered / seeded always render in correct order (z-sort by altitude? or store and render as attribut list per-tile?)
-- make seeds grow into plants.  one of a few templates of kinds of plants.
+- make biomes
 - make plants randomly seed neighboring ground... if they naturally grow in this biome ofc.
 - sword swing etc should search only objs on the neighboring tiles, not all objs
+	- region iterator, index for last region iterator
 - player sprite animations for sword, pickaxe, axe, shovel, hoe, watering ...
 - better sleep animation
 - super duper customizable character sprite
 - probably better align billboard sprites with where in 3D they are.
 - better lighting.  underground lighting.  any kind of falloff lighting.  any kind of better daylight shadow lighting.
-- half-step voxels for grass and stone, and maybe some slope tiles, and maybe rotate them in any of the 4 directions, so I don't have to jump everywhere (stupid Minecraft, why did you make that a standard?)
 - any kind of movement in those goombas
 - redo all the tree / bush / plant pics procedurally or something, esp to have one per 792 plants listed at the store right now.
-- move all scripts into a subfolder and fix distinfo to copy that one folder.
 - fix the distinfo project overall to auto package windows + linux (+osx?) all in one package.  i'm hacking it r.n. with a script.
 - unique sprite icons per each seed.
 - unique sprite icons per each tool / weapon / etc.
@@ -36,12 +35,14 @@
 - sprites cast shadows on the ground?
 - bump-mapping on sprites?  parallax mapping?
 - limit the seed shop to a subset of all seeds.  maybe multiple seed shops?
+	- higher price for more exotic seeds?
 - selling produce option?
 	- trash bucket like SDV?  or is that too nonsense, that you can teleport stuff at any time for money.
 	- shipping box like SDV, but becuse you're not there to man the booth you always get ripped off.
 	- on-farm trade-depot, but only when the Mountainhome Caravan comes once a ... week.  or when customers come.  infrequently.
 	- farmers market, once a saturady or something.  or any day.  you get lots of customers and sell at higher price.
 		- later you can hire someone to man the booth for you and sell even more round-the-clock.
+- get seeds from fruit.
 - livestock.
 - fences and gates to keep livestock from getting away.
 - capure livestock in pokeballs and train them to fight.
@@ -55,12 +56,14 @@
     - street fighter 2.  or secret of mana.  or both.
 - stats system.  level system.  weapon-skill-level system.  skill tree ofc because.
     - lots of equipment slots.  materia.
-- better dungeon/cave area.  not just mindless simplex noise or caves.  more like floodfill dungeons with some organization to them.
+- better dungeon/cave area.  not just mindless simplex noise or caves.  more like floodfill dungeons on a coarser resolution (like 8x8x8).
 	- more monsters in caves than on surface.
 - rodents, crop fungus, hurricaines... goblin raiding party.
-- tag logs with plant-type. shader for them too.  and add all those trees to the plant list.
+- give logs plant-type. color them too just like seeds.  and add all those trees to the plant list.
 - Better separate game-player from game-obj-player.  move all the UI stuff / clientside-only to game-player, all serverside to game-obj-player.
-
-## Right Now Plant Sprites Are Courtesy Of:
-
-https://opengameart.org/content/trees-bushes
+- allow rearranging stuff in inventory.
+- generalize tile placement
+	- tile orientation
+	- add material property to tiles ... either color, or some other way to change it based on the material ... and to store the material as well.
+- better linking/unlinking system than the current Lua-table-based
+	- maybe instead something like a per-tile linked-list (tho i need multiple lists per obj), or a ptr-per-tile that points to a list of objs
