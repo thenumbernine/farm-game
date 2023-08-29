@@ -202,7 +202,7 @@ function Chunk:buildDrawArrays()
 
 	-- 184816 vertexes total ...
 	-- ... from 196608 cubes
--- [[	
+--[[	
 	local volume = self.volume
 	print('volume', volume)
 	print('vtxs', self.vtxs.size)
@@ -485,10 +485,32 @@ void main() {
 	self.texpackSize = vec2i(2, 2)
 end
 
-function Map:buildDrawArrays()
-	for chunkIndex=0,self.chunkVolume-1 do
---print('building chunk', chunkIndex)	
-		self.chunks[chunkIndex]:buildDrawArrays()
+local timer = require 'ext.timer'
+function Map:buildDrawArrays(
+	minx, miny, minz,
+	maxx, maxy, maxz
+)
+	minx = bit.rshift(minx, Chunk.bitsize.x)
+	miny = bit.rshift(miny, Chunk.bitsize.y)
+	minz = bit.rshift(minz, Chunk.bitsize.z)
+	maxx = bit.rshift(maxx, Chunk.bitsize.x)
+	maxy = bit.rshift(maxy, Chunk.bitsize.y)
+	maxz = bit.rshift(maxz, Chunk.bitsize.z)
+	
+	for cz=minz,maxz do
+		for cy=miny,maxy do
+			for cx=minx,maxx do
+				local chunkIndex = cx + self.sizeInChunks.x * (cy + self.sizeInChunks.y * cz)
+				--[[
+				self.chunks[chunkIndex]:buildDrawArrays()
+				--]]
+				-- [[
+				local chunk = self.chunks[chunkIndex]
+				-- 0.04 to 0.08 seconds ... 1/25 to 1/12.5
+				timer('chunk', chunk.buildDrawArrays, chunk)
+				--]]
+			end
+		end
 	end
 end
 

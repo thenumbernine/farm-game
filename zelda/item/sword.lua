@@ -8,6 +8,7 @@ ItemSword.name = 'sword'
 -- static method
 function ItemSword:useInInventory(player)
 	local game = player.game
+	local map = player.map
 
 	if player.attackEndTime >= game.time then return end
 	player.swingPos = vec3f(player.pos.x, player.pos.y, player.pos.z + .7)
@@ -18,7 +19,7 @@ function ItemSword:useInInventory(player)
 	-- TODO iterate through all blocks within some range around us ...
 	-- then iterate over their objs ...
 	-- TODO TODO just do traceline
-	for _,obj in ipairs(game.objs) do
+	for _,obj in ipairs(map.objs) do
 		if not obj.removeFlag
 		and obj ~= player 
 		and obj.takesDamage

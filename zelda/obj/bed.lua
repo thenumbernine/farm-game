@@ -5,11 +5,6 @@ local Tile = require 'zelda.tile'
 local Obj = require 'zelda.obj.obj'
 
 --[[
-TODO placeable item ...
-... two kinds?
-1. place item <-> change map data
-2. place item <-> place object
-
 TODO
 - object represents the physical thing in the world
 	use an ax or something to disconnect from world and become an item that you touch to pick up.
@@ -27,7 +22,7 @@ not as long as I have .use() ...
 - as a behavior?
 --]]
 
-local Bed = Obj:subclass()
+local Bed = require 'zelda.obj.placeableobj'(Obj):subclass()
 
 Bed.name = 'bed'
 Bed.sprite = 'bed'
@@ -41,29 +36,6 @@ Bed.bbox = box3f{
 	min = {-.5, -.5, 0},
 	max = {.5, .5, .5},
 }
-
--- static method
-function Bed:useInInventory(player)
-	local map = self.map
-
-	-- TODO traceline and then step back
-	local dst = (player.pos + vec3f(
-		math.cos(player.angle),
-		math.sin(player.angle),
-		0
-	)):map(math.floor)
-
-	-- TODO also make sure no objects exist here
-	local tileType = map:get(dst:unpack())
-	if tileType == Tile.typeValues.Empty
-	-- TODO and no solid object exists on this tile
-	then
-		player.map:newObj{
-			class = player:removeSelectedItem(),
-			pos = dst+.5,
-		}
-	end
-end
 
 Bed.sleepTime = 3
 

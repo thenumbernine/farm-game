@@ -53,7 +53,9 @@ function Dirt:useInInventory(player)
 			player:removeSelectedItem()
 			tile.type = Tile.typeValues.Grass
 			tile.tex = 0	--maptexs.grass
-			map:buildDrawArrays()
+			map:buildDrawArrays(
+				dst.x, dst.y, dst.z,
+				dst.x, dst.y, dst.z)
 			return
 		end
 	end

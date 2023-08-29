@@ -33,7 +33,9 @@ function ItemShovel:useInInventory(player)
 			-- TODO here remove all the hoe and water and seeds and stuff somehow ...
 			-- in fact, seeds => pick-up-able seeds?
 
-			map:buildDrawArrays()
+			map:buildDrawArrays(
+				x,y,z-dz,
+				x,y,z-dz)
 			-- TODO instead of addItem, have it plop out an item object first ...
 			-- in case the player's inventory is full
 			player:addItem(require 'zelda.obj.dirt')
