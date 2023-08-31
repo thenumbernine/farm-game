@@ -266,6 +266,14 @@ Obj.collideFlags = 0
 local epsilon = 1e-5
 function Obj:update(dt)
 	local map = self.map
+	local game = self.game
+
+	if self.removeDuration
+	and game.time >= self.createTime + self.removeDuration
+	then
+		self:remove()
+		return
+	end
 
 	if self.vel.x ~= 0
 	or self.vel.y ~= 0

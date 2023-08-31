@@ -42,6 +42,9 @@ for f in srcdir:dir() do
 			-- TODO colorspace for measuring distance?
 			local dist = math.sqrt((br - r)^2 + (bg - g)^2 + (bb - b)^2)
 			if dist < 30 then
+				p[0] = 0
+				p[1] = 0
+				p[2] = 0
 				p[3] = 0
 			else
 				p[3] = 255
@@ -95,7 +98,9 @@ for f in srcdir:dir() do
 
 	local targetsize = 64
 	local planttype = 'plant'
-	if tostring(src):find'tree' then
+	if tostring(src):find'fruit' then
+		planttype = 'fruit'	-- really this is not a plantType, but it goes in this sprite folder
+	elseif tostring(src):find'tree' then
 		targetsize = 256
 		planttype = 'tree'
 	elseif tostring(src):find'bush' then

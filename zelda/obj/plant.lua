@@ -104,6 +104,8 @@ function Plant:update(...)
 		self.drawCenter:set(.5, 1)
 	end
 
+	-- TODO old and dying trees
+
 	-- don't do physics update
 	--Plant.super.update(self, ...)
 end

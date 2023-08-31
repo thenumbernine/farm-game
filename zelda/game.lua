@@ -150,8 +150,9 @@ TODO how to handle multiple maps with objects-in-map ...
 	-- don't require until app.game is created
 	local plantTypes = require 'zelda.plants'
 
+	local NPC = require 'zelda.obj.npc'
 	map:newObj{
-		class = Obj.classes.NPC,
+		class = NPC,
 		pos = vec3f(
 			map.size.x*.95,
 			map.size.y*.5,
@@ -212,7 +213,7 @@ TODO how to handle multiple maps with objects-in-map ...
 		pos = houseCenter + vec3f(houseSize.x-1, -(houseSize.y-1), -(houseSize.z-1)) + .5,
 	}
 
-	-- [[ plants
+	--[[ plants
 	for j=0,map.size.y-1 do
 		for i=0,map.size.x-1 do
 			local k = map.size.z-1
@@ -249,19 +250,20 @@ TODO how to handle multiple maps with objects-in-map ...
 	end
 	--]]
 
--- [[
+	-- [[
+	local Goomba = require 'zelda.obj.goomba'
 	for k=1,5 do
 		local i = math.random(tonumber(map.size.x))-1
 		local j = math.random(tonumber(map.size.y))-1
 		for _,dir in ipairs{{1,0},{0,1},{-1,0},{0,-1}} do
 			local ux, uy = table.unpack(dir)
 			local g = map:newObj{
-				class = Obj.classes.Goomba,
+				class = Goomba,
 				pos = vec3f(ux + i, uy + j, map.size.z-1),
 			}
 		end
 	end
---]]
+	--]]
 
 	return map
 end
@@ -492,8 +494,9 @@ void main() {
 	local farmMap = makeFarmMap(self)
 	self.maps:insert(farmMap)
 
+	local PlayerObj = require 'zelda.obj.player'
 	app.players[1].obj = farmMap:newObj{
-		class = Obj.classes.Player,
+		class = PlayerObj,
 		pos = vec3f(
 			farmMap.size.x*.5,
 			farmMap.size.y*.5,
@@ -637,9 +640,15 @@ function Game:draw()
 end
 
 function Game:update(dt)
+	--[[ update all maps?
 	for _,map in ipairs(self.maps) do
 		map:update(dt)
 	end
+	--]]
+	-- [[ only update maps that the player is in?
+	self.viewFollow.map:update(dt)
+	-- ... and maybe update all other maps on larger dt's?
+	--]]
 
 	-- now threads
 	self.threads:update()

@@ -1,6 +1,7 @@
 local vec2f = require 'vec-ffi.vec2f'
 local box3f = require 'vec-ffi.box3f'
 local Obj = require 'zelda.obj.obj'
+local Game = require 'zelda.game'
 
 local HoedGround = Obj:subclass()
 
@@ -17,5 +18,8 @@ HoedGround.bbox = box3f{
 	min = {-.3, -.3, -.001},
 	max = {.3, .3, .001},
 }
+
+-- TODO how to gauge plant growth / hoed ground / watered ground ...
+HoedGround.removeDuration = Game.secondsPerDay - Game.secondsPerHour
 
 return HoedGround 

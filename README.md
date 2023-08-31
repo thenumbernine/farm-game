@@ -20,7 +20,6 @@
 - sword swing etc should search only objs on the neighboring tiles, not all objs
 	- region iterator, index for last region iterator
 - player sprite animations for sword, pickaxe, axe, shovel, hoe, watering ...
-- better sleep animation
 - super duper customizable character sprite
 - probably better align billboard sprites with where in 3D they are.
 - better lighting.  underground lighting.  any kind of falloff lighting.  any kind of better daylight shadow lighting.

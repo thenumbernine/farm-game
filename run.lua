@@ -1,5 +1,11 @@
 #!/usr/bin/env luajit
+
+--[[ what's the default jit optimization level?
 require 'jit.opt'.start(2)
+--]]
+--[[ alternatively... this runs about 3x-4x slower
+jit.off()
+--]]
 
 -- setup before running
 -- configure your luajit ffi library locations here

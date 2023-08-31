@@ -134,6 +134,8 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 
 	local Game = require 'zelda.game'
 
+	local fruitTypes = table()
+
 	if plantType.sprite == 'faketree' then
 		plantType.numLogs = 10
 		plantType.hpMax = 5
@@ -141,15 +143,24 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 		plantType.shakeOnHit = true
 		plantType.tipOnDie = true
 		plantType.growDuration = Game.secondsPerYear
+	
+		plantType.fruitDuration = 3 * Game.secondsPerDay
+		plantType.fruit = fruitTypes:pickRandom()
 	elseif plantType.sprite == 'fakebush' then
 		plantType.numLogs = 2
 		plantType.inflictTypes = {axe=true, sword=true}
 		plantType.shakeOnHit = true
 		plantType.tipOnDie = true
 		plantType.growDuration = Game.secondsPerWeek
+		
+		plantType.fruitDuration = 4 * Game.secondsPerDay
+		plantType.fruit = fruitTypes:pickRandom()
 	else
 		plantType.inflictTypes = {axe=true, sword=true}
 		plantType.growDuration = Game.secondsPerWeek
+
+		-- TODO ... how to do this ...
+		plantType.fruit = fruitTypes:pickRandom()
 	end
 
 	plantType.objClass = require 'zelda.obj.plant':subclass(plantType)
