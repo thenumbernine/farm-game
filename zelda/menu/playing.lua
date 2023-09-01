@@ -138,6 +138,7 @@ function PlayingMenu:updateGUI()
 				ig.igPushStyleColor_Vec4(ig.ImGuiCol_Button, selectColor)
 			end
 
+			-- TODO maybe instead, use igSetCursorPos and use a full-sized no-background window?
 			ig.igSetNextWindowPos(ig.ImVec2(x,y), 0, ig.ImVec2())
 			ig.igSetNextWindowSize(ig.ImVec2(bw, bh), 0)
 			ig.igBegin('inventory '..i, nil, bit.bor(
@@ -191,6 +192,7 @@ end
 local ffi = require 'ffi'
 local anim = require 'zelda.anim'
 function PlayingMenu:itemButton(itemInfo, bw, bh)
+	ig.igSetCursorPos(ig.ImVec2(0,0))
 	local size = ig.ImVec2(bw, bh)
 	if itemInfo then
 		local cl = assert(itemInfo.class)
@@ -203,18 +205,23 @@ function PlayingMenu:itemButton(itemInfo, bw, bh)
 					if frame then
 						local tex = frame.tex
 						if tex then
-							size = ig.ImVec2(.7*bw, .7*bh)
-							if itemInfo.count > 1 then
-								size = ig.ImVec2(.5*bw, .5*bh)
-								ig.igText('x'..itemInfo.count)
-							end
-							return ig.igImageButton('',
+							-- why isn't bw x bh the same for imagebutton and for button?
+							size = ig.ImVec2(bw, bh)
+							local result = ig.igImageButton('',
 								ffi.cast('void*', tex.id),
 								size,		-- how come the image gets clipped?
 								ig.ImVec2(0,0),
 								ig.ImVec2(1,1),
 								ig.ImVec4(0,0,0,0),
 								ig.ImVec4(1,1,1,.5)) 
+							if itemInfo.count > 1 then
+								-- why isn't 0,0 the upper-left corner of text?
+								-- y-offset i'd understand (top vs bottom coordinate origin)
+								-- but why is it x-offset as well?
+								ig.igSetCursorPos(ig.ImVec2(8,4))
+								ig.igText('x'..itemInfo.count)
+							end
+							return result
 						end
 					end
 				end
