@@ -101,16 +101,6 @@ local StoneTile = SolidTile:subclass{name='Stone'}
 local GrassTile = SolidTile:subclass{name='Grass'}
 local WoodTile = SolidTile:subclass{name='Wood'}
 
-local SolidBottomHalfTile = Tile:subclass()
-SolidBottomHalfTile.name = 'SolidBottomHalf'
-SolidBottomHalfTile.solid = true
-SolidBottomHalfTile.bbox = box3f{min={0,0,0}, max={1,1,.5}}
-
-
-local SolidTopHalfTile = Tile:subclass()
-SolidTopHalfTile.name = 'SolidTopHalf'
-SolidTopHalfTile.solid = true
-SolidTopHalfTile.bbox = box3f{min = {0,0,.5}, max={1,1,1}}
 
 --[[
 what do i want ...
@@ -126,9 +116,6 @@ Tile.types[0] = EmptyTile()
 table.insert(Tile.types, StoneTile())
 table.insert(Tile.types, GrassTile())
 table.insert(Tile.types, WoodTile())
--- I'm not using these right now ...
-table.insert(Tile.types, SolidBottomHalfTile())
-table.insert(Tile.types, SolidTopHalfTile())
 
 -- pairs cuz 0 exists
 for index,obj in pairs(Tile.types) do

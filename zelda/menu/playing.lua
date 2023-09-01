@@ -205,8 +205,11 @@ function PlayingMenu:itemButton(itemInfo, bw, bh)
 					if frame then
 						local tex = frame.tex
 						if tex then
+							--local tw, th = tex.width, tex.height
 							-- why isn't bw x bh the same for imagebutton and for button?
-							size = ig.ImVec2(bw, bh)
+							size = ig.ImVec2(bw, bh 
+								-- * th / tw	-- maybe not worth it ...
+							)
 							local result = ig.igImageButton('',
 								ffi.cast('void*', tex.id),
 								size,		-- how come the image gets clipped?

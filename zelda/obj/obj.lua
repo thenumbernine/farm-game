@@ -114,17 +114,17 @@ function Obj:link()
 				math.max(math.floor(self.pos.x + self.bbox.min.x), 0),
 				math.min(math.floor(self.pos.x + self.bbox.max.x), map.size.x - 1)
 			do
-				local tileIndex = i + map.size.x * (j + map.size.y * k)
-				local tileObjs = map.objsPerTileIndex[tileIndex]
+				local voxelIndex = i + map.size.x * (j + map.size.y * k)
+				local tileObjs = map.objsPerTileIndex[voxelIndex]
 				
 				if not tileObjs then
 					tileObjs = table()
-					map.objsPerTileIndex[tileIndex] = tileObjs
+					map.objsPerTileIndex[voxelIndex] = tileObjs
 				end
 				
 				tileObjs:insertUnique(self)
 
-				self.tiles[tileIndex] = tileObjs
+				self.tiles[voxelIndex] = tileObjs
 			end
 		end
 	end
@@ -134,12 +134,12 @@ function Obj:unlink()
 	local map = self.map
 	-- self.tiles = list of tile-links that this obj is attached to ...
 	if self.tiles then
-		for tileIndex,tileObjs in pairs(self.tiles) do
+		for voxelIndex,tileObjs in pairs(self.tiles) do
 			tileObjs:removeObject(self)
 			if #tileObjs == 0 then
-				map.objsPerTileIndex[tileIndex] = nil
+				map.objsPerTileIndex[voxelIndex] = nil
 			end
-			self.tiles[tileIndex] = nil
+			self.tiles[voxelIndex] = nil
 		end
 	end
 	
@@ -311,17 +311,17 @@ function Obj:update(dt)
 						math.floor(math.max(self.pos.x, self.oldpos.x) + self.bbox.max.x + .5)
 					do
 						if i >= 0 and i < map.size.x and j >= 0 and j < map.size.y and k >= 0 and k < map.size.z then
-							local tileIndex = i + map.size.x * (j + map.size.y * k)
-							local tiletype = map:get(i,j,k)
-							if 
-							self.collidesWithTiles
-							and tiletype > 0
+							local voxelIndex = i + map.size.x * (j + map.size.y * k)
+							local voxel = map:getTile(i,j,k)
+							if self.collidesWithTiles
+							and voxel
+							and voxel.type > 0
 							then
-								local tile = Tile.types[tiletype]
-								if not tile then error("failed to find tile for type "..tostring(tiletype)) end
-								if tile.solid then
+								local voxelType = Tile.types[voxel.type]
+								if not voxelType then error("failed to find voxelType for type "..tostring(tiletype)) end
+								if voxelType.solid then
 									omin:set(i,j,k)
-									omax:set(i+1,j+1,k+1)
+									omax:set(i+1,j+1,k+.5*(2-voxel.half))
 									
 									-- TODO trace gravity fall downward separately
 									-- then move horizontall
@@ -330,7 +330,7 @@ function Obj:update(dt)
 									self.collideFlags = bit.bor(self.collideFlags, collided)
 								end
 							end
-							local objs = map.objsPerTileIndex[tileIndex]
+							local objs = map.objsPerTileIndex[voxelIndex]
 							if objs then
 								for _, obj in ipairs(objs) do
 									if not obj.removeFlag then

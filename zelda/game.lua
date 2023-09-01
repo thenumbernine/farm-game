@@ -83,7 +83,7 @@ TODO how to handle multiple maps with objects-in-map ...
 					--ijk.x = i
 					xyz.x = i / blockSize
 					local c = simplexnoise(xyz:unpack())
-					local maptype = Tile.typeValues.Empty
+					local voxelTypeIndex = Tile.typeValues.Empty
 					local maptex = k >= half-1
 						and maptexs.grass
 						or maptexs.stone
@@ -102,15 +102,31 @@ TODO how to handle multiple maps with objects-in-map ...
 					--]]
 
 					if c < .5 then
-						maptype =
+						voxelTypeIndex =
 							maptex == maptexs.stone
 							and Tile.typeValues.Stone
 							or Tile.typeValues.Grass
 					end
 					--local index = ijk:dot(step)
-					local tile = assert(map:getTile(i,j,k))
-					tile.type = maptype
-					tile.tex = maptex
+					local voxel = assert(map:getTile(i,j,k))
+					voxel.type = voxelTypeIndex
+					voxel.tex = maptex
+				end
+			end
+		end
+
+		-- make some grass tiles half-high
+		-- TODO this but in the lop above
+		for k=0,map.size.z-2 do
+			for j=0,map.size.y-1 do
+				for i=0,map.size.x-1 do
+					local voxel = map:getTile(i,j,k)
+					local nextVoxel = map:getTile(i,j,k+1)
+					if nextVoxel.type == Tile.typeValues.Empty
+					and voxel.type == Tile.typeValues.Grass
+					then
+						voxel.half = math.random() < .5 and 1 or 0
+					end
 				end
 			end
 		end
@@ -124,9 +140,10 @@ TODO how to handle multiple maps with objects-in-map ...
 						local adz = math.abs(z - houseCenter.z)
 						local linf = math.max(adx/houseSize.x, ady/houseSize.y, adz/houseSize.z)
 						if linf == 1 then
-							local tile = assert(map:getTile(x,y,z))
-							tile.type = Tile.typeValues.Wood
-							tile.tex = maptexs.wood
+							local voxel = assert(map:getTile(x,y,z))
+							voxel.type = Tile.typeValues.Wood
+							voxel.tex = maptexs.wood
+							voxel.half = 0
 						end
 					end
 				end
@@ -218,9 +235,9 @@ TODO how to handle multiple maps with objects-in-map ...
 		for i=0,map.size.x-1 do
 			local k = map.size.z-1
 			while k >= 0 do
-				local tile = map:getTile(i,j,k)
-				if tile.type ~= Tile.typeValues.Empty
-				and tile.tex == 0	-- grass tex
+				local voxel = map:getTile(i,j,k)
+				if voxel.type ~= Tile.typeValues.Empty
+				and voxel.tex == 0	-- grass tex
 				then
 					break
 				end
