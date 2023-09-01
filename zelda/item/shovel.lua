@@ -6,6 +6,8 @@ local Item = require 'zelda.item.item'
 local ItemShovel = Item:subclass()
 
 ItemShovel.name = 'shovel'
+ItemShovel.sprite = 'fakeitem'
+ItemShovel.seq = 'item_shovel'
 
 -- static method
 function ItemShovel:useInInventory(player)

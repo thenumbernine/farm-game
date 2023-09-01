@@ -60,11 +60,14 @@ local anim = {
 }
 
 -- auto-add.  i think this was below but below also had udlr stuff meh.
+-- TODO in the getsprites/process.lua, how about separating into dirs beforehand, so we don't have duplicated names in the path? fakeitem/item_... , fakefruit/fruit_..., etc
 local path = require 'ext.path'
 for _,dir in ipairs{
 	'faketree',
 	'fakeplant',
 	'fakebush',
+	'fakefruit',
+	'fakeitem',
 } do
 	local sprite = {}
 	for f in (path'sprites'/dir):dir() do

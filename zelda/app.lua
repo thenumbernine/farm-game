@@ -169,9 +169,9 @@ App.needsResortSprites = true
 function App:updateGame()
 	local game = self.game
 
-	local thisTime = getTime()
-	local deltaTime = thisTime - self.lastTime
-	self.lastTime = thisTime
+	local sysThisTime = getTime()
+	local sysDeltaTime = sysThisTime - self.lastTime
+	self.lastTime = sysThisTime
 
 	-- in degrees:
 	self.lastViewYaw = self.viewYaw
@@ -219,11 +219,10 @@ print('dir', v)
 
 	gl.glDisable(gl.GL_BLEND)
 
-	self.updateTime = self.updateTime + deltaTime
+	self.updateTime = self.updateTime + sysDeltaTime
 	if self.updateTime >= self.updateDelta then
 		self.updateTime = self.updateTime - self.updateDelta
-
-		-- TODO fixed update
+		-- fixed-framerate update
 		if game and not self.paused then
 			game:update(self.updateDelta)
 		end

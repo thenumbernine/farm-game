@@ -7,6 +7,8 @@ local Item = require 'zelda.item.item'
 local ItemHoe = Item:subclass()
 
 ItemHoe.name = 'hoe'
+ItemHoe.sprite = 'fakeitem'
+ItemHoe.seq = 'item_hoe'
 
 -- static method
 function ItemHoe:useInInventory(player)

@@ -213,7 +213,7 @@ TODO how to handle multiple maps with objects-in-map ...
 		pos = houseCenter + vec3f(houseSize.x-1, -(houseSize.y-1), -(houseSize.z-1)) + .5,
 	}
 
-	--[[ plants
+	-- [[ plants
 	for j=0,map.size.y-1 do
 		for i=0,map.size.x-1 do
 			local k = map.size.z-1

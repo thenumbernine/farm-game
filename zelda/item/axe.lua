@@ -5,6 +5,8 @@ local Item = require 'zelda.item.item'
 local ItemAxe = Item:subclass()
 
 ItemAxe.name = 'axe'
+ItemAxe.sprite = 'fakeitem'
+ItemAxe.seq = 'item_axe'
 
 -- static method
 function ItemAxe:useInInventory(player)

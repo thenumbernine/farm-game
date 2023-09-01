@@ -100,6 +100,8 @@ for f in srcdir:dir() do
 	local planttype = 'plant'
 	if tostring(src):find'fruit' then
 		planttype = 'fruit'	-- really this is not a plantType, but it goes in this sprite folder
+	elseif tostring(src):find'item' then
+		planttype = 'item'	-- really this is not a plantType, but it goes in this sprite folder
 	elseif tostring(src):find'tree' then
 		targetsize = 256
 		planttype = 'tree'

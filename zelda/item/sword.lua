@@ -4,6 +4,8 @@ local Item = require 'zelda.item.item'
 local ItemSword = Item:subclass()
 
 ItemSword.name = 'sword'
+ItemSword.sprite = 'fakeitem'
+ItemSword.seq = 'item_sword'
 
 -- static method
 function ItemSword:useInInventory(player)

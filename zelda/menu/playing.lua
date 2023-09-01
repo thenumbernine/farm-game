@@ -157,18 +157,11 @@ function PlayingMenu:updateGUI()
 				ig.igPushStyleVar_Float(ig.ImGuiStyleVar_FrameBorderSize, 1)
 			end
 			--]]
-			local name = '###'..i
-			if itemInfo then
-				if itemInfo.count == 1 then
-					name = itemInfo.class.name..name
-				else
-					name = itemInfo.class.name..'\nx'..itemInfo.count..name
-				end
-			end
-			if ig.igButton(name, ig.ImVec2(bw,bh)) then
+			ig.igPushID_Int(i)
+			if self:itemButton(itemInfo, bw, bh) then
 				playerObj.selectedItem = i
 			end
-
+			ig.igPopID()
 
 			--[[
 			if selected then
@@ -193,6 +186,48 @@ function PlayingMenu:updateGUI()
 		end
 		ig.igPopStyleVar(1)
 	end
+end
+
+local ffi = require 'ffi'
+local anim = require 'zelda.anim'
+function PlayingMenu:itemButton(itemInfo, bw, bh)
+	local size = ig.ImVec2(bw, bh)
+	if itemInfo then
+		local cl = assert(itemInfo.class)
+		if cl.sprite and cl.seq then
+			local sprite = anim[cl.sprite]
+			if sprite then
+				local seq = sprite[cl.seq]
+				if seq then
+					local frame = seq[1]
+					if frame then
+						local tex = frame.tex
+						if tex then
+							size = ig.ImVec2(.7*bw, .7*bh)
+							if itemInfo.count > 1 then
+								size = ig.ImVec2(.5*bw, .5*bh)
+								ig.igText('x'..itemInfo.count)
+							end
+							return ig.igImageButton('',
+								ffi.cast('void*', tex.id),
+								size,		-- how come the image gets clipped?
+								ig.ImVec2(0,0),
+								ig.ImVec2(1,1),
+								ig.ImVec4(0,0,0,0),
+								ig.ImVec4(1,1,1,.5)) 
+						end
+					end
+				end
+			end
+		end
+
+		if itemInfo.count == 1 then
+			return ig.igButton(cl.name, size)
+		else
+			return ig.igButton(cl.name..'\nx'..itemInfo.count, size)
+		end
+	end
+	return ig.igButton('', size)
 end
 
 return PlayingMenu
