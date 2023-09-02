@@ -42,6 +42,8 @@ local Plant = require 'zelda.obj.takesdamage'(Obj):subclass()
 Plant.name = 'Plant'
 
 Plant.sprite = 'plant1'
+Plant.spritePosOffset = vec3f(0,0,.003)
+
 Plant.useGravity = false	-- true?
 Plant.collidesWithTiles = false	-- this slows things down a lot.  so just turn off gravity and dont test with world.
 Plant.collidesWithObjects = false --?

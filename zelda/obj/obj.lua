@@ -28,7 +28,7 @@ Obj.bbox = box3f{
 	max = {.49, .49, .98},
 }
 
--- model rotation or sprite billboard direction chooser
+-- model rotation, or used for picking sprite billboard direction index
 Obj.angle = 0
 
 -- d/dt of angle
@@ -37,10 +37,14 @@ Obj.rotation = 0
 -- sprite rotation, not model rotation
 Obj.drawAngle = 0
 
+-- sprite 2D tex anchor point
 Obj.drawCenter = vec2f(.5, 1)
 
 -- TODO spriteScale?
 Obj.drawSize = vec2f(1,1)
+
+-- added to obj.pos for determining sprite center
+Obj.spritePosOffset = vec3f(0,0,0)
 
 -- false = use map x y basis
 -- true = use view x y basis
@@ -71,6 +75,9 @@ function Obj:init(args)
 	
 	self.drawCenter = vec2f(self.class.drawCenter)
 	if args.drawCenter then self.drawCenter = vec2f(args.drawCenter) end
+	
+	self.spritePosOffset = vec3f(self.class.spritePosOffset)
+	if args.spritePosOffset then self.spritePosOffset = vec3f(args.spritePosOffset) end
 
 	self.pos = vec3f(0,0,0)
 	if args.pos then self.pos:set(args.pos:unpack()) end
@@ -445,7 +452,10 @@ function Obj:drawSprite()
 	-- angle to apply relative to billboard in view space
 	gl.glUniform2f(shader.uniforms.drawAngleDir.loc, math.cos(self.drawAngle), math.sin(self.drawAngle))
 	
-	gl.glUniform3f(shader.uniforms.pos.loc, self.pos.x, self.pos.y, self.pos.z + .1) 
+	gl.glUniform3f(shader.uniforms.pos.loc,
+		self.pos.x + self.spritePosOffset.x,
+		self.pos.y + self.spritePosOffset.y,
+		self.pos.z + self.spritePosOffset.z)
 	
 	local cr, cg, cb, ca = self.color:unpack()
 --[[ cheap hack for cheap lighting

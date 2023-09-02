@@ -19,10 +19,6 @@ local Tile = require 'zelda.tile'
 local Obj = require 'zelda.obj.obj'
 local ThreadManager = require 'threadmanager'
 
--- put this somewhere as to not give it a require loop
-assert(not Obj.classes)
-Obj.classes = require 'zelda.obj.all'
-
 local function hexcolor(i)
 	return
 		bit.band(0xff, bit.rshift(i,16))/255,
@@ -125,7 +121,15 @@ TODO how to handle multiple maps with objects-in-map ...
 					if nextVoxel.type == Tile.typeValues.Empty
 					and voxel.type == Tile.typeValues.Grass
 					then
-						voxel.half = math.random() < .5 and 1 or 0
+						-- but not around the house or npc
+						if k >= half
+						and (
+							(vec2f(i,j) - vec2f(houseCenter.x, houseCenter.y)):length() < 15
+							or (vec2f(i,j) - vec2f(npcPos.x, npcPos.y)):length() < 5
+						) then
+						else
+							voxel.half = math.random() < .5 and 1 or 0
+						end
 					end
 				end
 			end

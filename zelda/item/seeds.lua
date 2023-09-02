@@ -23,19 +23,23 @@ function ItemSeeds:useInInventory(player)
 		math.sin(player.angle),
 		0
 	)):map(math.floor):unpack()
-	local topTile = map:getType(x,y,z)
-	local groundTile = map:getType(x,y,z-1)
-	if groundTile == Tile.typeValues.Grass
-	and topTile == Tile.typeValues.Empty
+	local topVoxelType = map:getType(x,y,z)
+	local groundVoxel = map:getTile(x,y,z-1)
+	if groundVoxel
+	and groundVoxel.type == Tile.typeValues.Grass
+	and topVoxelType == Tile.typeValues.Empty
 	and map:hasObjType(x,y,z, HoedGround)
-	-- TODO how about a flag for objs whether they block seeds or not?
-	and not map:hasObjType(x,y,z, Plant)
 	then
-		assert(player:removeSelectedItem() == self)
-		player.map:newObj{
-			class = self.plantType.objClass,
-			pos = vec3f(x+.5, y+.5, z + .003),
-		}
+		local half = -.5 * groundVoxel.half
+		local dx, dy, dz = x+.5, y+.5, z + half
+		-- TODO how about a flag for objs whether they block seeds or not?
+		if not map:hasObjType(dx,dy,dz, Plant) then
+			assert(player:removeSelectedItem() == self)
+			player.map:newObj{
+				class = self.plantType.objClass,
+				pos = vec3f(dx, dy, dz),
+			}
+		end
 	end
 end
 

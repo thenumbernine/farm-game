@@ -19,19 +19,23 @@ function ItemHoe:useInInventory(player)
 		math.sin(player.angle),
 		0
 	)):map(math.floor):unpack()
-	local topTile = map:getType(x,y,z)
-	local groundTile = map:getType(x,y,z-1)
-	if groundTile == Tile.typeValues.Grass
-	and topTile == Tile.typeValues.Empty
+	local topVoxelType = map:getType(x,y,z)
+	local groundVoxel = map:getTile(x,y,z-1)
+	if groundVoxel
+	and groundVoxel.type == Tile.typeValues.Grass
+	and topVoxelType == Tile.typeValues.Empty
 	and not map:hasObjType(x,y,z,HoedGround)
-	-- TODO any kind of solid object
-	--  a better classification would be only allow watered/hoedground/seededground types (which should all have a common parent class / flag)
-	and not map:hasObjType(x,y,z,Plant)
 	then
-		player.map:newObj{
-			class = HoedGround,
-			pos = vec3f(x+.5, y+.5, z + .001),
-		}
+		local half = -.5 * groundVoxel.half
+		local dx, dy, dz = x+.5, y+.5, z + half
+		-- TODO any kind of solid object
+		--  a better classification would be only allow watered/hoedground/seededground types (which should all have a common parent class / flag)
+		if not map:hasObjType(dx,dy,dz,Plant) then
+			player.map:newObj{
+				class = HoedGround,
+				pos = vec3f(dx, dy, dz),
+			}
+		end
 	end
 end
 
