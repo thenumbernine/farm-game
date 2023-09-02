@@ -23,8 +23,8 @@ function ItemSeeds:useInInventory(player)
 		math.sin(player.angle),
 		0
 	)):map(math.floor):unpack()
-	local topTile = map:get(x,y,z)
-	local groundTile = map:get(x,y,z-1)
+	local topTile = map:getType(x,y,z)
+	local groundTile = map:getType(x,y,z-1)
 	if groundTile == Tile.typeValues.Grass
 	and topTile == Tile.typeValues.Empty
 	and map:hasObjType(x,y,z, HoedGround)

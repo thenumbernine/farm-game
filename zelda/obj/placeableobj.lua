@@ -17,7 +17,7 @@ local function placeableObj(parent)
 		)):map(math.floor)
 
 		-- TODO also make sure no objects exist here
-		local tileType = map:get(dst:unpack())
+		local tileType = map:getType(dst:unpack())
 		if tileType == Tile.typeValues.Empty
 		-- TODO and no solid object exists on this tile
 		then

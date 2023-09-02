@@ -171,7 +171,7 @@ function Chunk:buildDrawArrays()
 									local nz = k + ofsz
 									local nbhdVoxelIsUnitCube
 									-- TODO test if it's along the sides, if not just use offset + step
-									-- if so then use map:get
+									-- if so then use map:getType
 									local nbhdVoxel = map:getTile(nx, ny, nz)
 									if nbhdVoxel 
 									and nbhdVoxel.half == 0
@@ -641,8 +641,7 @@ function Map:getTile(i,j,k)
 end
 
 -- i,j,k integers
--- TODO call this 'getType' ?
-function Map:get(i,j,k)
+function Map:getType(i,j,k)
 	local tile = self:getTile(i,j,k)
 	if not tile then return Tile.typeValues.Empty end
 	return tile.type
