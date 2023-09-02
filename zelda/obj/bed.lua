@@ -83,16 +83,4 @@ function Bed:interactInWorld(player)
 	end)
 end
 
-Bed.takesDamage = true
-function Bed:damage(amount, attacker, inflicter)
-	if not (inflicter and (inflicter.name == 'axe' or inflicter.name == 'pickaxe')) then return end
-
-	self.map:newObj{
-		class = require 'zelda.obj.item',
-		itemClass = require 'zelda.obj.bed',
-		pos = self.pos,
-	}
-	self:remove()
-end
-
 return Bed

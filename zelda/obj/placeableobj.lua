@@ -28,6 +28,22 @@ local function placeableObj(parent)
 		end
 	end
 
+	
+	-- fake-takesdamage?
+	-- or TODO use real takesdamage?
+	cl.takesDamage = true
+	function cl:damage(amount, attacker, inflicter)
+		if not (inflicter and (inflicter.name == 'axe' or inflicter.name == 'pickaxe')) then return end
+
+		self.map:newObj{
+			class = require 'zelda.obj.item',
+			itemClass = self.class,
+			pos = self.pos,
+		}
+		self:remove()
+	end
+
+
 	return cl
 end
 return placeableObj
