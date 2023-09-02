@@ -6,7 +6,7 @@ local Item = require 'zelda.item.item'
 local ItemWateringCan = Item:subclass()
 
 ItemWateringCan.name = 'watering can'
-ItemWateringCan.sprite = 'fakeitem'
+ItemWateringCan.sprite = 'item'
 ItemWateringCan.seq = 'item_wateringcan'
 
 -- static method

@@ -6,7 +6,7 @@ local Item = require 'zelda.item.item'
 local ItemShovel = Item:subclass()
 
 ItemShovel.name = 'shovel'
-ItemShovel.sprite = 'fakeitem'
+ItemShovel.sprite = 'item'
 ItemShovel.seq = 'item_shovel'
 
 -- static method

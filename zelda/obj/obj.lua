@@ -374,43 +374,6 @@ function Obj:draw()
 	local game = self.game
 	local app = game.app
 
---[[
-	gl.glColor3f(1,1,1)
-gl.glPointSize(10)
-gl.glDisable(gl.GL_TEXTURE_2D)
-gl.glUseProgram(0)
-gl.glDisable(gl.GL_CULL_FACE)
-gl.glDisable(gl.GL_DEPTH_TEST)
-gl.glMatrixMode(gl.GL_PROJECTION)
-gl.glLoadMatrixf(view.projMat.v)
-gl.glMatrixMode(gl.GL_MODELVIEW)
-gl.glLoadMatrixf(view.mvMat.v)
-	for faceIndex,faces in ipairs(Tile.cubeFaces) do
-		if bit.band(self.collideFlags, bit.lshift(1, faceIndex-1)) ~= 0 then
-			gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_FILL)
-			gl.glColor3f(1,0,0)
-		else
-			gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_LINE)
-			gl.glColor3f(1,1,1)
-		end
-		--gl.glBegin(gl.GL_QUADS)
-gl.glBegin(gl.GL_POINTS)
-		for _,vtxCoordFlags in ipairs(faces) do
-			local v = Tile.cubeVtxs[vtxCoordFlags+1]
-			gl.glVertex3f(
-				self.pos.x + (1 - v[1]) * self.bbox.min.x + v[1] * self.bbox.max.x,
-				self.pos.y + (1 - v[2]) * self.bbox.min.y + v[2] * self.bbox.max.y,
-				self.pos.z + (1 - v[3]) * self.bbox.min.z + v[3] * self.bbox.max.z)
-		end
-		gl.glEnd()
-	end
-	gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_FILL)
-	gl.glColor3f(1,1,1)
-gl.glEnable(gl.GL_CULL_FACE)
-gl.glEnable(gl.GL_DEPTH_TEST)
---]]
-
-
 --print('drawing', self.sprite, self.seq, self.frame, self.angle)
 	if self.sprite then
 		local sprite = anim[self.sprite]

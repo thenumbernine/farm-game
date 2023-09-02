@@ -5,7 +5,7 @@ local Item = require 'zelda.item.item'
 local ItemAxe = Item:subclass()
 
 ItemAxe.name = 'axe'
-ItemAxe.sprite = 'fakeitem'
+ItemAxe.sprite = 'item'
 ItemAxe.seq = 'item_axe'
 
 -- static method

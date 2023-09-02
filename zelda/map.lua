@@ -190,8 +190,8 @@ function Chunk:buildDrawArrays()
 										-- 2 triangles x 3 vtxs per triangle
 										for ti=1,6 do
 											local vi = Tile.unitQuadTriIndexes[ti]
-											local vtx = faces[vi]
-											local v = voxelType.cubeVtxs[vtx+1]
+											local vtxindex = faces[vi]
+											local v = voxelType.cubeVtxs[vtxindex+1]
 
 											local c = self.colors:emplace_back()
 											local l = 255 * v[3]
@@ -245,8 +245,8 @@ function Chunk:buildDrawArrays()
 										-- 2 triangles x 3 vtxs per triangle
 										for ti=1,6 do
 											local vi = Tile.unitQuadTriIndexes[ti]
-											local vtx = faces[vi]
-											local v = voxelType.cubeVtxs[vtx+1]
+											local vtxindex = faces[vi]
+											local v = voxelType.cubeVtxs[vtxindex+1]
 
 											local c = self.colors:emplace_back()
 											local l = 255 * v[3]

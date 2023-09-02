@@ -9,12 +9,14 @@ local table = require 'ext.table'
 local Image = require 'image'
 
 local srcdir = path'srcsprites'
-local dstdir = path'dstsprites'
-dstdir:mkdir()
-for f in srcdir:dir() do
-	local src = srcdir/f
-	-- TODO hmm how about a :setext() function?
-	local dst = (dstdir/f):setext'png'
+local fs = srcdir:rdir()
+for _,srcfn in ipairs(fs) do
+	local src = path(srcfn)
+	local dstfn = assert(srcfn:gsub('^srcsprites', 'dstsprites'))
+	local dst = path(dstfn):setext'png'
+	path((dst:getdir())):mkdir(true)
+
+
 	print('convert "'..src..'" "'..dst..'"')
 	--[[ imagemagick looks like it takes a lot of work to do this ...
 	-- https://stackoverflow.com/a/27194202/2714073
@@ -116,8 +118,9 @@ print('targetsize', targetsize)
 	dstimg:save(tostring(dst))
 	--]]
 	
-	-- last, copy it into its dst live folder ... ?
-	local dst2 = path('../sprites/fake'..planttype..'/'..f):setext'png'
+	--[[ last, copy it into its dst live folder ... ?
+	local dst2 = path('../sprites/'..planttype..'/'..f):setext'png'
 	print('also saving to', dst2)
 	dstimg:save(tostring(dst2))
+	--]]
 end

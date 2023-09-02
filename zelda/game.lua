@@ -305,8 +305,6 @@ Game.secondsPerMonth = Game.secondsPerWeek * Game.weeksPerMonth
 Game.monthsPerYear = 4
 Game.secondsPerYear = Game.secondsPerMonth * Game.monthsPerYear
 
-print('Game.secondsPerYear', Game.secondsPerYear)
-
 -- when to start / wake up
 Game.wakeHour = 6
 
@@ -554,6 +552,8 @@ function Game:draw()
 	view:setup(app.width / app.height)
 	--app.orbit.pos:set((app.view.angle:zAxis() * app.viewDist):unpack())
 
+-- [==[
+
 -- [[ sky
 	do
 		gl.glDisable(gl.GL_DEPTH_TEST)
@@ -653,6 +653,78 @@ function Game:draw()
 	GLTex2D:unbind()
 --]=]
 
+--]==]
+
+--[[ debug
+	do
+		local map = self.viewFollow.map
+		local gl = require 'gl'
+		gl.glColor3f(1,1,1)
+		gl.glPointSize(10)
+		gl.glDisable(gl.GL_TEXTURE_2D)
+		gl.glUseProgram(0)
+		gl.glDisable(gl.GL_CULL_FACE)
+		gl.glDisable(gl.GL_DEPTH_TEST)
+		
+		--[=[ why doesn't glLoadMatrix work?
+		gl.glMatrixMode(gl.GL_PROJECTION)
+		gl.glLoadMatrixf(view.projMat.v)	
+		gl.glMatrixMode(gl.GL_MODELVIEW)
+		gl.glLoadMatrixf(view.mvMat.v)
+		--]=]
+		-- [=[
+		view.useBuiltinMatrixMath = false
+		view:setup(app.width / app.height)
+		view.useBuiltinMatrixMath = true
+		--]=]
+
+		--gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_FILL)
+		gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_LINE)
+		gl.glBegin(gl.GL_QUADS)
+		--gl.glBegin(gl.GL_TRIANGLES)
+		--gl.glBegin(gl.GL_POINTS)
+
+		for _,obj in ipairs(map.objs) do
+			--[=[
+			gl.glVertex3f(obj.pos.x, obj.pos.y, obj.pos.z)
+			--]=]
+			-- [=[
+			for faceIndex,faces in ipairs(Tile.cubeFaces) do
+				-- [=[
+				for _,vtxCoordFlags in ipairs(faces) do
+					local v = Tile.cubeVtxs[vtxCoordFlags+1]
+					gl.glVertex3f(
+						obj.pos.x + (1 - v[1]) * obj.bbox.min.x + v[1] * obj.bbox.max.x,
+						obj.pos.y + (1 - v[2]) * obj.bbox.min.y + v[2] * obj.bbox.max.y,
+						obj.pos.z + (1 - v[3]) * obj.bbox.min.z + v[3] * obj.bbox.max.z)
+				end
+				--]=]
+				--[=[
+				for ti=1,6 do
+					local vi = Tile.unitQuadTriIndexes[ti]
+					local vtxindex = faces[vi]
+					local v = Tile.cubeVtxs[vtxindex+1]
+					gl.glVertex3f(
+						obj.pos.x + (1 - v[1]) * obj.bbox.min.x + v[1] * obj.bbox.max.x,
+						obj.pos.y + (1 - v[2]) * obj.bbox.min.y + v[2] * obj.bbox.max.y,
+						obj.pos.z + (1 - v[3]) * obj.bbox.min.z + v[3] * obj.bbox.max.z)
+				end
+				--]=]
+			end
+			--]=]
+			--[=[
+			gl.glBegin(gl.GL_LINES)
+			gl.glEnd()
+			--]=]
+		end
+		
+		gl.glEnd()
+		gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_FILL)
+		gl.glEnable(gl.GL_CULL_FACE)
+		gl.glEnable(gl.GL_DEPTH_TEST)
+		gl.glPointSize(1)
+	end
+--]]
 	glreport'here'
 end
 

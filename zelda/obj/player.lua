@@ -14,16 +14,18 @@ Player.name = 'Player'	-- TODO require name?
 
 Player.sprite = 'link'
 Player.drawSize = vec2f(1, 1.5)
-Player.walkSpeed = 6
-
-Player.attackTime = -1
-Player.attackEndTime = -1
-Player.attackDuration = .35
+Player.drawCenter = vec2f(.5, 1)
 
 Player.bbox = box3f{
 	min = {-.3, -.3, 0},
 	max = {.3, .3, 1.5},
 }
+
+Player.walkSpeed = 6
+
+Player.attackTime = -1
+Player.attackEndTime = -1
+Player.attackDuration = .35
 
 Player.jumpVel = 5
 

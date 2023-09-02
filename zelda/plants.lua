@@ -115,9 +115,9 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 	plantType.color = vec4f(color.x, color.y, color.z, 1)
 
 	plantType.sprite = table{
-		{weight=1, sprite='faketree'},
-		{weight=6, sprite='fakebush'},
-		{weight=12, sprite='fakeplant'},
+		{weight=1, sprite='tree'},
+		{weight=6, sprite='bush'},
+		{weight=12, sprite='plant'},
 	}:pickWeighted().sprite
 
 	-- pick a random sequence <-> plant sub-type
@@ -136,7 +136,7 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 
 	local fruitTypes = table()
 
-	if plantType.sprite == 'faketree' then
+	if plantType.sprite == 'tree' then
 		plantType.numLogs = 10
 		plantType.hpMax = 5
 		plantType.inflictTypes = {axe=true}
@@ -146,7 +146,7 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 	
 		plantType.fruitDuration = 3 * Game.secondsPerDay
 		plantType.fruit = fruitTypes:pickRandom()
-	elseif plantType.sprite == 'fakebush' then
+	elseif plantType.sprite == 'bush' then
 		plantType.numLogs = 2
 		plantType.inflictTypes = {axe=true, sword=true}
 		plantType.shakeOnHit = true
