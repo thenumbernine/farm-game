@@ -102,6 +102,20 @@ function Player:update(dt)
 				self.selectedItem = self.selectedItem - self.numSelectableItems
 				self.selectedItem = (self.selectedItem - 1) % maxItems + 1
 			end	
+			if appPlayer.keyPress.interact and not appPlayer.keyPressLast.interact then
+				local cl = self:removeSelectedItem()
+				if cl then
+					self.map:newObj{
+						class = require 'zelda.obj.item',
+						itemClass = cl,
+						pos = (self.pos + vec3f(
+							math.cos(self.angle) + (math.random() - .5) * .1,
+							math.sin(self.angle) + (math.random() - .5) * .1,
+							(math.random() - .5) * .1
+						)),
+					}
+				end
+			end
 		else
 			self.selectedItem = (self.selectedItem-1) % self.numSelectableItems + 1
 			

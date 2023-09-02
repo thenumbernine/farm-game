@@ -31,7 +31,7 @@ Item.min = box3f{
 	max = {.3, .3, .6},
 }
 
-Item.drawSize = vec2f(.5, .5)
+Item.drawSize = vec2f(.8, .8)
 Item.rotation = math.pi * .5
 
 function Item:init(args)
@@ -42,7 +42,7 @@ function Item:init(args)
 	
 	-- use the same sprite? or a dif one?
 	self.sprite = self.itemClass.sprite
-	--self.sprite = self.itemClass.itemSprite
+	self.seq = self.itemClass.seq
 end
 
 function Item:touch(other)

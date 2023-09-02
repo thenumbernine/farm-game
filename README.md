@@ -1,12 +1,28 @@
 ## Harvest Dwarf Stardew Moon Secret of Mana Fortress Valley: Link to the Past
 
 ## So Far:
+
 - you can dig dirt, chop down trees and wood tiles, and you can plop them down like any other voxel engine game.
-- you can hoe ground, water ground, and plant seeds in ground.
 - you can sleep in the bed and time will pass until the next day.
     - oh yes and there's realtime sunlighting on at least the top level of tiles.
 - you can buy seeds from the shop guy.
+- you can hoe ground, water ground, and plant seeds in ground.
 - you can use your one sword to kill enemies.
+
+## Controls:
+
+- arrows move
+- z = use item
+- x = jump
+- c = interact with world
+- a = switch previous item
+- s = switch next item
+- d = open inventory
+- q = rotate camera left
+- w = rotate camera right
+- `0-9, -, =` = select item in inventory bar.
+
+When inventory is open, arrows navigate, and `interact with world` will drop the item.
 
 ## TODO:
 
