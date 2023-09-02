@@ -118,8 +118,10 @@ print('targetsize', targetsize)
 	dstimg:save(tostring(dst))
 	--]]
 	
-	--[[ last, copy it into its dst live folder ... ?
-	local dst2 = path('../sprites/'..planttype..'/'..f):setext'png'
+	-- [[ last, copy it into its dst live folder ... ?
+	local dst2 = path(assert(dst.path:gsub('^dstsprites', '../sprites'))):setext'png'
+	path((dst2:getdir())):mkdir(true)
+	
 	print('also saving to', dst2)
 	dstimg:save(tostring(dst2))
 	--]]

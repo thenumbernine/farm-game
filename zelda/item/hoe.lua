@@ -8,7 +8,7 @@ local ItemHoe = Item:subclass()
 
 ItemHoe.name = 'hoe'
 ItemHoe.sprite = 'item'
-ItemHoe.seq = 'item_hoe'
+ItemHoe.seq = 'hoe'
 
 -- static method
 function ItemHoe:useInInventory(player)

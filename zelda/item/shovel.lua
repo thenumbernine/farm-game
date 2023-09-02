@@ -7,7 +7,7 @@ local ItemShovel = Item:subclass()
 
 ItemShovel.name = 'shovel'
 ItemShovel.sprite = 'item'
-ItemShovel.seq = 'item_shovel'
+ItemShovel.seq = 'shovel'
 
 -- static method
 function ItemShovel:useInInventory(player)

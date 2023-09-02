@@ -6,7 +6,7 @@ local ItemAxe = Item:subclass()
 
 ItemAxe.name = 'axe'
 ItemAxe.sprite = 'item'
-ItemAxe.seq = 'item_axe'
+ItemAxe.seq = 'axe'
 
 -- static method
 function ItemAxe:useInInventory(player)

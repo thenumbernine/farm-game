@@ -5,7 +5,7 @@ local ItemSword = Item:subclass()
 
 ItemSword.name = 'sword'
 ItemSword.sprite = 'item'
-ItemSword.seq = 'item_sword'
+ItemSword.seq = 'sword'
 
 -- static method
 function ItemSword:useInInventory(player)

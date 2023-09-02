@@ -7,7 +7,7 @@ local ItemWateringCan = Item:subclass()
 
 ItemWateringCan.name = 'watering can'
 ItemWateringCan.sprite = 'item'
-ItemWateringCan.seq = 'item_wateringcan'
+ItemWateringCan.seq = 'wateringcan'
 
 -- static method
 function ItemWateringCan:useInInventory(player)
