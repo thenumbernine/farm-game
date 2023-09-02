@@ -15,6 +15,17 @@ local anim = {
 		stand_d = {
 			{filename = 'sprites/link/stand_d.png'},
 		},
+	
+		-- TODO 'useDirs' per-frame / seq instead of per-sprite ....
+		kneel_r = {{filename = 'sprites/link/kneel.png'}},
+		kneel_u = {{filename = 'sprites/link/kneel.png'}},
+		kneel_l = {{filename = 'sprites/link/kneel.png', hflip=true}},
+		kneel_d = {{filename = 'sprites/link/kneel.png'}},
+	
+		handsup_r = {{filename = 'sprites/link/handsup.png'}},
+		handsup_u = {{filename = 'sprites/link/handsup.png'}},
+		handsup_l = {{filename = 'sprites/link/handsup.png', hflip=true}},
+		handsup_d = {{filename = 'sprites/link/handsup.png'}},
 	},
 	goomba = {
 		stand = {

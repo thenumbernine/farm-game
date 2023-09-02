@@ -76,6 +76,8 @@ function Player:update(dt)
 	local appPlayer = assert(self.player)
 
 	if self.sleeping then return end
+	-- use for animations ... and sleeping?
+	if self.cantMove then return end
 
 	-- if a prompt is open then don't handle buttons
 	if not appPlayer.gamePrompt then
@@ -104,6 +106,7 @@ function Player:update(dt)
 				self.selectedItem = self.selectedItem - self.numSelectableItems
 				self.selectedItem = (self.selectedItem - 1) % maxItems + 1
 			end	
+			-- drop item
 			if appPlayer.keyPress.interact and not appPlayer.keyPressLast.interact then
 				local cl = self:removeSelectedItem()
 				if cl then
@@ -113,7 +116,7 @@ function Player:update(dt)
 						pos = (self.pos + vec3f(
 							math.cos(self.angle) + (math.random() - .5) * .1,
 							math.sin(self.angle) + (math.random() - .5) * .1,
-							(math.random() - .5) * .1
+							.5 + (math.random() - .5) * .1
 						)),
 					}
 				end
@@ -231,6 +234,7 @@ function Player:update(dt)
 
 	Player.super.update(self, dt)
 
+	-- shake plants when you are near them
 	do
 		local x,y,z = self.pos:unpack()
 		x = math.floor(x)

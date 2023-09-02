@@ -552,4 +552,13 @@ function Obj:drawMesh()
 	}
 end
 
+function Obj:toItem()
+	self.map:newObj{
+		class = require 'zelda.obj.item',
+		itemClass = self.class,
+		pos = self.pos,
+	}
+	self:remove()
+end
+
 return Obj

@@ -34,15 +34,8 @@ local function placeableObj(parent)
 	cl.takesDamage = true
 	function cl:damage(amount, attacker, inflicter)
 		if not (inflicter and (inflicter.name == 'axe' or inflicter.name == 'pickaxe')) then return end
-
-		self.map:newObj{
-			class = require 'zelda.obj.item',
-			itemClass = self.class,
-			pos = self.pos,
-		}
-		self:remove()
+		self:toItem()
 	end
-
 
 	return cl
 end

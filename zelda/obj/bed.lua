@@ -50,7 +50,7 @@ function Bed:interactInWorld(player)
 		local startPos = player.pos:clone()
 		local endPos = self.pos + vec3f(0, 0, .5)
 
-		--player.seq = 'handsup'
+		player.seq = 'handsup'
 
 		game:fade(.5, function(x)
 			player.pos = startPos * (1 - x) + endPos * x + vec3f(0,0,1) * (4 * x * (1 - x))
@@ -61,10 +61,11 @@ function Bed:interactInWorld(player)
 		-- TODO at this point, if the player used the bed, have it cancel the sleep?
 		-- idk maybe maybe not
 
-		game:sleep(.3)
+		game:sleep(.5)
 
-		--player.seq = 'kneel'
-		--game:sleep(.5)
+		player.seq = 'kneel'
+		game:sleep(.5)
+		player.seq = 'stand'
 
 		player.drawAngle = .5 * math.pi
 		player.drawCenter:set(.5, .5)

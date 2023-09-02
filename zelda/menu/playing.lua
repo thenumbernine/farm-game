@@ -210,13 +210,17 @@ function PlayingMenu:itemButton(itemInfo, bw, bh)
 							size = ig.ImVec2(bw, bh 
 								-- * th / tw	-- maybe not worth it ...
 							)
+							local cr,cg,cb = 1,1,1
+							if cl.color then
+								cr,cg,cb = cl.color:unpack()
+							end
 							local result = ig.igImageButton('',
 								ffi.cast('void*', tex.id),
 								size,		-- how come the image gets clipped?
 								ig.ImVec2(0,0),
 								ig.ImVec2(1,1),
 								ig.ImVec4(0,0,0,0),
-								ig.ImVec4(1,1,1,.5)) 
+								ig.ImVec4(cr,cg,cb,.5)) 
 							if itemInfo.count > 1 then
 								-- why isn't 0,0 the upper-left corner of text?
 								-- y-offset i'd understand (top vs bottom coordinate origin)

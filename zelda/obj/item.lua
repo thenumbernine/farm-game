@@ -13,6 +13,7 @@ maybe I can just use the item/ folder for objs that *only* have an item-form (li
 --]]
 local vec2f = require 'vec-ffi.vec2f'
 local vec3f = require 'vec-ffi.vec3f'
+local vec4f = require 'vec-ffi.vec4f'
 local box3f = require 'vec-ffi.box3f'
 local Obj = require 'zelda.obj.obj'
 
@@ -33,9 +34,10 @@ Item.min = box3f{
 }
 
 Item.drawSize = vec2f(.8, .8)
+Item.drawCenter = vec2f(.5, .5)
 Item.rotation = math.pi * .5
 Item.disableBillboard = true
-Item.spritePosOffst = vec3f(0, 0, .5)
+Item.spritePosOffset = vec3f(0, 0, .5)
 
 function Item:init(args)
 	Item.super.init(self, args)
@@ -46,6 +48,7 @@ function Item:init(args)
 	-- use the same sprite? or a dif one?
 	self.sprite = self.itemClass.sprite
 	self.seq = self.itemClass.seq
+	if self.itemClass.color then self.color = vec4f(self.itemClass.color) end
 end
 
 function Item:touch(other)

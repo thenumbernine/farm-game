@@ -106,12 +106,47 @@ function Plant:update(...)
 		self.drawCenter:set(self.class.drawCenter:unpack())
 	end
 
-	self.shakeWhenNear = self.growFrac >= 1
+	if self.plantType.sprite == 'vegetable' then
+		self.shakeWhenNear = self.growFrac >= 1
+	end
 
 	-- TODO old and dying trees
 
 	-- don't do physics update
 	--Plant.super.update(self, ...)
+end
+
+function Plant:interactInWorld(player)
+	if self.shakeWhenNear
+	and not player.pullUpPlantThread
+	then
+		local game = self.game
+		-- if this is a tree or bush and it has fruit ... 
+		-- ... drop the fruit
+		-- TODO draw it also
+		-- if this is a veg then pull it up
+		-- how about fruit?  same?
+		game.threads:add(function()
+			self.pos:set(player.pos:unpack())
+			local srcpos = self.pos:clone()
+			self.useSeeThru = false
+			game:fade(.5, function(x)
+				self.pos.z = srcpos.z + 2*x
+			end)
+			self.pos:set(srcpos:unpack())
+			self:toItem()
+		end)
+		player.pullUpPlantThread = game.threads:add(function()
+			player.cantMove = true
+			player.seq = 'kneel'
+			game:sleep(.5)
+			player.seq = 'handsup'
+			game:sleep(.5)
+			player.seq = 'stand'
+			player.pullUpPlantThread = nil
+			player.cantMove = nil
+		end)
+	end
 end
 
 function Plant:damage(amount, attacker, inflicter)
