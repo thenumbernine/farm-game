@@ -115,9 +115,10 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 	plantType.color = vec4f(color.x, color.y, color.z, 1)
 
 	plantType.sprite = table{
-		{weight=1, sprite='tree'},
-		{weight=6, sprite='bush'},
-		{weight=12, sprite='plant'},
+		{weight=1, sprite='tree'},	-- grows slowly, maybe makes fruit every so many days
+		{weight=5, sprite='bush'},	-- grows medium, also fruit
+		{weight=5, sprite='plant'},	-- grows fast, scythe to get veg
+		{weight=10, sprite='vegetable'},	-- grows fast, pull up to get veg
 	}:pickWeighted().sprite
 
 	-- pick a random sequence <-> plant sub-type
@@ -155,10 +156,14 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 		
 		plantType.fruitDuration = 4 * Game.secondsPerDay
 		plantType.fruit = fruitTypes:pickRandom()
-	else
+	else	-- plant/veg
 		plantType.inflictTypes = {axe=true, sword=true}
 		plantType.growDuration = Game.secondsPerWeek
-
+		if plantType.sprite == 'vegetable' then
+			plantType.drawSize = plantType.drawSize * .5
+			plantType.drawCenter = vec2f(.5, .5)
+		end
+		
 		-- TODO ... how to do this ...
 		plantType.fruit = fruitTypes:pickRandom()
 	end

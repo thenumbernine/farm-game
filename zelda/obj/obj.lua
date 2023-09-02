@@ -34,7 +34,7 @@ Obj.angle = 0
 -- d/dt of angle
 Obj.rotation = 0
 
--- sprite rotation, not model rotation
+-- rotation of the sprite in billboard space.  not the model rotation, which is "angle".
 Obj.drawAngle = 0
 
 -- sprite 2D tex anchor point
@@ -65,8 +65,6 @@ function Obj:init(args)
 	-- what was the game clock when the object was created?
 	-- this will need to be explicitly set for objects being loaded from save games etc 
 	self.createTime = args.createTime or self.game.time
-
-	self.angle = 1.5 * math.pi
 
 	self.rotation = args.rotation
 
@@ -282,13 +280,13 @@ function Obj:update(dt)
 		return
 	end
 
+	self.angle = self.angle + self.rotation * dt
+
 	if self.vel.x ~= 0
 	or self.vel.y ~= 0
 	or self.vel.z ~= 0
 	then
 		self:unlink()
-
-		self.angle = self.angle + self.rotation * dt
 
 		self.oldpos:set(self.pos:unpack())
 
@@ -451,6 +449,9 @@ function Obj:drawSprite()
 	
 	-- angle to apply relative to billboard in view space
 	gl.glUniform2f(shader.uniforms.drawAngleDir.loc, math.cos(self.drawAngle), math.sin(self.drawAngle))
+	
+	-- angle cos&sin ... angle is for models, but for sprites will be used when disableBillboard is set. 
+	gl.glUniform2f(shader.uniforms.angleDir.loc, math.cos(self.angle), math.sin(self.angle))
 	
 	gl.glUniform3f(shader.uniforms.pos.loc,
 		self.pos.x + self.spritePosOffset.x,

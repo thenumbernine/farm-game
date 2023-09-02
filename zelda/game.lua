@@ -399,6 +399,7 @@ uniform vec2 drawCenter;
 
 uniform vec2 drawSize;
 uniform vec2 drawAngleDir;
+uniform vec2 angleDir;
 uniform vec3 pos;
 
 // 0 = use world xy axis
@@ -418,8 +419,8 @@ void main() {
 	);
 	vec4 worldpos = vec4(pos, 1.);
 
-	vec3 ex = mix(vec3(viewMat[0].x, viewMat[1].x, viewMat[2].x), vec3(1., 0., 0.), disableBillboard);
-	vec3 ey = mix(vec3(viewMat[0].y, viewMat[1].y, viewMat[2].y), vec3(0., 1., 0.), disableBillboard);
+	vec3 ex = mix(vec3(viewMat[0].x, viewMat[1].x, viewMat[2].x), vec3(angleDir.x, angleDir.y, 0.), disableBillboard);
+	vec3 ey = mix(vec3(viewMat[0].y, viewMat[1].y, viewMat[2].y), vec3(-angleDir.y, angleDir.x, 0.), disableBillboard);
 	worldpos.xyz += ex * c.x;
 	worldpos.xyz += ey * c.y;
 

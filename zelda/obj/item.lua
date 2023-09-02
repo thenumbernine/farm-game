@@ -12,6 +12,7 @@ hmm maybe I don't need obj/ and item/ folders for all objects?
 maybe I can just use the item/ folder for objs that *only* have an item-form (like weapons) but not world-form (i.e. beds)
 --]]
 local vec2f = require 'vec-ffi.vec2f'
+local vec3f = require 'vec-ffi.vec3f'
 local box3f = require 'vec-ffi.box3f'
 local Obj = require 'zelda.obj.obj'
 
@@ -33,6 +34,8 @@ Item.min = box3f{
 
 Item.drawSize = vec2f(.8, .8)
 Item.rotation = math.pi * .5
+Item.disableBillboard = true
+Item.spritePosOffst = vec3f(0, 0, .5)
 
 function Item:init(args)
 	Item.super.init(self, args)

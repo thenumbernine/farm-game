@@ -16,6 +16,8 @@ Player.sprite = 'link'
 Player.drawSize = vec2f(1, 1.5)
 Player.drawCenter = vec2f(.5, 1)
 
+Player.angle = 1.5 * math.pi
+
 Player.bbox = box3f{
 	min = {-.3, -.3, 0},
 	max = {.3, .3, 1.5},
@@ -228,6 +230,27 @@ function Player:update(dt)
 	end
 
 	Player.super.update(self, dt)
+
+	do
+		local x,y,z = self.pos:unpack()
+		x = math.floor(x)
+		y = math.floor(y)
+		z = math.floor(z)
+		for k=z-1,z+1 do
+			for j=y-1,y+1 do
+				for i=x-1,x+1 do
+					local objs = map:getTileObjs(i,j,k)
+					if objs then
+						for _,obj in ipairs(objs) do
+							if obj.shakeWhenNear then
+								obj:shake()
+							end
+						end
+					end
+				end
+			end
+		end
+	end
 
 	-- copy current to last keypress
 	-- do this here or in a separate update after object :update()'s?

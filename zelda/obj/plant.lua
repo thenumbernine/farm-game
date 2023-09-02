@@ -78,10 +78,10 @@ function Plant:update(...)
 	local game = self.game
 
 	-- TODO how about < some frac (like 1/7th) show the seed
-	local growTime = game.time - self.createTime
-	local growFrac = growTime / self.growDuration
+	self.growTime = game.time - self.createTime
+	self.growFrac = self.growTime / self.growDuration
 	
-	if growFrac < 1/7 then
+	if self.growFrac < 1/7 then
 		-- seed-form:
 		self.sprite = 'seededground'
 		self.seq = 'stand'
@@ -95,16 +95,18 @@ function Plant:update(...)
 		self.sprite = self.plantType.sprite
 		self.seq = nil	-- fall back on class seq, generated class based on plantType
 		local sx, sy = self.plantType.drawSize:unpack()
-		if growFrac < 1 then
-			sx = sx * growFrac
-			sy = sy * growFrac
+		if self.growFrac < 1 then
+			sx = sx * self.growFrac
+			sy = sy * self.growFrac
 		end
 		self.drawSize:set(sx, sy)
 		self.bbox.min:set(-.49, -.49, 0)
 		self.bbox.max:set(.49, .49, .98)
 		self.disableBillboard = nil
-		self.drawCenter:set(.5, 1)
+		self.drawCenter:set(self.class.drawCenter:unpack())
 	end
+
+	self.shakeWhenNear = self.growFrac >= 1
 
 	-- TODO old and dying trees
 
@@ -118,13 +120,7 @@ function Plant:damage(amount, attacker, inflicter)
 		and not self.dead
 		then
 			-- shake plant angle ... for trees chopping down.
-			local game = self.game
-			game.threads:add(function()
-				game:fade(1, function(x)
-					-- TODO stack modifiers on attributes?
-					self.drawAngle = math.rad(10) * math.sin(-x*30) * math.exp(-5*x)
-				end)
-			end)
+			self:shake()
 		end
 		return true
 	end
@@ -169,6 +165,19 @@ function Plant:die()
 			end
 		end)
 	end
+end
+
+-- TODO maybe share this with tree axe hit?
+function Plant:shake()
+	if self.shakeThread then return end
+	local game = self.game
+	self.shakeThread = game.threads:add(function()
+		game:fade(1, function(x)
+			-- TODO stack modifiers on attributes?
+			self.drawAngle = math.rad(10) * math.sin(-x*30) * math.exp(-5*x)
+		end)
+		self.shakeThread = nil
+	end)
 end
 
 return Plant
