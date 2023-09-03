@@ -9,7 +9,7 @@ local Obj = require 'zelda.obj.obj'
 local sides = require 'zelda.sides'
 
 
-local Player = Obj:subclass()
+local Player = require 'zelda.obj.takesdamage'(Obj):subclass()
 Player.name = 'Player'	-- TODO require name?
 
 Player.sprite = 'link'
@@ -22,6 +22,9 @@ Player.bbox = box3f{
 	min = {-.3, -.3, 0},
 	max = {.3, .3, 1.5},
 }
+
+Player.hpMax = 10
+Player.foodMax = 10
 
 Player.walkSpeed = 6
 
@@ -49,6 +52,8 @@ function Player:init(args, ...)
 
 	self.player = assert(args.player)
 
+	self.food = self.foodMax
+
 	--[[
 	how should inventory work?
 	for key based
@@ -74,6 +79,13 @@ function Player:update(dt)
 	local game = self.game
 	local app = game.app
 	local appPlayer = assert(self.player)
+
+	-- TODO dif activities use dif energy
+	self.food = math.max(0, self.food - dt * .1)
+	if self.food <= 0 then
+		self:damage(dt * .1, self, self)
+		if self.dead then return end
+	end
 
 	if self.sleeping then return end
 	-- use for animations ... and sleeping?
@@ -113,6 +125,7 @@ function Player:update(dt)
 					self.map:newObj{
 						class = require 'zelda.obj.item',
 						itemClass = cl,
+						itemCount = 1,	-- TODO or should I be like minecraft and just have all item-objects == 1 ...
 						pos = (self.pos + vec3f(
 							math.cos(self.angle) + (math.random() - .5) * .1,
 							math.sin(self.angle) + (math.random() - .5) * .1,
@@ -299,6 +312,7 @@ end
 
 function Player:removeSelectedItem()
 	local itemInfo = self.items[self.selectedItem]
+	if not itemInfo then return end
 	itemInfo.count = itemInfo.count - 1
 	if itemInfo.count <= 0 then
 		self.items[self.selectedItem] = nil

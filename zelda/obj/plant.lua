@@ -215,4 +215,18 @@ function Plant:shake()
 	end)
 end
 
+-- static method
+function Plant:useInInventory(player)
+	-- only run when the player pushes the button
+	-- TODO maybe the push vs hold functionality should be moved to the player code?
+	local appPlayer = player.player
+	if appPlayer.keyPress.useItem and appPlayer.keyPressLast.useItem then return end
+
+	-- heal and eat
+	assert(player:removeSelectedItem() == self)
+
+	player.hp = math.min(player.hp + self.hpGiven, player.hpMax)
+	player.food = math.min(player.food + self.foodGiven, player.foodMax)
+end
+
 return Plant

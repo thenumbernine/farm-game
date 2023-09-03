@@ -173,6 +173,9 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 		plantType.fruit = fruitTypes:pickRandom()
 	end
 
+	plantType.hpGiven = math.random(3,5)
+	plantType.foodGiven = math.random(3,5)
+
 	plantType.objClass = require 'zelda.obj.plant':subclass(plantType)
 	plantType.objClass.plantType = plantType
 

@@ -32,6 +32,8 @@ function PlayingMenu:updateGUI()
 	ig.igSetWindowFontScale(.5)
 
 	ig.igText('$'..appPlayer.money)
+	ig.igText('HP: '..playerObj.hp..'/'..playerObj.hpMax)
+	ig.igText('FP: '..playerObj.food..'/'..playerObj.foodMax)
 	ig.igText(game:timeToStr())
 	ig.igText(tostring(playerObj.pos))
 
@@ -211,9 +213,11 @@ function PlayingMenu:itemButton(itemInfo, bw, bh)
 								-- * th / tw	-- maybe not worth it ...
 							)
 							local cr,cg,cb = 1,1,1
+							-- assume the color matrix <-> scale matrix
+							-- hmm otherwise how to draw imgui icons?
 							if cl.colorMatrix then
 								-- will only color by the 1st row
-								cr,cg,cb = cl.colorMatrix[{1,1}], cl.colorMatrix[{2,2}], cl.colorMatrix[{3,3}]
+								cr,cg,cb = cl.colorMatrix.ptr[0], cl.colorMatrix.ptr[5], cl.colorMatrix.ptr[10]
 							end
 							local result = ig.igImageButton('',
 								ffi.cast('void*', tex.id),
@@ -221,7 +225,7 @@ function PlayingMenu:itemButton(itemInfo, bw, bh)
 								ig.ImVec2(0,0),
 								ig.ImVec2(1,1),
 								ig.ImVec4(0,0,0,0),
-								ig.ImVec4(cr,cg,cb,.5)) 
+								ig.ImVec4(cr,cg,cb,1)) 
 							if itemInfo.count > 1 then
 								-- why isn't 0,0 the upper-left corner of text?
 								-- y-offset i'd understand (top vs bottom coordinate origin)
