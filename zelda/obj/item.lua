@@ -44,6 +44,7 @@ function Item:init(args)
 	Item.super.init(self, args)
 
 	self.itemClass = assert(args.itemClass)
+	
 	-- TODO get rid of?
 	self.itemCount = args.itemCount or 1
 	

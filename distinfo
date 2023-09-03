@@ -10,6 +10,7 @@ files = {
 		'texpack.png',
 		'splash.png',
 		'sprites',
+		'music',
 		'plants.csv',
 		'zelda',
 	},

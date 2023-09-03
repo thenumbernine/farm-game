@@ -32,7 +32,7 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 	- half-step voxels for grass and stone, and maybe some slope tiles, and maybe rotate them in any of the 4 directions, so I don't have to jump everywhere (stupid Minecraft, why did you make that a standard?)
 - make sure hoed / watered / seeded always render in correct order (z-sort by altitude? or store and render as attribut list per-tile?)
 - make biomes
-- make plants randomly seed neighboring ground... if they naturally grow in this biome ofc.
+- make plants randomly seed neighboring ground... only if they naturally grow in this biome ofc.
 - sword swing etc should search only objs on the neighboring tiles, not all objs
 	- region iterator, index for last region iterator
 - player sprite animations for sword, pickaxe, axe, shovel, hoe, watering ...
@@ -57,6 +57,7 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 	- on-farm trade-depot, but only when the Mountainhome Caravan comes once a ... week.  or when customers come.  infrequently.
 	- farmers market, once a saturady or something.  or any day.  you get lots of customers and sell at higher price.
 		- later you can hire someone to man the booth for you and sell even more round-the-clock.
+		- plants in-biome should cost less than plants out of biome
 - get seeds from fruit.
 - livestock.
 - fences and gates to keep livestock from getting away.
@@ -78,7 +79,10 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 - Better separate game-player from game-obj-player.  move all the UI stuff / clientside-only to game-player, all serverside to game-obj-player.
 - allow rearranging stuff in inventory.
 - generalize tile placement
-	- tile orientation
+	- tile orientation is added, but make it do something.  won't matter until i get more than just half-blocks ...
 	- add material property to tiles ... either color, or some other way to change it based on the material ... and to store the material as well.
 - better linking/unlinking system than the current Lua-table-based
 	- maybe instead something like a per-tile linked-list (tho i need multiple lists per obj), or a ptr-per-tile that points to a list of objs
+- proper glycemic index and blood sugar level ... [here](https://en.wikipedia.org/wiki/Glycemic_index) [here](https://en.wikipedia.org/wiki/Blood_sugar_level)
+	- also make sure this updates while sleeping.  in fact, fix the sleep cycle so it doesn't just set the time but calls :update() , but a limited form so it's not running monsters movements / physics...
+- add a grappling hook.

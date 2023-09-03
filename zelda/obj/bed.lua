@@ -58,7 +58,7 @@ function Bed:interactInWorld(player)
 
 		player:setPos(player.pos:unpack())
 
-		-- TODO at this point, if the player used the bed, have it cancel the sleep?
+		-- TODO at this point, if the player pushes 'use', have it cancel the sleep?
 		-- idk maybe maybe not
 
 		game:sleep(.5)
@@ -76,6 +76,8 @@ function Bed:interactInWorld(player)
 		-- offst to the next cycle of 6am
 		local endTime = (day * game.hoursPerDay + game.wakeHour) * game.secondsPerHour
 		game:fadeAppTime(self.sleepTime, function(x)
+			-- TODO here, make sure to run :update() cycles
+			-- and make sure the player's food is subtracting during those cycles
 			game.time = startTime * (1 - x) + endTime * x
 		end)
 		player.sleeping = false
