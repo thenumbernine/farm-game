@@ -6,6 +6,7 @@ local vec2f = require 'vec-ffi.vec2f'
 local vec3i = require 'vec-ffi.vec3i'
 local vec3f = require 'vec-ffi.vec3f'
 local vec4f = require 'vec-ffi.vec4f'
+local matrix_ffi = require 'matrix.ffi'
 local Image = require 'image'
 local gl = require 'gl'
 local GLTex2D = require 'gl.tex2d'
@@ -238,8 +239,9 @@ TODO how to handle multiple maps with objects-in-map ...
 	for j=0,map.size.y-1 do
 		for i=0,map.size.x-1 do
 			local k = map.size.z-1
+			local voxel
 			while k >= 0 do
-				local voxel = map:getTile(i,j,k)
+				voxel = map:getTile(i,j,k)
 				if voxel.type ~= Tile.typeValues.Empty
 				and voxel.tex == 0	-- grass tex
 				then
@@ -247,7 +249,9 @@ TODO how to handle multiple maps with objects-in-map ...
 				end
 				k = k - 1
 			end
-			if k >= 0 then
+			if k >= 0 
+			and voxel
+			then
 				-- found a grass tile
 				local r = math.random()
 				if (vec2f(i,j) - vec2f(houseCenter.x, houseCenter.y)):length() < 7.5
@@ -261,7 +265,7 @@ TODO how to handle multiple maps with objects-in-map ...
 					local plantType = plantTypes:pickRandom()
 					map:newObj{
 						class = plantType.objClass,
-						pos = vec3f(i + .5, j + .5, k + 1),
+						pos = vec3f(i + .5, j + .5, k + 1 - voxel.half * .5),
 						-- TODO scale by plant life
 						createTime = game.time - math.random() * plantType.growDuration * 2,
 					}
@@ -438,7 +442,7 @@ in vec3 viewPosv;
 out vec4 fragColor;
 
 uniform sampler2D tex;
-uniform vec4 color;
+uniform mat4 colorMatrix;
 
 uniform bool useSeeThru;
 uniform vec3 playerViewPos;
@@ -447,7 +451,7 @@ const float cosClipAngle = .9;	// = cone with 25 degree from axis
 
 // gl_FragCoord is in pixel coordinates with origin at lower-left
 void main() {
-	fragColor = color * texture(tex, texcoordv);
+	fragColor = colorMatrix * texture(tex, texcoordv);
 
 	// alpha-testing
 	if (fragColor.a < .1) discard;
@@ -463,6 +467,7 @@ void main() {
 ]],
 		uniforms = {
 			tex = 0,
+			colorMatrix = matrix_ffi({{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, 'float').ptr,
 		},
 	}:useNone()
 
@@ -602,7 +607,6 @@ function Game:draw()
 		self.playerPos = vec3f(self.viewFollow.pos:unpack()) + .1
 		--]]
 	end
-
 	
 	-- prep draw lists
 	-- with zero sprite rendering whatsoever i'm getting 30fps
@@ -626,7 +630,6 @@ function Game:draw()
 	self.viewFollow.map:draw()
 	self.viewFollow.map:drawObjs()
 --]]
-
 
 	self.spriteShader:use()
 	self.spriteSceneObj:enableAndSetAttrs()

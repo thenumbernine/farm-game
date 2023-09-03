@@ -170,7 +170,7 @@ function Plant:die()
 		-- fade out and remove
 		game.threads:add(function()
 			game:fade(1, function(alpha)
-				self.color.w = 1 - alpha
+				self.colorMatrix[{4,4}] = 1 - alpha
 			end)
 			self:remove()
 		end)

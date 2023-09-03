@@ -3,7 +3,7 @@
 -- used with item/seeds .plant, obj/seededground .plant etc
 local vec2f = require 'vec-ffi.vec2f'
 local vec3f = require 'vec-ffi.vec3f'
-local vec4f = require 'vec-ffi.vec4f'
+local matrix_ffi = require 'matrix.ffi'
 local table = require 'ext.table'
 
 --[[
@@ -111,8 +111,13 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 	plantType.growType = 'seeds'
 	plantType.cost = 10
 	
-	local color = vec3f(math.random(), math.random(), math.random()):normalize()
-	plantType.color = vec4f(color.x, color.y, color.z, 1)
+	local colorMatrix = matrix_ffi({4,4},'float'):zeros()
+		:setRotate(
+			math.random()*2*math.pi,
+			1 + .2 * (math.random() - .5),
+			1 + .2 * (math.random() - .5),
+			1 + .2 * (math.random() - .5))
+	plantType.colorMatrix = colorMatrix
 
 	plantType.sprite = table{
 		{weight=1, sprite='tree'},	-- grows slowly, maybe makes fruit every so many days

@@ -49,7 +49,9 @@ function Item:init(args)
 	-- use the same sprite? or a dif one?
 	self.sprite = self.itemClass.sprite
 	self.seq = self.itemClass.seq
-	if self.itemClass.color then self.color = vec4f(self.itemClass.color) end
+	if self.itemClass.colorMatrix then
+		self.colorMatrix:copy(self.itemClass.colorMatrix)
+	end
 end
 
 function Item:touch(other)

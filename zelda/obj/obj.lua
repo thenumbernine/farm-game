@@ -2,8 +2,8 @@ local table = require 'ext.table'
 local class = require 'ext.class'
 local vec2f = require 'vec-ffi.vec2f'
 local vec3f = require 'vec-ffi.vec3f'
-local vec4f = require 'vec-ffi.vec4f'
 local box3f = require 'vec-ffi.box3f'
+local matrix_ffi = require 'matrix.ffi'
 local gl = require 'gl'
 local glreport = require 'gl.report'
 local GLTex2D = require 'gl.tex2d'
@@ -55,7 +55,11 @@ Obj.disableBillboard = false
 -- yes for not-so-interactable sprites like plants
 Obj.useSeeThru = false
 
-Obj.color = vec4f(1,1,1,1)
+Obj.colorMatrix = matrix_ffi({4,4}, 'float'):lambda(function(i,j)
+	return i==j and 1 or 0
+end)
+
+
 
 function Obj:init(args)
 	assert(args)
@@ -87,8 +91,7 @@ function Obj:init(args)
 	self.bbox = box3f(self.class.bbox)
 	if args.bbox then self.bbox = box3f(args.bbox) end
 
-	self.color = vec4f(self.class.color)
-	if args.color then self.color:set(args.color:unpack()) end
+	self.colorMatrix = matrix_ffi(assert(args.colorMatrix or self.class.colorMatrix), 'float')
 
 	self.sprite = args.sprite
 	self.seq = args.seq
@@ -305,7 +308,10 @@ function Obj:update(dt)
 	or self.vel.z ~= 0
 	-- TODO if we only touch upon movement then what about stationary items being spawned?
 	-- TODO this but for obj's touch...
-	or (self.touchesObjects and self.createTime == game.time)
+	or (
+		self.touchesObjects 
+		--and self.createTime == game.time
+	)
 	then
 		self:unlink()
 
@@ -466,6 +472,7 @@ function Obj:draw()
 	end
 end
 
+local identMat4 = matrix_ffi({4,4},'float'):lambda(function(i,j) return i==j and 1 or 0 end)
 function Obj:drawSprite()
 	local frame = self.currentFrame
 	local map = self.map
@@ -497,8 +504,15 @@ function Obj:drawSprite()
 		self.pos.y + self.spritePosOffset.y,
 		self.pos.z + self.spritePosOffset.z)
 	
-	local cr, cg, cb, ca = self.color:unpack()
+-- [[ 
+	-- vector
+	--gl.glUniform4f(shader.uniforms.color.loc, self.color:unpack())
+	-- matrix
+	gl.glUniformMatrix4fv(shader.uniforms.colorMatrix.loc, 1, gl.GL_FALSE, self.colorMatrix.ptr)
+--]] 
 --[[ cheap hack for cheap lighting
+	-- TODO update for colorMatrix
+	local cr, cg, cb, ca = self.color:unpack()
 	local x = math.floor(self.pos.x)
 	local y = math.floor(self.pos.y)
 	local z = math.floor(self.pos.z)
@@ -527,8 +541,8 @@ function Obj:drawSprite()
 			cb = cb * sunlight
 		end
 	end
---]]	
 	gl.glUniform4f(shader.uniforms.color.loc, cr, cg, cb, ca)
+--]]	
 	
 	gl.glUniform3fv(shader.uniforms.playerViewPos.loc, 1, game.playerViewPos.s)
 	gl.glUniform1i(shader.uniforms.useSeeThru.loc, self.useSeeThru and 1 or 0)
@@ -568,7 +582,6 @@ function Obj:drawMesh()
 	gl.glUniformMatrix4fv(shader.uniforms.projectionMatrix.loc, 1, gl.GL_FALSE, view.projMat.ptr)
 	--shader:useNone()	-- why does shader need to be :use()'d here?
 	--]]
-	local cr, cg, cb, ca = self.color:unpack()
 	frame.mesh:draw{
 		shader = shader,
 		beginGroup = function(g)
@@ -578,7 +591,7 @@ function Obj:drawMesh()
 				useLighting = 0,
 				useTextures = g.tex_Kd and 1 or 0,
 				Ka = {0,0,0,0},
-				Kd = g.Kd and {g.Kd.x*cr, g.Kd.y*cg, g.Kd.z*cb, ca} or {cr,cg,cb,ca},
+				Kd = g.Kd and {g.Kd.x, g.Kd.y, g.Kd.z, 1} or {1,1,1,1},
 				Ks = g.Ks and g.Ks.s or {1,1,1,1},
 				Ns = g.Ns or 10,
 				

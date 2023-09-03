@@ -211,8 +211,9 @@ function PlayingMenu:itemButton(itemInfo, bw, bh)
 								-- * th / tw	-- maybe not worth it ...
 							)
 							local cr,cg,cb = 1,1,1
-							if cl.color then
-								cr,cg,cb = cl.color:unpack()
+							if cl.colorMatrix then
+								-- will only color by the 1st row
+								cr,cg,cb = cl.colorMatrix[{1,1}], cl.colorMatrix[{2,2}], cl.colorMatrix[{3,3}]
 							end
 							local result = ig.igImageButton('',
 								ffi.cast('void*', tex.id),

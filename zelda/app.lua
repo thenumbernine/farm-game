@@ -119,6 +119,7 @@ precision highp float;
 						totalPixels = totalPixels + thisPixels
 						--]]
 					elseif fn:sub(-4) == '.obj' then
+print("WARNING - you're using .objs")						
 						frame.mesh = OBJLoader():load(fn)
 					else
 						print("idk how to load this file")
