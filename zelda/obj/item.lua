@@ -26,7 +26,8 @@ Item.useGravity = false
 Item.collidesWithTiles = false
 -- hmm how do I say 'test touch' but not 'test movement collision' ?
 -- quake engines did touchtype_item ...
---Item.collidesWithObjects = false	
+Item.collidesWithObjects = false	-- won't block other objects
+Item.touchesObjects = true			-- will trigger touch of other moving objects
 
 Item.min = box3f{
 	min = {-.3, -.3, 0},

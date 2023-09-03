@@ -168,7 +168,7 @@ end
 -- or just push? how about just push.
 -- Writes to vel
 local epsilon = 1e-5
-local function push(pos, min, max, bmin, bmax, vel)
+local function push(pos, min, max, bmin, bmax, vel, dontPush)
 	-- TODO cache these as 'worldmin'/max? 
 	local amin = pos + min
 	local amax = pos + max
@@ -231,30 +231,48 @@ local function push(pos, min, max, bmin, bmax, vel)
 		end
 		
 		if side == 0 then 
-			vel.x = 0
+			if not dontPush then
+				vel.x = 0
+			end
 			if pm == 1 then
-				pos.x = bmin.x - max.x - epsilon
+				if not dontPush then
+					pos.x = bmin.x - max.x - epsilon
+				end
 				return sides.flags.xp
 			else
-				pos.x = bmax.x - min.x + epsilon
+				if not dontPush then
+					pos.x = bmax.x - min.x + epsilon
+				end
 				return sides.flags.xm
 			end
 		elseif side == 1 then 
-			vel.y = 0 
+			if not dontPush then
+				vel.y = 0 
+			end
 			if pm == 1 then
-				pos.y = bmin.y - max.y - epsilon
+				if not dontPush then
+					pos.y = bmin.y - max.y - epsilon
+				end
 				return sides.flags.yp
 			else
-				pos.y = bmax.y - min.y + epsilon
+				if not dontPush then
+					pos.y = bmax.y - min.y + epsilon
+				end
 				return sides.flags.ym
 			end
 		elseif side == 2 then 
-			vel.z = 0
+			if not dontPush then
+				vel.z = 0
+			end
 			if pm == 1 then
-				pos.z = bmin.z - max.z - epsilon
+				if not dontPush then
+					pos.z = bmin.z - max.z - epsilon
+				end
 				return sides.flags.zp
 			else
-				pos.z = bmax.z - min.z + epsilon
+				if not dontPush then
+					pos.z = bmax.z - min.z + epsilon
+				end
 				return sides.flags.zm
 			end
 		end
@@ -285,6 +303,9 @@ function Obj:update(dt)
 	if self.vel.x ~= 0
 	or self.vel.y ~= 0
 	or self.vel.z ~= 0
+	-- TODO if we only touch upon movement then what about stationary items being spawned?
+	-- TODO this but for obj's touch...
+	or (self.touchesObjects and self.createTime == game.time)
 	then
 		self:unlink()
 
@@ -300,6 +321,10 @@ function Obj:update(dt)
 
 		if self.collidesWithTiles
 		or self.collidesWithObjects
+		or (
+			self.touchesObjects
+			--and self.createTime == game.time
+		)
 		then
 			local omin = vec3f()
 			local omax = vec3f()
@@ -339,13 +364,27 @@ function Obj:update(dt)
 							if objs then
 								for _, obj in ipairs(objs) do
 									if not obj.removeFlag then
-										if obj.collidesWithObjects then
-											local collided = push(self.pos, self.bbox.min, self.bbox.max, obj.pos + obj.bbox.min, obj.pos + obj.bbox.max, self.vel)
+										local touches
+										-- TODO if obj.solid
+										if obj.collidesWithObjects 
+										or obj.touchesObjects
+										or (
+											self.touchesObjects
+											--and self.createTime == game.time
+										)
+										then
+											local collided = push(self.pos, self.bbox.min, self.bbox.max, obj.pos + obj.bbox.min, obj.pos + obj.bbox.max, self.vel, obj.touchesObjects)
 											self.collideFlags = bit.bor(self.collideFlags, collided)
-											if collided ~= 0 
-											and obj.touch
-											then
-												obj:touch(self)
+											if collided ~= 0 then
+												-- TODO set obj.collideFlags also?
+												if self.touch then
+													self:touch(obj)
+												end
+												if not obj.removeFlag 
+												and not self.removeFlag 
+												and obj.touch then
+													obj:touch(self)
+												end
 											end
 										end
 									end
