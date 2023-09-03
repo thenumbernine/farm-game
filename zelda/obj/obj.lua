@@ -102,6 +102,9 @@ function Obj:init(args)
 	self.tiles = {}
 
 	self:setPos(self.pos:unpack())
+
+	-- TODO not until after subclass ctor is done
+	--self:move(vec3f(), 1)
 end
 
 function Obj:link()
@@ -287,11 +290,11 @@ Obj.gravity = -9.8
 Obj.useGravity = true	-- or TODO just change the gravity value to zero?
 Obj.collidesWithTiles = true
 Obj.collidesWithObjects = true
+Obj.itemTouch = false	-- for items only, to add a touch test upon creation
 Obj.collideFlags = 0
 
 local epsilon = 1e-5
 function Obj:update(dt)
-	local map = self.map
 	local game = self.game
 
 	if self.removeDuration
@@ -306,91 +309,91 @@ function Obj:update(dt)
 	if self.vel.x ~= 0
 	or self.vel.y ~= 0
 	or self.vel.z ~= 0
-	-- TODO if we only touch upon movement then what about stationary items being spawned?
-	-- TODO this but for obj's touch...
-	or (
-		self.touchesObjects 
-		--and self.createTime == game.time
-	)
+	or self.itemTouch
 	then
-		self:unlink()
+		self:move(self.vel, dt)
+	end
 
-		self.oldpos:set(self.pos:unpack())
+	if self.useGravity
+	and 0 == bit.band(self.collideFlags, sides.flags.zm)
+	then
+		self.vel.z = self.vel.z + self.gravity * dt
+	end
+end
 
-	-- [[
-		self.pos.x = self.pos.x + self.vel.x * dt
-		self.pos.y = self.pos.y + self.vel.y * dt
-		self.pos.z = self.pos.z + self.vel.z * dt
-	--]]
+local omin = vec3f()
+local omax = vec3f()
+function Obj:move(vel, dt)
+	local map = self.map
+	
+	self:unlink()
 
-		self.collideFlags = 0
+	self.oldpos:set(self.pos:unpack())
 
-		if self.collidesWithTiles
-		or self.collidesWithObjects
-		or (
-			self.touchesObjects
-			--and self.createTime == game.time
-		)
-		then
-			local omin = vec3f()
-			local omax = vec3f()
-			for k = 
-				math.floor(math.min(self.pos.z, self.oldpos.z) + self.bbox.min.z - 1.5),
-				math.floor(math.max(self.pos.z, self.oldpos.z) + self.bbox.max.z + .5)
+-- [[
+	self.pos.x = self.pos.x + vel.x * dt
+	self.pos.y = self.pos.y + vel.y * dt
+	self.pos.z = self.pos.z + vel.z * dt
+--]]
+
+	self.collideFlags = 0
+
+	if self.collidesWithTiles
+	or self.collidesWithObjects
+	or self.itemTouch
+	then
+		for k = 
+			math.floor(math.min(self.pos.z, self.oldpos.z) + self.bbox.min.z - 1.5),
+			math.floor(math.max(self.pos.z, self.oldpos.z) + self.bbox.max.z + .5)
+		do
+			for j =
+				math.floor(math.min(self.pos.y, self.oldpos.y) + self.bbox.min.y - 1.5),
+				math.floor(math.max(self.pos.y, self.oldpos.y) + self.bbox.max.y + .5)
 			do
-				for j =
-					math.floor(math.min(self.pos.y, self.oldpos.y) + self.bbox.min.y - 1.5),
-					math.floor(math.max(self.pos.y, self.oldpos.y) + self.bbox.max.y + .5)
+				for i =
+					math.floor(math.min(self.pos.x, self.oldpos.x) + self.bbox.min.x - 1.5),
+					math.floor(math.max(self.pos.x, self.oldpos.x) + self.bbox.max.x + .5)
 				do
-					for i =
-						math.floor(math.min(self.pos.x, self.oldpos.x) + self.bbox.min.x - 1.5),
-						math.floor(math.max(self.pos.x, self.oldpos.x) + self.bbox.max.x + .5)
-					do
-						if i >= 0 and i < map.size.x and j >= 0 and j < map.size.y and k >= 0 and k < map.size.z then
-							local voxelIndex = i + map.size.x * (j + map.size.y * k)
-							local voxel = map:getTile(i,j,k)
-							if self.collidesWithTiles
-							and voxel
-							and voxel.type > 0
-							then
-								local voxelType = Tile.types[voxel.type]
-								if not voxelType then error("failed to find voxelType for type "..tostring(tiletype)) end
-								if voxelType.solid then
-									omin:set(i,j,k)
-									omax:set(i+1,j+1,k+.5*(2-voxel.half))
-									
-									-- TODO trace gravity fall downward separately
-									-- then move horizontall
-									-- if push fails then raise up, move, and go back down, to try and do steps
-									local collided = push(self.pos, self.bbox.min, self.bbox.max, omin, omax, self.vel)
-									self.collideFlags = bit.bor(self.collideFlags, collided)
-								end
+					if i >= 0 and i < map.size.x and j >= 0 and j < map.size.y and k >= 0 and k < map.size.z then
+						local voxelIndex = i + map.size.x * (j + map.size.y * k)
+						local voxel = map:getTile(i,j,k)
+						if self.collidesWithTiles
+						and voxel
+						and voxel.type > 0
+						then
+							local voxelType = Tile.types[voxel.type]
+							if not voxelType then error("failed to find voxelType for type "..tostring(tiletype)) end
+							if voxelType.solid then
+								omin:set(i,j,k)
+								omax:set(i+1,j+1,k+.5*(2-voxel.half))
+								
+								-- TODO trace gravity fall downward separately
+								-- then move horizontall
+								-- if push fails then raise up, move, and go back down, to try and do steps
+								local collided = push(self.pos, self.bbox.min, self.bbox.max, omin, omax, vel)
+								self.collideFlags = bit.bor(self.collideFlags, collided)
 							end
-							local objs = map.objsPerTileIndex[voxelIndex]
-							if objs then
-								for _, obj in ipairs(objs) do
-									if not obj.removeFlag then
-										local touches
-										-- TODO if obj.solid
-										if obj.collidesWithObjects 
-										or obj.touchesObjects
-										or (
-											self.touchesObjects
-											--and self.createTime == game.time
-										)
-										then
-											local collided = push(self.pos, self.bbox.min, self.bbox.max, obj.pos + obj.bbox.min, obj.pos + obj.bbox.max, self.vel, obj.touchesObjects)
-											self.collideFlags = bit.bor(self.collideFlags, collided)
-											if collided ~= 0 then
-												-- TODO set obj.collideFlags also?
-												if self.touch then
-													self:touch(obj)
-												end
-												if not obj.removeFlag 
-												and not self.removeFlag 
-												and obj.touch then
-													obj:touch(self)
-												end
+						end
+						local objs = map.objsPerTileIndex[voxelIndex]
+						if objs then
+							for _, obj in ipairs(objs) do
+								if not obj.removeFlag then
+									-- TODO if obj.solid
+									if obj.collidesWithObjects 
+									or obj.itemTouch
+									or self.itemTouch
+									then
+										local collided = push(self.pos, self.bbox.min, self.bbox.max, obj.pos + obj.bbox.min, obj.pos + obj.bbox.max, vel, self.itemTouch or obj.itemTouch)
+										self.collideFlags = bit.bor(self.collideFlags, collided)
+										if collided ~= 0 then
+											-- TODO set obj.collideFlags also?
+											if self.touch then
+												self:touch(obj)
+											end
+											if not obj.removeFlag 
+											and not self.removeFlag 
+											and obj.touch then
+												obj:touch(self)
 											end
 										end
 									end
@@ -401,15 +404,9 @@ function Obj:update(dt)
 				end
 			end
 		end
-
-		self:link()
 	end
 
-	if self.useGravity
-	and 0 == bit.band(self.collideFlags, sides.flags.zm)
-	then
-		self.vel.z = self.vel.z + self.gravity * dt
-	end
+	self:link()
 end
 
 -- ccw start at 0' (with 45' spread)

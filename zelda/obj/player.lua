@@ -274,6 +274,7 @@ function Player:useItem()
 end
 
 function Player:addItem(cl, count)
+	assert(cl)
 	count = count or 1
 	for i=1,self.numInvItems do
 		local itemInfo = self.items[i]
@@ -287,7 +288,7 @@ function Player:addItem(cl, count)
 	for i=1,self.numInvItems do
 		if not self.items[i] then
 			self.items[i] = {
-				class = cl,
+				class = assert(cl),
 				count = count,
 			}
 			return true
