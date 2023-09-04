@@ -431,7 +431,13 @@ local Map = class()
 Map.Chunk = Chunk
 
 -- voxel-based
-function Map:init(args)	-- vec3i
+--[[
+args =
+	game = game
+	sizeInChunks = vec3i
+	chunkData = (optional) xyz major order, per-chunk
+--]]
+function Map:init(args)
 	self.game = assert(args.game)
 	local game = self.game
 	local app = game.app
@@ -558,6 +564,15 @@ void main() {
 		end
 	end
 
+	if args.chunkData then
+		assert(#args.chunkData == self.volume * ffi.sizeof'voxel_t')
+		local p = ffi.cast('voxel_t*', ffi.cast('char*', args.chunkData))
+		for chunkIndex=0,self.chunkVolume-1 do
+			local chunk = self.chunks[chunkIndex]
+			ffi.copy(chunk.v, p + chunkIndex * Chunk.volume, Chunk.volume * ffi.sizeof'voxel_t')
+		end
+	end
+	
 	self.texpackSize = vec2i(2, 2)
 end
 
@@ -704,6 +719,38 @@ function Map:update(dt)
 	for _,obj in ipairs(self.objs) do
 		if obj.update then obj:update(dt) end
 	end
+end
+
+-- TODO this is slow.  coroutine and progress bar?
+local tolua = require 'ext.tolua'
+local range = require 'ext.range'
+function Map:getSaveData()
+	return tolua({
+		sizeInChunks = {self.sizeInChunks:unpack()},
+		data = range(0,self.chunkVolume-1):mapi(function(j)
+			local chunk = self.chunks[j]
+			return ffi.string(chunk.v, chunk.volume)
+		end):concat(),
+		objs = self.objs:mapi(function(obj)
+			local dstobjinfo = table(obj)
+			dstobjinfo.classname = obj.classname	-- copy from class to obj
+			dstobjinfo.currentFrame = nil
+			dstobjinfo.game = nil
+			dstobjinfo.map = nil
+			dstobjinfo:setmetatable(nil)
+			return dstobjinfo
+		end),
+	}, {
+		skipRecursiveReferences = true,
+		serializeForType = {
+			cdata = function(state, x, ...)
+				-- vec*
+				-- box*
+				-- matrix.ffi
+				return tostring(x)
+			end,
+		},
+	})
 end
 
 return Map

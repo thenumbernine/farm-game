@@ -2,6 +2,7 @@ local ffi = require 'ffi'
 local sdl = require 'ffi.req' 'sdl'
 local class = require 'ext.class'
 local table = require 'ext.table'
+local path = require 'ext.path'
 local vec2f = require 'vec-ffi.vec2f'
 local vec3i = require 'vec-ffi.vec3i'
 local vec3f = require 'vec-ffi.vec3f'
@@ -316,8 +317,11 @@ Game.secondsPerYear = Game.secondsPerMonth * Game.monthsPerYear
 -- when to start / wake up
 Game.wakeHour = 6
 
--- 16 x 16 = 256 tiles in a typical screen
--- 8 x 8 x 8 = 512 tiles
+--[[
+args:
+	app = app
+	srcdir = (optional) save game folder
+--]]
 function Game:init(args)
 	self.app = assert(args.app)
 	local app = self.app
@@ -326,6 +330,9 @@ function Game:init(args)
 	self.time = self.wakeHour * self.secondsPerHour
 
 	self.threads = ThreadManager()
+
+	-- move to app:
+	-- since it's in common with every game
 
 	self.quadVtxBuf = app.quadVertexBuf
 	self.quadGeom = app.quadGeom
@@ -516,18 +523,48 @@ void main() {
 	}
 
 	self.maps = table()
-	local farmMap = makeFarmMap(self)
-	self.maps:insert(farmMap)
 
-	local PlayerObj = require 'zelda.obj.player'
-	app.players[1].obj = farmMap:newObj{
-		class = PlayerObj,
-		pos = vec3f(
-			farmMap.size.x*.5,
-			farmMap.size.y*.5,
-			farmMap.size.z-.5),
-		player = assert(app.players[1]),
-	}
+	-- NOTICE here's the load-game functionality
+	-- the save-game functionality is in Map
+	-- maybe move this to Map too?
+	if args.srcdir then
+		for i=0,math.huge do
+			local mapfile = args.srcdir/(i..'.map')
+			if not mapfile:exists() then break end
+			local mapdata = require 'gameapp.serialize'.safefromlua(tostring(mapfile))
+			local map = Map{
+				game = self,
+				sizeInChunks = vec3i(mapdata.sizeInChunks),
+				chunkData = mapdata.chunkData,
+			}
+			self.maps:insert(map)
+			for _,objsrcinfo in ipairs(mapdata.objs) do
+				local newobj = map:newObj(table(objsrcinfo, {
+					game = game,
+					map = map,
+					class = require(objsrcinfo.classname),
+				}))
+				if objsrcinfo.classname == 'zelda.obj.player' then
+					app.players[1].obj = newobj
+				end
+			end
+		end
+	else
+		local farmMap = makeFarmMap(self)
+		
+		-- start off the map
+		self.maps:insert(farmMap)
+
+		local PlayerObj = require 'zelda.obj.player'
+		app.players[1].obj = farmMap:newObj{
+			class = PlayerObj,
+			pos = vec3f(
+				farmMap.size.x*.5,
+				farmMap.size.y*.5,
+				farmMap.size.z-.5),
+			player = assert(app.players[1]),
+		}
+	end
 
 	self.viewFollow = app.players[1].obj
 	--self.viewFollow = self.goomba
@@ -830,32 +867,6 @@ function Game:event(event, ...)
 				playerObj.selectedItem = 12
 			end
 		end
-	end
-end
-
-local tolua = require 'ext.tolua'
-function Game:save(folder)
-	folder = path(folder)
-	folder:mkdir()
-	assert(folder:isdir(), "mkdir failed")
-	for i,map in ipairs(self.maps) do
-		(folder/i..'.map'):write(tolua({
-			sizeInChunks = {map.sizeInChunks:unpack()},
-			data = range(0,map.chunkVolume-1):mapi(function(j)
-				local chunk = map.chunks[j]
-				return ffi.string(chunk.v, chunk.volume)
-			end):concat(),
-			objs = map.objs:mapi(function(obj)
-				return obj
-			end),
-		}, {
-			skipRecursiveReferences = true,
-			serializeForType = {
-				cdata = function(state, x, ...)
-					return tostring(x)
-				end,
-			},
-		}))
 	end
 end
 

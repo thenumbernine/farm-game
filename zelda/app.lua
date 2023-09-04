@@ -1,6 +1,7 @@
 local bit = require 'bit'
 local range = require 'ext.range'
 local table = require 'ext.table'
+local path = require 'ext.path'
 local sdl = require 'ffi.req' 'sdl'
 local ig = require 'imgui'
 local quatd = require 'vec-ffi.quatd'
@@ -65,6 +66,8 @@ PlayerKeysEditor.defaultKeys = {
 	},
 }
 
+App.saveBaseDir = path'save'
+
 -- just hack the main menu class instead of subclassing it.
 local MainMenu = require 'gameapp.menu.main'
 function MainMenu:update()
@@ -77,6 +80,32 @@ end)
 MainMenu.menuOptions:removeObject(nil, function(o)
 	return o.name == 'High Scores'
 end)
+MainMenu.menuOptions:insert(2, {
+	name = 'Save Game',
+	click = function(self)
+		-- TODO save menu?
+		-- or TODO pick a filename upon 'new game' and just save there?
+		local app = self.app
+		local game = app.game
+		if not game then return end
+		app:saveGame(app.saveBaseDir/game.saveDir)
+		-- TODO print upon fail or something
+	end,
+	visible = function(self)
+		return not not (self.app and self.app.game)
+	end,
+})
+MainMenu.menuOptions:insert(3, {
+	name = 'Load Game',
+	click = function(self)
+		local app = self.app
+		app.menu = require 'zelda.menu.loadgame'(app)
+	end,
+	visible = function(self)
+		-- TODO detect upon construction and upon save?
+		return true
+	end,
+})
 
 App.url = 'https://github.com/thenumbernine/zelda3d-lua'
 
@@ -161,6 +190,20 @@ function App:resetGame(dontMakeGame)
 
 	if not dontMakeGame then
 		self.game = Game{app = self}
+
+		-- find the next available save dir name
+		self.saveBaseDir:mkdir()
+		for i=1,math.huge do
+			local dirname = tostring(i)
+			local thissave = self.saveBaseDir/dirname
+			if not thissave:exists() then
+				thissave:mkdir()
+				self.game.saveDir = dirname
+				-- TODO initial save?
+				break
+			end
+		end
+print('App:resetGame', self.game.saveDir)
 	end
 end
 
@@ -251,6 +294,23 @@ function App:event(event, ...)
 	if self.game then
 		self.game:event(event)
 	end
+end
+
+function App:saveGame(folder)
+	local game = assert(self.game)
+	folder:mkdir(true)
+	assert(folder:isdir(), "mkdir failed")
+	for i,map in ipairs(game.maps) do
+		(folder/(i..'.map')):write(map:getSaveData())
+	end
+end
+
+function App:loadGame(folder)
+	assert(folder:isdir())
+	self.game = Game{
+		app = self, 
+		srcdir = folder,
+	}
 end
 
 return App
