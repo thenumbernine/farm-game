@@ -109,7 +109,7 @@ MainMenu.menuOptions:insert(3, {
 		if app.saveBaseDir:exists()
 		and app.saveBaseDir:isdir() then
 			for fn in app.saveBaseDir:dir() do
-				if path(fn):isdir() then
+				if (app.saveBaseDir/fn):isdir() then
 					num = num + 1
 				end
 			end

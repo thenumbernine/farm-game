@@ -15,10 +15,11 @@ function LoadGameMenu:updateGUI()
 	if app.saveBaseDir:exists()
 	and app.saveBaseDir:isdir() then
 		for fn in app.saveBaseDir:dir() do
-			if path(fn):isdir() then
+			local dir = app.saveBaseDir/fn
+			if dir:isdir() then
 				found = true
 				if ig.igButton(fn) then
-					app:loadGame(app.saveBaseDir/fn)
+					app:loadGame(dir)
 					app.menu = app.playingMenu
 					return
 				end
