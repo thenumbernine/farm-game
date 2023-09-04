@@ -8,6 +8,7 @@ local Obj = require 'zelda.obj.obj'
 -- maybe Log (and tools) should be in zelda/items
 -- and no need for zelda/obj/items
 local Log = require 'zelda.obj.placeabletile'(Obj):subclass()
+Log.classname = 'zelda.obj.log'
 
 Log.name = 'log'
 Log.sprite = 'log'

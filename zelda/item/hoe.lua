@@ -5,6 +5,7 @@ local Plant = require 'zelda.obj.plant'
 local Item = require 'zelda.item.item'
 
 local ItemHoe = Item:subclass()
+ItemHoe.classname = 'zelda.item.hoe'
 
 ItemHoe.name = 'hoe'
 ItemHoe.sprite = 'item'

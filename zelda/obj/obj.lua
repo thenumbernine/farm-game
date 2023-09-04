@@ -18,6 +18,7 @@ local function smoothstep(edge0,edge1,x)
 end
 
 local Obj = class()
+Obj.classname = 'zelda.obj.obj'
 
 -- default
 Obj.seq = 'stand'

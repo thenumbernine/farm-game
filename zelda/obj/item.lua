@@ -18,6 +18,7 @@ local box3f = require 'vec-ffi.box3f'
 local Obj = require 'zelda.obj.obj'
 
 local Item = Obj:subclass()
+Item.classname = 'zelda.obj.item'
 
 Item.name = 'Item'
 

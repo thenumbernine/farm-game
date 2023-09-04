@@ -23,6 +23,7 @@ not as long as I have .use() ...
 --]]
 
 local Bed = require 'zelda.obj.placeableobj'(Obj):subclass()
+Bed.classname = 'zelda.obj.bed'
 
 Bed.name = 'bed'
 Bed.sprite = 'bed'

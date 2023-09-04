@@ -4,6 +4,7 @@ local Tile = require 'zelda.tile'
 -- to contrast 'placeableTile', which puts a tile at a position
 local function placeableObj(parent)
 	local cl = parent:subclass()
+	cl.classname = nil
 
 	-- static method
 	function cl:useInInventory(player)

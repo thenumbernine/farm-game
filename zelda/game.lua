@@ -528,10 +528,15 @@ void main() {
 	-- the save-game functionality is in Map
 	-- maybe move this to Map too?
 	if args.srcdir then
+		local fromlua = require 'ext.fromlua'
+		local env = {
+			math = {huge = math.huge},
+			app = app,
+		}
 		for i=0,math.huge do
 			local mapfile = args.srcdir/(i..'.map')
 			if not mapfile:exists() then break end
-			local mapdata = require 'gameapp.serialize'.safefromlua(tostring(mapfile))
+			local mapdata = fromlua(assert(mapfile:read()), nil, 't', env)
 			local map = Map{
 				game = self,
 				sizeInChunks = vec3i(mapdata.sizeInChunks),
@@ -544,7 +549,8 @@ void main() {
 					map = map,
 					class = require(objsrcinfo.classname),
 				}))
-				if objsrcinfo.classname == 'zelda.obj.player' then
+				-- TODO what if it's a dif player?
+				if objsrcinfo.player == app.players[1] then
 					app.players[1].obj = newobj
 				end
 			end

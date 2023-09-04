@@ -33,6 +33,7 @@ local box3f = require 'vec-ffi.box3f'
 local Obj = require 'zelda.obj.obj'
 
 local Plant = require 'zelda.obj.takesdamage'(Obj):subclass()
+Plant.classname = 'zelda.obj.plant'
 
 -- TODO makeSubclass based on plantType
 -- just like item/seeds

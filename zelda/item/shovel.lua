@@ -4,7 +4,7 @@ local HoedGround = require 'zelda.obj.hoedground'
 local Item = require 'zelda.item.item'
 
 local ItemShovel = Item:subclass()
-
+ItemShovel.classname = 'zelda.item.shovel'
 ItemShovel.name = 'shovel'
 ItemShovel.sprite = 'item'
 ItemShovel.seq = 'shovel'

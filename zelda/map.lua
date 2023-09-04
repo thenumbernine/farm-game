@@ -725,29 +725,90 @@ end
 local tolua = require 'ext.tolua'
 local range = require 'ext.range'
 function Map:getSaveData()
+	local game = self.game
+	local app = game.app
 	return tolua({
-		sizeInChunks = {self.sizeInChunks:unpack()},
+		sizeInChunks = self.sizeInChunks,
 		data = range(0,self.chunkVolume-1):mapi(function(j)
 			local chunk = self.chunks[j]
 			return ffi.string(chunk.v, chunk.volume)
 		end):concat(),
 		objs = self.objs:mapi(function(obj)
 			local dstobjinfo = table(obj)
-			dstobjinfo.classname = obj.classname	-- copy from class to obj
+			for k,v in pairs(obj) do
+				if v == obj.class[k] then
+					dstobjinfo[k] = nil
+				end
+			end
+			dstobjinfo.class = obj.class	-- 'require '..tolua(assert(obj.classname))	-- copy from class to obj
 			dstobjinfo.currentFrame = nil
-			dstobjinfo.game = nil
+			dstobjinfo.game = nil		
 			dstobjinfo.map = nil
+			dstobjinfo.tiles = nil
 			dstobjinfo:setmetatable(nil)
 			return dstobjinfo
 		end),
 	}, {
 		skipRecursiveReferences = true,
 		serializeForType = {
-			cdata = function(state, x, ...)
-				-- vec*
-				-- box*
+			table = function(state, x, ...)
+				if rawequal(x, game) then
+					return 'error "can\'t serialize game"'
+				end
+				if rawequal(x, app) then
+					return 'error "can\'t serialize app"'
+				end
+				if rawequal(x, x.class) then
+					return 'require '..tolua(x.classname)
+				end
+				for i,player in ipairs(app.players) do
+					if rawequal(x, player) then
+						return 'app.players['..i..']'
+					end			
+				end
+
+				local mt = getmetatable(x)
 				-- matrix.ffi
-				return tostring(x)
+				if mt == require 'matrix.ffi' then
+					return 'matrix_ffi('
+						..tostring(x)
+							:gsub('%[', '{')
+							:gsub('%]', '}')
+							:gsub('\n', '')
+						..', '
+						..tolua(x.ctype)..')'
+				end			
+				return tolua.defaultSerializeForType.table(state, x, ...)
+			end,
+			cdata = function(state, x, ...)
+				local ft = ffi.typeof(x)
+				-- vec*
+				for _,s in ipairs{
+					'2b', '2d', '2f', '2i', '2s',        '2ub',
+					'3b', '3d', '3f', '3i', '3s', '3sz', '3ub',
+					'4b', '4d', '4f', '4i',              '4ub',
+				} do
+					local name = 'vec'..s
+					if ft == require('vec-ffi.'..name) then
+						return name..'('
+							..table{x:unpack()}:concat', '
+							..')'
+					end
+				end
+				-- box*
+				for _,s in ipairs{
+					'2f', '3f',
+				} do
+					local name = 'box'..s
+					if ft == require('vec-ffi.'..name) then
+						return name..'({'
+							..table{x.min:unpack()}:concat', '
+							..'}, {'
+							..table{x.max:unpack()}:concat', '
+							..'})'
+					end
+				end
+				return "error'got unknown metatype'"
 			end,
 		},
 	})

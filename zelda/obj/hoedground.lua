@@ -5,6 +5,7 @@ local Obj = require 'zelda.obj.obj'
 local Game = require 'zelda.game'
 
 local HoedGround = Obj:subclass()
+HoedGround.classname = 'zelda.obj.hoedground'
 
 HoedGround.name = 'HoedGround'
 

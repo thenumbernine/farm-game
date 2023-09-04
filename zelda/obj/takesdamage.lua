@@ -1,7 +1,8 @@
 -- behavior
 local function takesDamage(parent)
 	local cl = parent:subclass()
-
+	cl.classname = nil
+	
 	cl.takesDamage = true
 	cl.hpMax = 1
 

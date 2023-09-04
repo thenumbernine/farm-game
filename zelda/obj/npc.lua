@@ -3,6 +3,8 @@ local box3f = require 'vec-ffi.box3f'
 local Obj = require 'zelda.obj.obj'
 
 local NPC = Obj:subclass()
+NPC.classname = 'zelda.obj.npc'
+
 NPC.name = 'NPC'
 NPC.sprite = 'link'
 NPC.drawSize = vec2f(1, 1.5)

@@ -8,9 +8,9 @@ local Plant = require 'zelda.obj.plant'
 local Item = require 'zelda.item.item'
 
 local ItemSeeds = Item:subclass()
+ItemSeeds.classname = 'zelda.item.seeds'
 
 ItemSeeds.name = 'seeds'
--- TODO custom shader from the plantType for inventory icon?
 ItemSeeds.sprite = 'seededground'
 ItemSeeds.seq = 'stand'
 

@@ -2,7 +2,7 @@ local vec3f = require 'vec-ffi.vec3f'
 local Item = require 'zelda.item.item'
 
 local ItemSword = Item:subclass()
-
+ItemSword.classname = 'zelda.item.sword'
 ItemSword.name = 'sword'
 ItemSword.sprite = 'item'
 ItemSword.seq = 'sword'

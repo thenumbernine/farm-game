@@ -10,6 +10,8 @@ local sides = require 'zelda.sides'
 
 
 local Player = require 'zelda.obj.takesdamage'(Obj):subclass()
+Player.classname = 'zelda.obj.player'
+
 Player.name = 'Player'	-- TODO require name?
 
 Player.sprite = 'link'

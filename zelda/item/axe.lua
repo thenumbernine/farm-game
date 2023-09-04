@@ -3,7 +3,7 @@ local Tile = require 'zelda.tile'
 local Item = require 'zelda.item.item'
 
 local ItemAxe = Item:subclass()
-
+ItemAxe.classname = 'zelda.item.axe'
 ItemAxe.name = 'axe'
 ItemAxe.sprite = 'item'
 ItemAxe.seq = 'axe'

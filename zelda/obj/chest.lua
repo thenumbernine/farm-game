@@ -2,6 +2,7 @@ local box3f = require 'vec-ffi.box3f'
 local Obj = require 'zelda.obj.obj'
 
 local Chest = require 'zelda.obj.placeableobj'(Obj):subclass()
+Chest.classname = 'zelda.obj.chest'
 
 Chest.name = 'chest'
 Chest.sprite = 'chest'

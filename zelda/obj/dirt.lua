@@ -4,6 +4,7 @@ local Tile = require 'zelda.tile'
 local Obj = require 'zelda.obj.obj'
 
 local Dirt = Obj:subclass()
+Dirt.classname = 'zelda.obj.dirt'
 
 Dirt.name = 'Dirt'
 

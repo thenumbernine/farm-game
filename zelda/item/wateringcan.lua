@@ -4,7 +4,7 @@ local WateredGround = require 'zelda.obj.wateredground'
 local Item = require 'zelda.item.item'
 
 local ItemWateringCan = Item:subclass()
-
+ItemWateringCan.classname = 'zelda.item.wateringcan'
 ItemWateringCan.name = 'watering can'
 ItemWateringCan.sprite = 'item'
 ItemWateringCan.seq = 'wateringcan'

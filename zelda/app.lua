@@ -95,6 +95,7 @@ MainMenu.menuOptions:insert(2, {
 		return not not (self.app and self.app.game)
 	end,
 })
+
 MainMenu.menuOptions:insert(3, {
 	name = 'Load Game',
 	click = function(self)
@@ -102,8 +103,18 @@ MainMenu.menuOptions:insert(3, {
 		app.menu = require 'zelda.menu.loadgame'(app)
 	end,
 	visible = function(self)
+		local app = self.app
 		-- TODO detect upon construction and upon save?
-		return true
+		local num = 0
+		if app.saveBaseDir:exists()
+		and app.saveBaseDir:isdir() then
+			for fn in app.saveBaseDir:dir() do
+				if path(fn):isdir() then
+					num = num + 1
+				end
+			end
+		end
+		return num > 0
 	end,
 })
 
