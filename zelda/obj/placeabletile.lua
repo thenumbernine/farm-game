@@ -16,14 +16,20 @@ local function placeableTile(parent)
 			0
 		)):map(math.floor)
 
-		local tile = map:getTile(dst:unpack())
-		if tile.type == Tile.typeValues.Empty then
-			player:removeSelectedItem()
-			tile.type = assert(self.tileType)
-			tile.tex = 2	--maptexs.wood
-			map:buildDrawArrays(
-				dst.x, dst.y, dst.z,
-				dst.x, dst.y, dst.z)
+		-- first try to place in front
+		-- next try to place one below
+		-- hmm maybe? idk
+		for dz=0,-1,-1 do
+			local tile = map:getTile(dst.x, dst.y, dst.z+dz)
+			if tile and tile.type == Tile.typeValues.Empty then
+				player:removeSelectedItem()
+				tile.type = assert(self.tileType)
+				tile.tex = 2	--maptexs.wood
+				map:buildDrawArrays(
+					dst.x, dst.y, dst.z,
+					dst.x, dst.y, dst.z)
+				break
+			end
 		end
 	end
 

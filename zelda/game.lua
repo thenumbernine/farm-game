@@ -833,4 +833,30 @@ function Game:event(event, ...)
 	end
 end
 
+local tolua = require 'ext.tolua'
+function Game:save(folder)
+	folder = path(folder)
+	folder:mkdir()
+	assert(folder:isdir(), "mkdir failed")
+	for i,map in ipairs(self.maps) do
+		(folder/i..'.map'):write(tolua({
+			sizeInChunks = {map.sizeInChunks:unpack()},
+			data = range(0,map.chunkVolume-1):mapi(function(j)
+				local chunk = map.chunks[j]
+				return ffi.string(chunk.v, chunk.volume)
+			end):concat(),
+			objs = map.objs:mapi(function(obj)
+				return obj
+			end),
+		}, {
+			skipRecursiveReferences = true,
+			serializeForType = {
+				cdata = function(state, x, ...)
+					return tostring(x)
+				end,
+			},
+		}))
+	end
+end
+
 return Game
