@@ -63,6 +63,7 @@ function Player:init(args, ...)
 	self.selectedItem = 1
 	self.items = table{
 		require 'zelda.item.sword',
+		require 'zelda.item.pickaxe',
 		require 'zelda.item.shovel',
 		require 'zelda.item.axe',
 		require 'zelda.item.hoe',

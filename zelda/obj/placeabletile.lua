@@ -9,6 +9,9 @@ local function placeableTile(parent)
 	-- static method, so 'self' is the subclass
 	function cl:useInInventory(player)
 		local map = player.map
+		-- only place upon button press
+		local appPlayer = player.player
+		if not (appPlayer.keyPress.useItem and not appPlayer.keyPressLast.useItem) then return end
 
 		-- TODO traceline and then step back
 		local dst = (player.pos + vec3f(
@@ -17,10 +20,8 @@ local function placeableTile(parent)
 			0
 		)):map(math.floor)
 
-		-- first try to place in front
-		-- next try to place one below
-		-- hmm maybe? idk
-		for dz=0,-1,-1 do
+		-- opposite order as tools remove tiles
+		for dz=-1,1 do
 			local tile = map:getTile(dst.x, dst.y, dst.z+dz)
 			if tile and tile.type == Tile.typeValues.Empty then
 				player:removeSelectedItem()

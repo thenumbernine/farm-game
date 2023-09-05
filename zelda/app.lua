@@ -80,7 +80,7 @@ end)
 MainMenu.menuOptions:removeObject(nil, function(o)
 	return o.name == 'High Scores'
 end)
-MainMenu.menuOptions:insert(2, {
+MainMenu.menuOptions:insert(3, {
 	name = 'Save Game',
 	click = function(self)
 		-- TODO save menu?
@@ -96,7 +96,7 @@ MainMenu.menuOptions:insert(2, {
 	end,
 })
 
-MainMenu.menuOptions:insert(3, {
+MainMenu.menuOptions:insert(4, {
 	name = 'Load Game',
 	click = function(self)
 		local app = self.app

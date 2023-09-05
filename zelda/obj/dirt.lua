@@ -1,8 +1,11 @@
+-- TODO this is a copy of zelda.obj.stone
+--  both are used for item-obj <-> item <-> tile
 local vec3f = require 'vec-ffi.vec3f'
 local box3f = require 'vec-ffi.box3f'
 local Tile = require 'zelda.tile'
 local Obj = require 'zelda.obj.obj'
 
+-- TODO subclass of item?
 local Dirt = Obj:subclass()
 Dirt.classname = 'zelda.obj.dirt'
 
@@ -40,9 +43,12 @@ end
 -- or maybe wood should do that too?
 function Dirt:useInInventory(player)
 	local map = player.map
+	-- only place upon button press
+	local appPlayer = player.player
+	if not (appPlayer.keyPress.useItem and not appPlayer.keyPressLast.useItem) then return end
 
 	-- TODO traceline and then step back
-	for z=-1,0 do
+	for z=-1,1 do
 		local dst = (player.pos + vec3f(
 			math.cos(player.angle),
 			math.sin(player.angle),

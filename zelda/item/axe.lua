@@ -26,15 +26,15 @@ function ItemAxe:useInInventory(player)
 		0
 	)):map(math.floor):unpack()
 
-	for dz=-1,1 do
+	for dz=1,-1,-1 do
 		local tile = map:getTile(x,y,z-dz)
 		if tile 
 		and tile.type == Tile.typeValues.Wood
 		then
 			tile.type = Tile.typeValues.Empty
 			map:buildDrawArrays(
-				x,y,z-dz,
-				x,y,z-dz)
+				x,y,z+dz,
+				x,y,z+dz)
 			-- TODO instead of addItem, have it plop out an item object first ...
 			-- in case the player's inventory is full
 			player:addItem(require 'zelda.obj.log')
