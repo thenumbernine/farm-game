@@ -330,8 +330,8 @@ function Player:draw(...)
 	Player.super.draw(self, ...)
 
 	if self.attackEndTime > game.time then
-		local buf = app.swordSwingVtxBufGPU
-		local cpuBuf = buf.data
+		local buf = app.swordSwingVtxBuf
+		local cpuBuf = buf.data	-- float[]
 		
 		local delta = (game.time - self.attackTime) / (self.attackEndTime - self.attackTime)
 		local dtheta = 150*math.pi/180

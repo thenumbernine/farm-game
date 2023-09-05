@@ -355,15 +355,16 @@ void main() {
 	}:useNone()
 
 	self.swordSwingNumDivs = 20
-	local swordSwingVtxBufCPU = ffi.new('vec3f_t[?]', 2 * self.swordSwingNumDivs)
-	self.swordSwingVtxBufGPU = GLArrayBuffer{
-		size = ffi.sizeof(swordSwingVtxBufCPU),
-		data = swordSwingVtxBufCPU,
+	local cpuBuf = ffi.new('vec3f_t[?]', 2 * self.swordSwingNumDivs)
+	self.swordSwingVtxBuf = GLArrayBuffer{
+		size = ffi.sizeof(cpuBuf),
+		data = cpuBuf,
 		usage = gl.GL_DYNAMIC_DRAW,
 	}:unbind()
 
-	-- build the map
 
+	-- tex pack for the map
+	-- TODO put all sprites in here.
 	self.texpack = GLTex2D{
 		filename = 'texpack.png',
 		magFilter = gl.GL_LINEAR,
