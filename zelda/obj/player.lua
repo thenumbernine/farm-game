@@ -330,6 +330,9 @@ function Player:draw(...)
 	Player.super.draw(self, ...)
 
 	if self.attackEndTime > game.time then
+		local buf = app.swordSwingVtxBufGPU
+		local cpuBuf = buf.data
+		
 		local delta = (game.time - self.attackTime) / (self.attackEndTime - self.attackTime)
 		local dtheta = 150*math.pi/180
 		local ndivs = app.swordSwingNumDivs
@@ -340,13 +343,12 @@ function Player:draw(...)
 			local dr = rFar - rNear
 			for j=0,1 do
 				local r = rNear + j * dr
-				app.swordSwingVtxBufCPU[j + 2 * (i-1)]:set(
+				cpuBuf[j + 2 * (i-1)]:set(
 					self.swingPos.x + r * math.cos(theta),
 					self.swingPos.y + r * math.sin(theta),
 					self.swingPos.z + .05)
 			end
 		end
-		local buf = app.swordSwingVtxBufGPU
 		buf:bind()
 			:updateData()
 		

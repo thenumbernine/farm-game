@@ -355,10 +355,10 @@ void main() {
 	}:useNone()
 
 	self.swordSwingNumDivs = 20
-	self.swordSwingVtxBufCPU = ffi.new('vec3f_t[?]', 2 * self.swordSwingNumDivs)
+	local swordSwingVtxBufCPU = ffi.new('vec3f_t[?]', 2 * self.swordSwingNumDivs)
 	self.swordSwingVtxBufGPU = GLArrayBuffer{
-		size = ffi.sizeof(self.swordSwingVtxBufCPU),
-		data = self.swordSwingVtxBufCPU,
+		size = ffi.sizeof(swordSwingVtxBufCPU),
+		data = swordSwingVtxBufCPU,
 		usage = gl.GL_DYNAMIC_DRAW,
 	}:unbind()
 
