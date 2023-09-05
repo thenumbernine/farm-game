@@ -602,6 +602,8 @@ function Obj:drawMesh()
 	}
 end
 
+-- TODO this matches Item.toItemObj
+-- but since both Obj and Item can separately be items ... meh?
 function Obj:toItem()
 	self.map:newObj{
 		class = require 'zelda.obj.item',

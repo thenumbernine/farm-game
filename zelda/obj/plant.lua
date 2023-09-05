@@ -189,9 +189,8 @@ function Plant:die()
 			for i=1,self.numLogs do
 				local r = math.random() * 2
 				local theta = math.random() * 2 * math.pi
-				self.map:newObj{
-					class = require 'zelda.obj.item',
-					itemClass = require 'zelda.obj.log',
+				require 'zelda.item.log':toItemObj{
+					map = self.map,
 					pos = self.pos + vec3f(
 						math.cos(theta) * r,
 						math.sin(theta) * r,

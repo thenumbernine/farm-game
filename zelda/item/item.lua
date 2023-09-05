@@ -8,4 +8,18 @@ local class = require 'ext.class'
 local Item = class()
 Item.classname = 'zelda.item.item'
 
+--[[
+TODO this matches Obj.toItem
+however this is a static method atm.
+except unlike Obj.toItem, this needs .map and .pos specified
+--]]
+function Item:toItemObj(args)
+	assert(args.pos)
+	assert(args.map):newObj(table({
+		class = require 'zelda.obj.item',
+		itemClass = self.class,
+	}, args))
+	self:remove()
+end
+
 return Item

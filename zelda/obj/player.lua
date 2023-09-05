@@ -125,9 +125,8 @@ function Player:update(dt)
 			if appPlayer.keyPress.interact and not appPlayer.keyPressLast.interact then
 				local cl = self:removeSelectedItem()
 				if cl then
-					self.map:newObj{
-						class = require 'zelda.obj.item',
-						itemClass = cl,
+					cl:toItemObj{
+						map = self.map,
 						itemCount = 1,	-- TODO or should I be like minecraft and just have all item-objects == 1 ...
 						pos = (self.pos + vec3f(
 							math.cos(self.angle) + (math.random() - .5) * .1,

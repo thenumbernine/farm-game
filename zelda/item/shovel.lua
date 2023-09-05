@@ -40,7 +40,7 @@ function ItemShovel:useInInventory(player)
 				x,y,z+dz)
 			-- TODO instead of addItem, have it plop out an item object first ...
 			-- in case the player's inventory is full
-			player:addItem(require 'zelda.obj.dirt')
+			player:addItem(require 'zelda.item.dirt')
 			return
 		end
 	end
