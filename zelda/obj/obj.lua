@@ -440,10 +440,10 @@ function Obj:draw()
 					local frame = seq[self.frame]
 					self.currentFrame = frame
 					if frame.tex then
-						--[[
+						--[[ draw immediately
 						self:drawSprite()
 						--]]
-						--[[
+						--[[ no grouping
 						game.spriteDrawList:insert(self)
 						--]]
 						-- [[ group per tex to bind
@@ -478,14 +478,12 @@ function Obj:drawSprite()
 	local app = game.app
 	local view = app.view
 
-	local shader = game.spriteShader
+	local shader = app.spriteShader
 	local uscale = -1
 	local vscale = 1
 	if frame.hflip then uscale = uscale * -1 end
 	if self.vflip then vscale = vscale * -1 end
 	
-	gl.glUniformMatrix4fv(shader.uniforms.viewMat.loc, 1, gl.GL_FALSE, view.mvMat.ptr)
-	gl.glUniformMatrix4fv(shader.uniforms.projMat.loc, 1, gl.GL_FALSE, view.projMat.ptr)
 	gl.glUniform2f(shader.uniforms.uvscale.loc, uscale, vscale)
 	gl.glUniform2f(shader.uniforms.drawCenter.loc, self.drawCenter:unpack()) 
 	gl.glUniform2f(shader.uniforms.drawSize.loc, self.drawSize:unpack()) 
@@ -542,12 +540,11 @@ function Obj:drawSprite()
 	gl.glUniform4f(shader.uniforms.color.loc, cr, cg, cb, ca)
 --]]	
 	
-	gl.glUniform3fv(shader.uniforms.playerViewPos.loc, 1, game.playerViewPos.s)
 	gl.glUniform1i(shader.uniforms.useSeeThru.loc, self.useSeeThru and 1 or 0)
 
 	-- TODO buffer all these?
 	-- or store positions (or 4x for vertexes) in a GL buffer?
-	game.spriteSceneObj.geometry:draw()
+	app.spriteSceneObj.geometry:draw()
 
 	--glreport'here'
 end
@@ -562,7 +559,7 @@ function Obj:drawMesh()
 	modelMat:setTranslate(self.pos:unpack())
 		:applyScale(self.drawSize.x, self.drawSize.x, self.drawSize.y)
 		:applyRotate(self.angle, 0, 0, 1)
-	local shader = self.shader or game.meshShader
+	local shader = app.meshShader
 	--[[
 	shader
 		:use()

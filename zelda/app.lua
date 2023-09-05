@@ -1,3 +1,4 @@
+local ffi = require 'ffi'
 local bit = require 'bit'
 local range = require 'ext.range'
 local table = require 'ext.table'
@@ -5,7 +6,13 @@ local path = require 'ext.path'
 local sdl = require 'ffi.req' 'sdl'
 local ig = require 'imgui'
 local quatd = require 'vec-ffi.quatd'
+local Image = require 'image'
+local matrix_ffi = require 'matrix.ffi'
 local gl = require 'gl'
+local GLProgram = require 'gl.program'
+local GLSceneObject = require 'gl.sceneobject'
+local GLTex2D = require 'gl.tex2d'
+local GLArrayBuffer = require 'gl.arraybuffer'
 local Game = require 'zelda.game'
 local getTime = require 'ext.timer'.getTime
 local OBJLoader = require 'mesh.objloader'
@@ -171,6 +178,199 @@ print("WARNING - you're using .objs")
 --print('total pixels', totalPixels)
 --print('sqrt', math.sqrt(totalPixels))
 	--]]
+
+
+	-- TODO would be nice per-hour-of-the-day ...
+	-- why am I not putting this in a texture?
+	-- because I also want a gradient for at-ground vs undergournd
+	-- but maybe I still should ..
+	local skyTexData = {
+		{{10, 10, 20}, {50, 50, 85}},
+		{{80, 80, 120}, {70, 80, 110}},
+		{{80, 120, 140}, {140, 170, 200}},
+		{{0, 100, 170}, {255, 100, 0}},
+		{{10, 10, 20}, {50, 50, 85}},
+	}
+
+	self.skyTex = GLTex2D{
+		image = Image(#skyTexData, #skyTexData[1], 4, 'unsigned char', function(u,v)
+			local t = skyTexData[u+1][v+1]
+			return t[1], t[2], t[3], 255
+		end),
+		minFilter = gl.GL_NEAREST,
+		magFilter = gl.GL_LINEAR,
+		wrap = {
+			s = gl.GL_CLAMP_TO_EDGE,
+			t = gl.GL_CLAMP_TO_EDGE,
+		},
+	}
+
+	self.skyShader = GLProgram{
+		vertexCode = self.glslHeader..[[
+in vec2 vertex;
+out vec2 vtxv;
+uniform mat4 mvProjMat;
+void main() {
+	vtxv = vertex;
+	gl_Position = mvProjMat * vec4(vertex, 0., 1.);
+}
+]],
+		fragmentCode = self.glslHeader..[[
+in vec2 vtxv;
+out vec4 fragColor;
+uniform float timeOfDay;
+uniform sampler2D skyTex;
+void main() {
+	fragColor = texture(skyTex, vec2(timeOfDay, vtxv.y));
+}
+]],
+		uniforms = {
+			skyTex = 0,
+		},
+	}:useNone()
+
+	self.skySceneObj = GLSceneObject{
+		geometry = self.quadGeom,
+		program = self.skyShader,
+		attrs = {
+			vertex = self.quadVertexBuf,
+		},
+		texs = {
+			self.skyTex,
+		},
+	}
+
+	self.spriteShader = GLProgram{
+		vertexCode = self.glslHeader..[[
+in vec2 vertex;
+out vec2 texcoordv;
+out vec3 viewPosv;
+
+uniform vec2 uvscale;
+
+//what uv coordinates to center the sprite at (y=1 is bottom)
+uniform vec2 drawCenter;
+
+uniform vec2 drawSize;
+uniform vec2 drawAngleDir;
+uniform vec2 angleDir;
+uniform vec3 pos;
+
+// 0 = use world xy axis
+// 1 = use view xy axis
+uniform float disableBillboard;
+
+uniform mat4 viewMat;
+uniform mat4 projMat;
+
+void main() {
+	texcoordv = (vertex - .5) * uvscale + .5;
+
+	vec2 c = (drawCenter - vertex) * drawSize;
+	c = vec2(
+		c.x * drawAngleDir.x - c.y * drawAngleDir.y,
+		c.x * drawAngleDir.y + c.y * drawAngleDir.x
+	);
+	vec4 worldpos = vec4(pos, 1.);
+
+	vec3 ex = mix(vec3(viewMat[0].x, viewMat[1].x, viewMat[2].x), vec3(angleDir.x, angleDir.y, 0.), disableBillboard);
+	vec3 ey = mix(vec3(viewMat[0].y, viewMat[1].y, viewMat[2].y), vec3(-angleDir.y, angleDir.x, 0.), disableBillboard);
+	worldpos.xyz += ex * c.x;
+	worldpos.xyz += ey * c.y;
+
+	vec4 viewPos = viewMat * worldpos;
+
+	viewPosv = viewPos.xyz;
+
+	gl_Position = projMat * viewPos;
+}
+]],
+		fragmentCode = self.glslHeader..[[
+in vec2 texcoordv;
+in vec3 viewPosv;
+
+out vec4 fragColor;
+
+uniform sampler2D tex;
+uniform mat4 colorMatrix;
+
+uniform bool useSeeThru;
+uniform vec3 playerViewPos;
+
+const float cosClipAngle = .9;	// = cone with 25 degree from axis
+
+// gl_FragCoord is in pixel coordinates with origin at lower-left
+void main() {
+	fragColor = colorMatrix * texture(tex, texcoordv);
+
+	// alpha-testing
+	if (fragColor.a < .1) discard;
+
+	if (useSeeThru) {
+		vec3 testViewPos = playerViewPos + vec3(0., 1., -2.);
+		if (normalize(viewPosv - testViewPos).z > cosClipAngle) {
+			//fragColor.w = .2;
+			discard;
+		}
+	}
+}
+]],
+		uniforms = {
+			tex = 0,
+			colorMatrix = matrix_ffi({{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, 'float').ptr,
+		},
+	}:useNone()
+
+	self.spriteSceneObj = GLSceneObject{
+		geometry = self.quadGeom,
+		program = self.spriteShader,
+		attrs = {
+			vertex = self.quadVertexBuf,
+		},
+		texs = {},
+	}
+
+	self.meshShader = require 'mesh':makeShader{
+		glslHeader = self.glslHeader,
+	}
+
+	self.swordShader = GLProgram{
+		vertexCode = self.glslHeader..[[
+in vec3 vertex;
+in vec4 color;
+out vec4 colorv;
+uniform mat4 mvProjMat;
+void main() {
+	colorv = color;
+	gl_Position = mvProjMat * vec4(vertex, 1.);
+}
+]],
+		fragmentCode = self.glslHeader..[[
+in vec4 colorv;
+out vec4 fragColor;
+void main() {
+	fragColor = colorv;
+}
+]],
+	}:useNone()
+
+	self.swordSwingNumDivs = 20
+	self.swordSwingVtxBufCPU = ffi.new('vec3f_t[?]', 2 * self.swordSwingNumDivs)
+	self.swordSwingVtxBufGPU = GLArrayBuffer{
+		size = ffi.sizeof(self.swordSwingVtxBufCPU),
+		data = self.swordSwingVtxBufCPU,
+		usage = gl.GL_DYNAMIC_DRAW,
+	}:unbind()
+
+	-- build the map
+
+	self.texpack = GLTex2D{
+		filename = 'texpack.png',
+		magFilter = gl.GL_LINEAR,
+		minFilter = gl.GL_NEAREST,
+	}
+
+
 
 	gl.glEnable(gl.GL_DEPTH_TEST)
 	gl.glEnable(gl.GL_CULL_FACE)

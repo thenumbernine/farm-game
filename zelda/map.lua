@@ -322,7 +322,7 @@ function Chunk:draw(app, game)
 	local timeOfDay = (game.time / game.secondsPerDay) % 1
 	self.sceneObj.uniforms.sunAngle = 2 * math.pi * timeOfDay
 	-- just bind as we go, not in sceneObj
-	--self.sceneObj.texs[1] = game.texpack
+	--self.sceneObj.texs[1] = app.texpack
 	--self.sceneObj.texs[2] = self.sunAngleTex
 	self.sceneObj:draw()
 end
@@ -608,7 +608,7 @@ end
 function Map:draw()
 	local game = self.game
 	local app = game.app
-	game.texpack:bind(0)
+	app.texpack:bind(0)
 	for chunkIndex=0,self.chunkVolume-1 do
 		local chunk = self.chunks[chunkIndex]
 		chunk.sunAngleTex:bind(1)

@@ -36,7 +36,10 @@ function PlayingMenu:updateGUI()
 	ig.igText('HP: '..playerObj.hp..'/'..playerObj.hpMax)
 	ig.igText('FP: '..playerObj.food..'/'..playerObj.foodMax)
 	ig.igText(game:timeToStr())
-	ig.igText(tostring(playerObj.pos))
+	if true then
+		ig.igText(tostring(playerObj.pos))
+		ig.igText('#sprites '..game.numSpritesDrawn)
+	end
 
 	if ig.igButton'Console' then
 		self.consoleOpen = not self.consoleOpen

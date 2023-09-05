@@ -324,6 +324,7 @@ end
 
 function Player:draw(...)
 	local game = self.game
+	local app = game.app
 
 	-- draw sprite
 	Player.super.draw(self, ...)
@@ -331,7 +332,7 @@ function Player:draw(...)
 	if self.attackEndTime > game.time then
 		local delta = (game.time - self.attackTime) / (self.attackEndTime - self.attackTime)
 		local dtheta = 150*math.pi/180
-		local ndivs = game.swordSwingNumDivs
+		local ndivs = app.swordSwingNumDivs
 		for i=1,ndivs do
 			local theta = self.angle + (i/(ndivs-1)-.5)*dtheta
 			local rNear = .3
@@ -339,23 +340,27 @@ function Player:draw(...)
 			local dr = rFar - rNear
 			for j=0,1 do
 				local r = rNear + j * dr
-				game.swordSwingVtxBufCPU[j + 2 * (i-1)]:set(
+				app.swordSwingVtxBufCPU[j + 2 * (i-1)]:set(
 					self.swingPos.x + r * math.cos(theta),
 					self.swingPos.y + r * math.sin(theta),
 					self.swingPos.z + .05)
 			end
 		end
+		local buf = app.swordSwingVtxBufGPU
+		buf:bind()
+			:updateData()
 		
 		gl.glDepthMask(gl.GL_FALSE)
-		local shader = game.swordShader
+		local shader = app.swordShader
 		shader:use()
 		gl.glUniformMatrix4fv(shader.uniforms.mvProjMat.loc, 1, gl.GL_FALSE, game.app.view.mvProjMat.ptr)
 		gl.glVertexAttrib4f(shader.attrs.color.loc, 1,1,.4,.7*(1-delta))
-		gl.glVertexAttribPointer(shader.attrs.vertex.loc, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, game.swordSwingVtxBufCPU)
+		gl.glVertexAttribPointer(shader.attrs.vertex.loc, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, nil)
 		gl.glEnableVertexAttribArray(shader.attrs.vertex.loc)
 		gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, 2 * ndivs)
 		gl.glDisableVertexAttribArray(shader.attrs.vertex.loc)
 		gl.glDepthMask(gl.GL_TRUE)
+		buf:unbind()
 		shader:useNone()
 	end
 end

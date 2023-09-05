@@ -118,7 +118,8 @@ function Plant:update(...)
 	if self.fruitDuration
 	and self.growFrac >= 1 
 	and self.nextFruitTime < game.time
-	and math.random() < .1	-- TODO chance/frame of spawning a fruit 
+	and (not self.fruit or #self.fruit < 3)	-- TODO max fruit ...
+	and math.random() < .01	-- TODO chance/frame of spawning a fruit 
 	then
 		self.nextFruitTime = game.time + self.fruitDuration
 		self.fruit = self.fruit or table()

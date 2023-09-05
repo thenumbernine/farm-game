@@ -1,4 +1,3 @@
-local ffi = require 'ffi'
 local sdl = require 'ffi.req' 'sdl'
 local class = require 'ext.class'
 local table = require 'ext.table'
@@ -7,14 +6,9 @@ local vec2f = require 'vec-ffi.vec2f'
 local vec3i = require 'vec-ffi.vec3i'
 local vec3f = require 'vec-ffi.vec3f'
 local vec4f = require 'vec-ffi.vec4f'
-local matrix_ffi = require 'matrix.ffi'
-local Image = require 'image'
 local gl = require 'gl'
 local GLTex2D = require 'gl.tex2d'
 local GLProgram = require 'gl.program'
-local GLArrayBuffer = require 'gl.arraybuffer'
-local GLGeometry = require 'gl.geometry'
-local GLSceneObject = require 'gl.sceneobject'
 local glreport = require 'gl.report'
 local Map = require 'zelda.map'
 local Tile = require 'zelda.tile'
@@ -331,197 +325,6 @@ function Game:init(args)
 
 	self.threads = ThreadManager()
 
-	-- move to app:
-	-- since it's in common with every game
-
-	self.quadVtxBuf = app.quadVertexBuf
-	self.quadGeom = app.quadGeom
-
-	-- TODO would be nice per-hour-of-the-day ...
-	-- why am I not putting this in a texture?
-	-- because I also want a gradient for at-ground vs undergournd
-	-- but maybe I still should ..
-	local skyTexData = {
-		{{10, 10, 20}, {50, 50, 85}},
-		{{80, 80, 120}, {70, 80, 110}},
-		{{80, 120, 140}, {140, 170, 200}},
-		{{0, 100, 170}, {255, 100, 0}},
-		{{10, 10, 20}, {50, 50, 85}},
-	}
-
-	self.skyTex = GLTex2D{
-		image = Image(#skyTexData, #skyTexData[1], 4, 'unsigned char', function(u,v)
-			local t = skyTexData[u+1][v+1]
-			return t[1], t[2], t[3], 255
-		end),
-		minFilter = gl.GL_NEAREST,
-		magFilter = gl.GL_LINEAR,
-		wrap = {
-			s = gl.GL_CLAMP_TO_EDGE,
-			t = gl.GL_CLAMP_TO_EDGE,
-		},
-	}
-
-	self.skyShader = GLProgram{
-		vertexCode = app.glslHeader..[[
-in vec2 vertex;
-out vec2 vtxv;
-uniform mat4 mvProjMat;
-void main() {
-	vtxv = vertex;
-	gl_Position = mvProjMat * vec4(vertex, 0., 1.);
-}
-]],
-		fragmentCode = app.glslHeader..[[
-in vec2 vtxv;
-out vec4 fragColor;
-uniform float timeOfDay;
-uniform sampler2D skyTex;
-void main() {
-	fragColor = texture(skyTex, vec2(timeOfDay, vtxv.y));
-}
-]],
-		uniforms = {
-			skyTex = 0,
-		},
-	}:useNone()
-
-	self.skySceneObj = GLSceneObject{
-		geometry = self.quadGeom,
-		program = self.skyShader,
-		attrs = {
-			vertex = self.quadVtxBuf,
-		},
-		texs = {
-			self.skyTex,
-		},
-	}
-
-	self.spriteShader = GLProgram{
-		vertexCode = app.glslHeader..[[
-in vec2 vertex;
-out vec2 texcoordv;
-out vec3 viewPosv;
-
-uniform vec2 uvscale;
-
-//what uv coordinates to center the sprite at (y=1 is bottom)
-uniform vec2 drawCenter;
-
-uniform vec2 drawSize;
-uniform vec2 drawAngleDir;
-uniform vec2 angleDir;
-uniform vec3 pos;
-
-// 0 = use world xy axis
-// 1 = use view xy axis
-uniform float disableBillboard;
-
-uniform mat4 viewMat;
-uniform mat4 projMat;
-
-void main() {
-	texcoordv = (vertex - .5) * uvscale + .5;
-
-	vec2 c = (drawCenter - vertex) * drawSize;
-	c = vec2(
-		c.x * drawAngleDir.x - c.y * drawAngleDir.y,
-		c.x * drawAngleDir.y + c.y * drawAngleDir.x
-	);
-	vec4 worldpos = vec4(pos, 1.);
-
-	vec3 ex = mix(vec3(viewMat[0].x, viewMat[1].x, viewMat[2].x), vec3(angleDir.x, angleDir.y, 0.), disableBillboard);
-	vec3 ey = mix(vec3(viewMat[0].y, viewMat[1].y, viewMat[2].y), vec3(-angleDir.y, angleDir.x, 0.), disableBillboard);
-	worldpos.xyz += ex * c.x;
-	worldpos.xyz += ey * c.y;
-
-	vec4 viewPos = viewMat * worldpos;
-
-	viewPosv = viewPos.xyz;
-
-	gl_Position = projMat * viewPos;
-}
-]],
-		fragmentCode = app.glslHeader..[[
-in vec2 texcoordv;
-in vec3 viewPosv;
-
-out vec4 fragColor;
-
-uniform sampler2D tex;
-uniform mat4 colorMatrix;
-
-uniform bool useSeeThru;
-uniform vec3 playerViewPos;
-
-const float cosClipAngle = .9;	// = cone with 25 degree from axis
-
-// gl_FragCoord is in pixel coordinates with origin at lower-left
-void main() {
-	fragColor = colorMatrix * texture(tex, texcoordv);
-
-	// alpha-testing
-	if (fragColor.a < .1) discard;
-
-	if (useSeeThru) {
-		vec3 testViewPos = playerViewPos + vec3(0., 1., -2.);
-		if (normalize(viewPosv - testViewPos).z > cosClipAngle) {
-			//fragColor.w = .2;
-			discard;
-		}
-	}
-}
-]],
-		uniforms = {
-			tex = 0,
-			colorMatrix = matrix_ffi({{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, 'float').ptr,
-		},
-	}:useNone()
-
-	self.spriteSceneObj = GLSceneObject{
-		geometry = self.quadGeom,
-		program = self.spriteShader,
-		attrs = {
-			vertex = self.quadVtxBuf,
-		},
-		texs = {},
-	}
-
-	self.meshShader = require 'mesh':makeShader{
-		glslHeader = app.glslHeader,
-	}
-
-	self.swordShader = GLProgram{
-		vertexCode = app.glslHeader..[[
-in vec3 vertex;
-in vec4 color;
-out vec4 colorv;
-uniform mat4 mvProjMat;
-void main() {
-	colorv = color;
-	gl_Position = mvProjMat * vec4(vertex, 1.);
-}
-]],
-		fragmentCode = app.glslHeader..[[
-in vec4 colorv;
-out vec4 fragColor;
-void main() {
-	fragColor = colorv;
-}
-]],
-	}:useNone()
-
-	self.swordSwingNumDivs = 20
-	self.swordSwingVtxBufCPU = ffi.new('vec3f_t[?]', 2 * self.swordSwingNumDivs)
-
-	-- build the map
-
-	self.texpack = GLTex2D{
-		filename = 'texpack.png',
-		magFilter = gl.GL_LINEAR,
-		minFilter = gl.GL_NEAREST,
-	}
-
 	self.maps = table()
 
 	-- NOTICE here's the load-game functionality
@@ -594,6 +397,7 @@ function Game:timeToStr()
 	return ('%d %02d:%02d'):format(td,h,m)
 end
 
+Game.numSpritesDrawn = 0
 function Game:draw()
 	local app = self.app
 	local view = app.view
@@ -613,11 +417,11 @@ function Game:draw()
 
 		view.mvProjMat:setOrtho(0,1,0,1,-1,1)
 
-		self.skySceneObj.uniforms.mvProjMat = view.mvProjMat.ptr
-		self.skySceneObj.uniforms.timeOfDay = (self.time / self.secondsPerDay) % 1
+		app.skySceneObj.uniforms.mvProjMat = view.mvProjMat.ptr
+		app.skySceneObj.uniforms.timeOfDay = (self.time / self.secondsPerDay) % 1
 		-- testing: 1 min = 1 day
-		--self.skySceneObj.uniforms.timeOfDay = (self.time / 60) % 1
-		self.skySceneObj:draw()
+		--app.skySceneObj.uniforms.timeOfDay = (self.time / 60) % 1
+		app.skySceneObj:draw()
 
 		gl.glEnable(gl.GL_DEPTH_TEST)
 
@@ -674,25 +478,32 @@ function Game:draw()
 	self.viewFollow.map:drawObjs()
 --]]
 
-	self.spriteShader:use()
-	self.spriteSceneObj:enableAndSetAttrs()
---[[
+	local shader = app.spriteShader
+	shader:use()
+	app.spriteSceneObj:enableAndSetAttrs()
+	gl.glUniformMatrix4fv(shader.uniforms.viewMat.loc, 1, gl.GL_FALSE, view.mvMat.ptr)
+	gl.glUniformMatrix4fv(shader.uniforms.projMat.loc, 1, gl.GL_FALSE, view.projMat.ptr)
+	gl.glUniform3fv(shader.uniforms.playerViewPos.loc, 1, self.playerViewPos.s)
+--[[ no grouping
 	for _,obj in ipairs(self.spriteDrawList) do
 		obj.currentFrame.tex:bind(0)
 		obj:drawSprite()
 	end
 --]]
--- [[
+-- [[ group per tex to bind
+	local numSpritesDrawn = 0
 	for tex,objs in pairs(self.spriteDrawList) do
 		tex:bind()
 		for _,obj in ipairs(objs) do
 			obj:drawSprite()
+			numSpritesDrawn = numSpritesDrawn + 1
 		end
 	end
+	self.numSpritesDrawn = numSpritesDrawn
 --]]
-	
-	self.spriteSceneObj:disableAttrs()
-	self.spriteShader:useNone()
+
+	app.spriteSceneObj:disableAttrs()
+	shader:useNone()
 
 	GLTex2D:unbind()
 
