@@ -27,7 +27,7 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 ## TODO:
 
 - digging:
-	- if you dig ground, it should remove sprites on top of the ground (hoed, watered, seeded)
+	- if you dig ground, (or remove stone or wood or any tile), it should remove sprites on top of the ground (hoed, watered, seeded)
 	- if you try to dig ground that has a bush/tree on it, it should fail to dig.
 	- half-step voxels for grass and stone, and maybe some slope tiles, and maybe rotate them in any of the 4 directions, so I don't have to jump everywhere (stupid Minecraft, why did you make that a standard?)
 - make sure hoed / watered / seeded always render in correct order (z-sort by altitude? or store and render as attribut list per-tile?)

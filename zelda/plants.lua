@@ -149,9 +149,11 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 		plantType.shakeOnHit = true
 		plantType.tipOnDie = true
 		plantType.growDuration = Game.secondsPerYear
-	
-		plantType.fruitDuration = 3 * Game.secondsPerDay
-		plantType.fruit = fruitTypes:pickRandom()
+
+		if math.random() < .3 then
+			plantType.fruitDuration = 3 * Game.secondsPerDay
+			plantType.fruit = fruitTypes:pickRandom()
+		end
 	elseif plantType.sprite == 'bush' then
 		plantType.numLogs = 2
 		plantType.inflictTypes = {axe=true, sword=true}
@@ -159,8 +161,10 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 		plantType.tipOnDie = true
 		plantType.growDuration = Game.secondsPerWeek
 		
-		plantType.fruitDuration = 4 * Game.secondsPerDay
-		plantType.fruit = fruitTypes:pickRandom()
+		if math.random() < .3 then
+			plantType.fruitDuration = 4 * Game.secondsPerDay
+			plantType.fruit = fruitTypes:pickRandom()
+		end
 	else	-- plant/veg
 		plantType.inflictTypes = {axe=true, sword=true}
 		plantType.growDuration = Game.secondsPerWeek

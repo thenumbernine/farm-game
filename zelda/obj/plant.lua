@@ -27,6 +27,7 @@ bushes
 	- ex: hay, straw, grains ...
 
 --]]
+local table = require 'ext.table'
 local vec2f = require 'vec-ffi.vec2f'
 local vec3f = require 'vec-ffi.vec3f'
 local box3f = require 'vec-ffi.box3f'
@@ -75,6 +76,8 @@ function Plant:init(args, ...)
 	assert(self.plantType)
 end
 
+Plant.nextFruitTime = -math.huge
+
 function Plant:update(...)
 	local game = self.game
 
@@ -107,8 +110,27 @@ function Plant:update(...)
 		self.drawCenter:set(self.class.drawCenter:unpack())
 	end
 
-	if self.plantType.sprite == 'vegetable' then
+	if self.plantType.sprite == 'vegetable'
+	then
 		self.shakeWhenNear = self.growFrac >= 1
+	end
+
+	if self.fruitDuration
+	and self.growFrac >= 1 
+	and self.nextFruitTime < game.time
+	and math.random() < .1	-- TODO chance/frame of spawning a fruit 
+	then
+		self.nextFruitTime = game.time + self.fruitDuration
+		self.fruit = self.fruit or table()
+		self.fruit:insert(
+			self.map:newObj{
+				class = require 'zelda.obj.fruit',
+				pos = self.pos + vec3f(
+					(math.random() - .5) * self.drawSize.x * .5,
+					(math.random() - .5) * self.drawSize.x * .5,
+					math.random() * self.drawSize.y * .5 + 1)
+			}
+		)
 	end
 
 	-- TODO old and dying trees
