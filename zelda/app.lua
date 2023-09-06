@@ -306,7 +306,7 @@ void main() {
 
 	self.spriteShader = GLProgram{
 		vertexCode = self.glslHeader..[[
-//in vec2 vertex; // just use 1st 2 bits of gl_VertexID
+in vec2 vertex;
 
 // this sprite's texcoord pos and size in the atlas
 in vec2 atlasTcPos;
@@ -348,15 +348,6 @@ uniform mat4 viewMat;
 uniform mat4 projMat;
 uniform vec2 atlasInvSize;
 
-const vec2 vertexes[6] = vec2[6](
-	vec2(0,0),
-	vec2(1,0),
-	vec2(0,1),
-	vec2(0,1),
-	vec2(1,0),
-	vec2(1,1)
-);
-
 void main() {
 	// can't just assign a mat4 varying to a mat4-of-col-vectors 
 	// ... can't assign the varying's individual col vectors either
@@ -368,37 +359,6 @@ void main() {
 		colorMatrixA);
 	colorMatrixv = colorMatrix;
 	useSeeThruv = ((flags & SPRITEFLAG_USE_SEE_THRU) != 0) ? 1 : 0;
-
-#if 0
-	// welp, quads is deprecated / not in ES
-	// so I have to draw quads in batches of 6 instead of 4
-	// so I can't just use bit operations ...
-	vec2 vertex = vec2(
-		float(gl_VertexID & 1),
-		float((gl_VertexID >> 1) & 1)
-	);
-#elif 0
-	/*
-	quad <-> tri uses indexes 
-	gl_VertexID%6	u	v
-	0 = 000b		{0,0}
-	1 = 001b		{1,0}
-	2 = 010b		{0,1}
-	3 = 011b		{0,1}
-	4 = 100b		{1,0}
-	5 = 101b		{1,1}
-	so 
-	u = (id>>2)&1 | (id==1)
-	v = (id>>1)&1 | (id==5)
-	*/
-	int idmod6 = gl_VertexID % 6;
-	vec2 vertex = vec2(
-		float(((idmod6 >> 2) & 1) | int(idmod6 == 1)),
-		float(((idmod6 >> 1) & 1) | int(idmod6 == 5))
-	);
-#else
-	vec2 vertex = vertexes[gl_VertexID % 6];
-#endif
 
 	vec2 uvscale = vec2(-1., 1.);
 	if ((flags & SPRITEFLAG_HFLIP) != 0) uvscale.x *= -1.;
@@ -496,12 +456,13 @@ void main() {
 
 	self.spriteSceneObj = GLSceneObject{
 		geometry = GLGeometry{
-			mode = gl.GL_TRIANGLES,
+			mode = gl.GL_TRIANGLE_STRIP,
 			count = 0,
 		},
 		program = self.spriteShader,
 		-- TODO can I just copy the spriteShader.attrs and insert the buffer and offset?
 		attrs = {
+			vertex = self.quadVertexBuf,
 			flags = {
 				divisor = 1,	-- 6 vtxs per 2 tris <-> 1 quad
 				size = 1,

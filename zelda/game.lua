@@ -503,7 +503,7 @@ function Game:draw()
 	
 	--app.spriteSceneObj.geometry.count = 6 * app.spritesBufCPU.size
 	--app.spriteSceneObj.geometry:draw()
-	gl.glDrawArraysInstanced(gl.GL_TRIANGLES, 0, 6, app.spritesBufCPU.size)
+	gl.glDrawArraysInstanced(gl.GL_TRIANGLE_STRIP, 0, 4, app.spritesBufCPU.size)
 
 	app.spriteSceneObj:disableAttrs()
 	shader:useNone()
