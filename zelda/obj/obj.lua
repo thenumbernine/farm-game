@@ -40,7 +40,7 @@ Obj.rotation = 0
 Obj.drawAngle = 0
 
 -- sprite 2D tex anchor point
-Obj.drawCenter = vec2f(.5, 1)
+Obj.drawCenter = vec3f(.5, 1, 0)
 
 -- TODO spriteScale?
 Obj.drawSize = vec2f(1,1)
@@ -77,8 +77,8 @@ function Obj:init(args)
 	self.drawSize = vec2f(self.class.drawSize)
 	if args.drawSize then self.drawSize = vec2f(args.drawSize) end
 	
-	self.drawCenter = vec2f(self.class.drawCenter)
-	if args.drawCenter then self.drawCenter = vec2f(args.drawCenter) end
+	self.drawCenter = vec3f(self.class.drawCenter)
+	if args.drawCenter then self.drawCenter = vec3f(args.drawCenter) end
 	
 	self.spritePosOffset = vec3f(self.class.spritePosOffset)
 	if args.spritePosOffset then self.spritePosOffset = vec3f(args.spritePosOffset) end
@@ -448,7 +448,7 @@ function Obj:draw()
 						--[[
 						self:drawMesh()
 						--]]
-						--[[
+						-- [[
 						game.meshDrawList:insert(self)
 						--]]
 					else
@@ -462,12 +462,11 @@ end
 
 local identMat4 = matrix_ffi({4,4},'float'):lambda(function(i,j) return i==j and 1 or 0 end)
 function Obj:drawSprite(frame)
-	local game = self.game
-	local app = game.app
+	local app = self.game.app
 
--- write all props to an attribute buffer
--- write as we go and just update the whole buffer
--- TODO later map objs <-> loc in buffer and only update what we need
+	-- write all props to an attribute buffer
+	-- write as we go and just update the whole buffer
+	-- TODO later map objs <-> loc in buffer and only update what we need
 	local sprite = app.spritesBufCPU:emplace_back()
 	sprite.atlasTcPos:set(frame.atlasTcPos:unpack())
 	sprite.atlasTcSize:set(frame.atlasTcSize:unpack())

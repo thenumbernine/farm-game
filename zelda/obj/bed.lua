@@ -28,7 +28,7 @@ Bed.classname = 'zelda.obj.bed'
 Bed.name = 'bed'
 Bed.sprite = 'bed'
 Bed.drawSize = vec2f(2, 2)
-Bed.drawCenter = vec2f(.5, .5)
+Bed.drawCenter = vec3f(.5, .5, 0)
 
 -- TODO eventually dont do this
 Bed.useGravity = false
@@ -69,7 +69,7 @@ function Bed:interactInWorld(player)
 		player.seq = 'stand'
 
 		player.drawAngle = .5 * math.pi
-		player.drawCenter:set(.5, .5)
+		player.drawCenter:set(.5, .5, 0)
 		player.sleeping = true
 
 		local startTime = game.time

@@ -52,7 +52,7 @@ typedef struct {
 	vec2f_t atlasTcPos;
 	vec2f_t atlasTcSize;
 	
-	vec2f_t drawCenter;
+	vec3f_t drawCenter;
 	vec2f_t drawSize;
 	float drawAngle;
 	float angle;
@@ -320,7 +320,7 @@ disableBillboard = use world basis (rotated by 'angle') instead of view basis (r
 in int flags;
 
 //what uv coordinates to center the sprite at (y=1 is bottom)
-in vec2 drawCenter;
+in vec3 drawCenter;
 
 in vec2 drawSize;
 in float drawAngle;
@@ -361,28 +361,34 @@ void main() {
 	// convert from integer to texture-atlas space
 	texcoordv = (texcoordv * atlasTcSize + atlasTcPos) * atlasInvSize;
 
-	vec2 c = (drawCenter - vertex) * drawSize;
+	vec3 c = drawCenter;
+	c.xy -= vertex;
+	c.xy *= drawSize;
 
 	// hmm, faster to just store cos and sin outside and use cplx mul?
 	vec2 drawAngleDir = vec2(cos(drawAngle), sin(drawAngle));
-	c = vec2(
+	c = vec3(
 		c.x * drawAngleDir.x - c.y * drawAngleDir.y,
-		c.x * drawAngleDir.y + c.y * drawAngleDir.x
+		c.x * drawAngleDir.y + c.y * drawAngleDir.x,
+		c.z
 	);
 	vec4 worldpos = vec4(pos + spritePosOffset, 1.);
 
-	vec3 ex, ey;
+	vec3 ex, ey, ez;
 	if ((flags & SPRITEFLAG_DISABLE_BILLBOARD) != 0) {
 		// same question as drawAngleDir above ...
 		vec2 angleDir = vec2(cos(angle), sin(angle));
 		ex = vec3(angleDir.x, angleDir.y, 0.);
 		ey = vec3(-angleDir.y, angleDir.x, 0.);
+		ez = vec3(0., 0., 1.);
 	} else {
 		ex = vec3(viewMat[0].x, viewMat[1].x, viewMat[2].x);
 		ey = vec3(viewMat[0].y, viewMat[1].y, viewMat[2].y);
+		ez = vec3(viewMat[0].z, viewMat[1].z, viewMat[2].z);
 	}
 	worldpos.xyz += ex * c.x;
 	worldpos.xyz += ey * c.y;
+	worldpos.xyz += ez * c.z;
 
 	vec4 viewPos = viewMat * worldpos;
 
@@ -492,7 +498,7 @@ void main() {
 			},
 			drawCenter = {
 				divisor = 1,
-				size = 2,
+				size = 3,
 				type = gl.GL_FLOAT,
 				normalize = false,
 				stride = ffi.sizeof'sprite_t',
@@ -717,22 +723,7 @@ void main() {
 
 
 	--[[
-	TODO here sprite uniform buffer
-	and/or attribute buffers
-
-	attributes: unit quad
-
-	uniforms:
-		vec2f uvscale - derived from bool hflip, bool vflip (unused) flags
-		bool disableBillboard
-		vec2f drawCenter
-		vec2f drawSize
-		vec2f drawAngleDir - derived from float drawAngle
-		vec2f angleDir - derived from float angle
-		vec3f pos - derived from vec3f pos + vec3f spritePosOffset
-		mat4x4f colorMatrix
-
-	another TODO:
+	TODO:
 		dynamic resizing GL buffers
 	like std::vector but for GL
 	in fact, why not build it into thel GLBuffer class?

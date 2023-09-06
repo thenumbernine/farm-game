@@ -179,7 +179,7 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 		plantType.growDuration = Game.secondsPerWeek
 		if plantType.sprite == 'vegetable' then
 			plantType.drawSize = plantType.drawSize * .5
-			plantType.drawCenter = vec2f(.5, .5)
+			plantType.drawCenter = vec3f(.5, .5, 0)
 		end
 		plantType.hpGiven = math.random(3,5)
 		plantType.foodGiven = math.random(3,5)

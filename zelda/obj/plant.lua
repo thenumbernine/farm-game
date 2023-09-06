@@ -93,7 +93,7 @@ function Plant:update(...)
 		self.bbox.min:set(-.3, -.3, -.001)
 		self.bbox.max:set(.3, .3, .001)
 		self.disableBillboard = true
-		self.drawCenter:set(.5, .5)
+		self.drawCenter:set(.5, .5, 0)
 	else
 		-- plant-form:
 		self.sprite = self.plantType.sprite
@@ -136,10 +136,11 @@ function Plant:update(...)
 		self.fruitobjs:insert(
 			self.map:newObj{
 				class = self.fruitClass,
-				pos = self.pos + vec3f(
+				pos = vec3f(self.pos:unpack()),
+				drawCenter = vec3f(
 					(math.random() - .5) * self.drawSize.x * .5,
-					(math.random() - .5) * self.drawSize.x * .5,
-					math.random() * self.drawSize.y * .5 + 1),
+					(math.random() - .5) * self.drawSize.y * .5,
+					.01),
 			}
 		)
 	end

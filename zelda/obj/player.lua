@@ -16,7 +16,7 @@ Player.name = 'Player'	-- TODO require name?
 
 Player.sprite = 'link'
 Player.drawSize = vec2f(1, 1.5)
-Player.drawCenter = vec2f(.5, 1)
+Player.drawCenter = vec3f(.5, 1, 0)
 
 Player.angle = 1.5 * math.pi
 
