@@ -37,16 +37,20 @@ so dilemma
 	I can use gl_VertexID's lower 4 bits for that.
 --]]
 ffi.cdef[[
-typedef struct {
-	union {
-		struct {
-			uint8_t hflip : 1;
-			uint8_t vflip : 1;
-			uint8_t disableBillboard : 1;
-			uint8_t useSeeThru : 1;
-		};
-		uint8_t flags;
+typedef union {
+	struct {
+		uint8_t hflip : 1;
+		uint8_t vflip : 1;
+		uint8_t disableBillboard : 1;
+		uint8_t useSeeThru : 1;
 	};
+	uint8_t flags;
+} spriteflags_t;
+]]
+assert(ffi.sizeof'spriteflags_t' == 1)
+ffi.cdef[[
+typedef struct {
+	uint8_t flags;
 	
 	// ... or store these in an array, indexed by sprite frame, and just put the sprite frame here ...
 	vec2f_t atlasTcPos;
@@ -358,7 +362,7 @@ void main() {
 		colorMatrixB,
 		colorMatrixA);
 	colorMatrixv = colorMatrix;
-	useSeeThruv = ((flags & SPRITEFLAG_USE_SEE_THRU) != 0) ? 1 : 0;
+	useSeeThruv = flags & SPRITEFLAG_USE_SEE_THRU;
 
 	vec2 uvscale = vec2(-1., 1.);
 	if ((flags & SPRITEFLAG_HFLIP) != 0) uvscale.x *= -1.;
@@ -464,9 +468,12 @@ void main() {
 		attrs = {
 			vertex = self.quadVertexBuf,
 			flags = {
-				divisor = 1,	-- 6 vtxs per 2 tris <-> 1 quad
+				divisor = 1,
 				size = 1,
-				type = gl.GL_INT,
+				-- https://stackoverflow.com/a/67653318/2714073
+				-- so looks like I need to add behavior to gl/attribute.lua to pick the right setter of glVertexAttrib*Pointer
+				--type = gl.GL_INT,
+				type = gl.GL_FLOAT,
 				normalize = false,
 				stride = ffi.sizeof'sprite_t',
 				offset = ffi.offsetof('sprite_t', 'flags'),
