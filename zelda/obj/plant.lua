@@ -124,7 +124,7 @@ function Plant:update(...)
 		end
 	end
 
-	-- TODO this for initially spawned trees with back-dated createTime's
+	-- [[ TODO this for initially spawned trees with back-dated createTime's
 	if self.fruitClass
 	and growFrac >= 1 
 	and self.nextFruitTime < game.time
@@ -133,18 +133,21 @@ function Plant:update(...)
 	then
 		self.nextFruitTime = game.time + self.fruitDuration
 		self.fruitobjs = self.fruitobjs or table()
+--print'new fruit'
 		self.fruitobjs:insert(
 			self.map:newObj{
 				class = self.fruitClass,
 				pos = vec3f(self.pos:unpack()),
-				drawCenter = vec3f(
-					(math.random() - .5) * self.drawSize.x * .5,
-					(math.random() - .5) * self.drawSize.y * .5,
-					.01),
+				drawSize = vec2f(.5, .5),
+--				drawCenter = vec3f(
+--					(math.random() - .5) * self.drawSize.x * .5,
+--					(math.random() - .5) * self.drawSize.y * .5,
+--					-.01),
 			}
 		)
 	end
-
+	--]]
+	
 	-- TODO old and dying trees
 
 	-- don't do physics update
@@ -156,9 +159,11 @@ function Plant:interactInWorld(player)
 	
 	if self.fruitClass then
 		if self.fruitobjs then
-			for _,fruit in ipairs(self.fruitobjs) do
+			for i=#self.fruitobjs,1,-1 do
+				local fruit = self.fruitobjs[i]
 				if fruit.ready then
 					fruit:toItem()
+					self.fruitobjs:remove(i)
 				end
 			end
 		end

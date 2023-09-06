@@ -23,7 +23,7 @@ local Game = require 'zelda.game'
 Fruit.growDuration = Game.secondsPerDay
 
 function Fruit:update(dt)
-	Fruit.super.update(self, dt)
+	--Fruit.super.update(self, dt)
 	local game = self.game
 	local growTime = game.time - self.createTime
 	local growFrac = growTime / self.growDuration
