@@ -1,3 +1,4 @@
+local ffi = require 'ffi'
 local table = require 'ext.table'
 local class = require 'ext.class'
 local vec2f = require 'vec-ffi.vec2f'
@@ -439,20 +440,12 @@ function Obj:draw()
 				if seq and self.frame then
 					local frame = seq[self.frame]
 					self.currentFrame = frame
-					if frame.tex then
+					if frame.atlasTcPos then
 						--[[ draw immediately
 						self:drawSprite()
 						--]]
-						--[[ no grouping
+						-- [[
 						game.spriteDrawList:insert(self)
-						--]]
-						-- [[ group per tex to bind
-						local objsForTex = game.spriteDrawList[frame.tex]
-						if not objsForTex then
-							objsForTex = {}
-							game.spriteDrawList[frame.tex] = objsForTex 
-						end
-						table.insert(objsForTex, self)
 						--]]
 					elseif frame.mesh then
 						--[[
@@ -471,13 +464,14 @@ function Obj:draw()
 end
 
 local identMat4 = matrix_ffi({4,4},'float'):lambda(function(i,j) return i==j and 1 or 0 end)
-function Obj:drawSprite()
+function Obj:drawSprite(index)
 	local frame = self.currentFrame
 	local map = self.map
 	local game = self.game
 	local app = game.app
 	local view = app.view
 
+--[=[ old GL uniform way
 	local shader = app.spriteShader
 	local uscale = -1
 	local vscale = 1
@@ -547,6 +541,36 @@ function Obj:drawSprite()
 	app.spriteSceneObj.geometry:draw()
 
 	--glreport'here'
+--]=]
+-- [=[ next: write all props to an attribute buffer
+-- write as we go and just update the whole buffer
+-- TODO later map objs <-> loc in buffer and only update what we need
+
+	-- until I get divisors working
+	for i=1,6 do
+		local sprite = app.spritesBufCPU:emplace_back()
+		sprite.atlasTcPos:set(frame.atlasTcPos:unpack())
+		sprite.atlasTcSize:set(frame.atlasTcSize:unpack())
+		sprite.hflip = frame.hflip and 1 or 0
+		sprite.vflip = self.vflip and 1 or 0
+		sprite.disableBillboard = self.displayBillboard and 1 or 0
+		sprite.useSeeThru = self.useSeeThru and 1 or 0
+		sprite.drawCenter:set(self.drawCenter:unpack())
+		sprite.drawSize:set(self.drawSize:unpack())
+		sprite.drawAngle = self.drawAngle
+		sprite.angle = self.angle
+		sprite.pos:set(self.pos:unpack())
+		sprite.spritePosOffset:set(self.spritePosOffset:unpack())
+		-- TODO store the color as mat4 
+		--ffi.copy(sprite.colorMatrix, self.colorMatrix.ptr, ffi.sizeof'float' * 16)
+		-- until then ...
+		-- col-major or row-major?
+		ffi.copy(sprite.colorMatrixR.s, self.colorMatrix.ptr + 0, ffi.sizeof'float' * 4)
+		ffi.copy(sprite.colorMatrixG.s, self.colorMatrix.ptr + 4, ffi.sizeof'float' * 4)
+		ffi.copy(sprite.colorMatrixB.s, self.colorMatrix.ptr + 8, ffi.sizeof'float' * 4)
+		ffi.copy(sprite.colorMatrixA.s, self.colorMatrix.ptr + 12, ffi.sizeof'float' * 4)
+	end
+--]=]
 end
 
 function Obj:drawMesh()

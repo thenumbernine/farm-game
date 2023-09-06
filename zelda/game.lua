@@ -1,3 +1,4 @@
+local ffi = require 'ffi'
 local sdl = require 'ffi.req' 'sdl'
 local class = require 'ext.class'
 local table = require 'ext.table'
@@ -478,29 +479,29 @@ function Game:draw()
 	self.viewFollow.map:drawObjs()
 --]]
 
+-- [[ accumulate into sprite buf
+-- TODO this can be merged with map:draw like it used to be
+	app.spritesBufCPU:resize(0)
+	for i,obj in ipairs(self.spriteDrawList) do
+		obj:drawSprite(i-1)
+	end
+	self.numSpritesDrawn = #self.spriteDrawList
+--]]
+	app.spritesBufGPU
+		:bind()
+		:updateData(0, app.spritesBufCPU.size * ffi.sizeof'sprite_t')
+		:unbind()
+
 	local shader = app.spriteShader
 	shader:use()
-	app.spriteSceneObj:enableAndSetAttrs()
+	app.spriteSceneObj.geometry.count = app.spritesBufCPU.size
+	app.spriteSceneObj:enableAndSetAttrs()	-- enable vao
 	gl.glUniformMatrix4fv(shader.uniforms.viewMat.loc, 1, gl.GL_FALSE, view.mvMat.ptr)
 	gl.glUniformMatrix4fv(shader.uniforms.projMat.loc, 1, gl.GL_FALSE, view.projMat.ptr)
 	gl.glUniform3fv(shader.uniforms.playerViewPos.loc, 1, self.playerViewPos.s)
---[[ no grouping
-	for _,obj in ipairs(self.spriteDrawList) do
-		obj.currentFrame.tex:bind(0)
-		obj:drawSprite()
-	end
---]]
--- [[ group per tex to bind
-	local numSpritesDrawn = 0
-	for tex,objs in pairs(self.spriteDrawList) do
-		tex:bind()
-		for _,obj in ipairs(objs) do
-			obj:drawSprite()
-			numSpritesDrawn = numSpritesDrawn + 1
-		end
-	end
-	self.numSpritesDrawn = numSpritesDrawn
---]]
+	
+	app.spriteAtlasTex:bind(0)
+	app.spriteSceneObj.geometry:draw()
 
 	app.spriteSceneObj:disableAttrs()
 	shader:useNone()

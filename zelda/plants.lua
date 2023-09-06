@@ -135,8 +135,8 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 
 	local seq = assert(sprite[seqname])
 	local frame = assert(seq[1])
-	local tex = assert(frame.tex, "failed to find frame for sprite "..plantType.sprite.." seq "..seqname)
-	plantType.drawSize = vec2f(tex.width, tex.height) / 20
+	local framesize = assert(frame.atlasTcSize)
+	plantType.drawSize = framesize / 20
 
 	local Game = require 'zelda.game'
 

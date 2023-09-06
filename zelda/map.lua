@@ -9,7 +9,6 @@ local vec3f = require 'vec-ffi.vec3f'
 local vec2f = require 'vec-ffi.vec2f'
 local vec4ub = require 'vec-ffi.vec4ub'
 local gl = require 'gl'
-local GLProgram = require 'gl.program'
 local GLArrayBuffer = require 'gl.arraybuffer'
 local GLSceneObject = require 'gl.sceneobject'
 local GLGeometry = require 'gl.geometry'
@@ -28,7 +27,7 @@ typedef struct {
 	voxel_basebits_t rotx : 2;	// Euler angles, in 90' increments
 	voxel_basebits_t roty : 2;
 	voxel_basebits_t rotz : 2;
-	voxel_basebits_t tex : 2;	// right now texpack is 2x2 ... 
+	voxel_basebits_t tex : 2;	// right now mapTexAtlas is 2x2 ... 
 } voxel_t;
 
 typedef struct {
@@ -51,6 +50,8 @@ Chunk.volume = Chunk.size:volume()	-- same as 1 << bitsize:sum() (if i had a :su
 
 function Chunk:init(args)
 	local map = assert(args.map)
+	local game = map.game
+	local app = game.app
 	self.map = map
 	self.pos = vec3i(assert(args.pos))
 	
@@ -101,7 +102,7 @@ function Chunk:init(args)
 			mode = gl.GL_TRIANGLES,
 			count = self.vtxs.size,
 		},
-		program = map.shader,
+		program = app.mapShader,
 		attrs = {
 			vertex = {
 				buffer = self.vtxBuf,
@@ -322,7 +323,7 @@ function Chunk:draw(app, game)
 	local timeOfDay = (game.time / game.secondsPerDay) % 1
 	self.sceneObj.uniforms.sunAngle = 2 * math.pi * timeOfDay
 	-- just bind as we go, not in sceneObj
-	--self.sceneObj.texs[1] = app.texpack
+	--self.sceneObj.texs[1] = app.mapTexAtlas
 	--self.sceneObj.texs[2] = self.sunAngleTex
 	self.sceneObj:draw()
 end
@@ -457,97 +458,6 @@ function Map:init(args)
 	-- 0-based index, based on chunk position
 	self.chunks = {}
 
-
-	-- setup shader before creating chunks
-	self.shader = GLProgram{
-		vertexCode = app.glslHeader..[[
-in vec3 vertex;
-in vec2 texcoord;
-in vec4 color;
-
-out vec3 worldPosv;
-out vec3 viewPosv;
-out vec2 texcoordv;
-out vec4 colorv;
-
-//model transform is ident for map
-// so this is just the view mat + proj mat
-uniform mat4 mvMat;
-uniform mat4 projMat;
-
-void main() {
-	texcoordv = texcoord;
-	colorv = color;
-	
-	worldPosv = vertex;
-	vec4 viewPos = mvMat * vec4(vertex, 1.);
-	viewPosv = viewPos.xyz;
-	
-	gl_Position = projMat * viewPos;
-}
-]],
-		fragmentCode = app.glslHeader..[[
-in vec3 worldPosv;
-in vec3 viewPosv;
-in vec2 texcoordv;
-in vec4 colorv;
-
-out vec4 fragColor;
-
-//tile texture
-uniform sampler2D tex;
-
-//cheap sunlighting
-uniform float sunAngle;
-uniform sampler2D sunAngleTex;
-uniform vec3 chunkSize;
-
-// map view clipping
-uniform bool useSeeThru;
-uniform vec3 playerViewPos;
-
-//lol, C standard is 'const' associates left
-//but GLSL requires it to associate right
-const float cosClipAngle = .9;	// = cone with 25 degree from axis 
-
-void main() {
-	fragColor = texture(tex, texcoordv);
-	fragColor.xyz *= colorv.xyz;
-
-	// technically I should also subtract the chunkPos
-	// but texcoords are fraational part, so the integer part is thrown away anyways ...
-	vec2 sunTc = worldPosv.xy / chunkSize.xy;
-	vec2 sunAngles = texture(sunAngleTex, sunTc).xy;
-	const float sunWidthInRadians = .1;
-	float sunlight = (
-		smoothstep(sunAngles.x - sunWidthInRadians, sunAngles.x + sunWidthInRadians, sunAngle)
-		- smoothstep(sunAngles.y - sunWidthInRadians, sunAngles.y + sunWidthInRadians, sunAngle)
-	) * .9 + .1;
-	fragColor.xyz *= sunlight;
-
-	// keep the dx dy outside the if block to prevent errors.
-	if (useSeeThru) {
-		vec3 dx = dFdx(viewPosv);
-		vec3 dy = dFdy(viewPosv);
-		vec3 testViewPos = playerViewPos + vec3(0., 0., 0.);
-		if (normalize(viewPosv - testViewPos).z > cosClipAngle) {
-			vec3 n = normalize(cross(dx, dy));
-			//if (dot(n, testViewPos - viewPosv) < -.01) 
-			{
-				fragColor.w = .1;
-				discard;
-			}
-		}
-	}
-}
-]],
-		uniforms = {
-			tex = 0,
-			sunAngleTex = 1,
-			chunkSize = {Chunk.size:unpack()},
-		},
-	}:useNone()
-
 	-- create the chunks
 	do
 		local chunkIndex = 0
@@ -608,7 +518,7 @@ end
 function Map:draw()
 	local game = self.game
 	local app = game.app
-	app.texpack:bind(0)
+	app.mapTexAtlas:bind(0)
 	for chunkIndex=0,self.chunkVolume-1 do
 		local chunk = self.chunks[chunkIndex]
 		chunk.sunAngleTex:bind(1)

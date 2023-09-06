@@ -2,14 +2,19 @@ local ffi = require 'ffi'
 local bit = require 'bit'
 local range = require 'ext.range'
 local table = require 'ext.table'
+local fromlua = require 'ext.fromlua'
 local path = require 'ext.path'
 local sdl = require 'ffi.req' 'sdl'
 local ig = require 'imgui'
+local vec2f = require 'vec-ffi.vec2f'
+local vec3f = require 'vec-ffi.vec3f'
+local vec4f = require 'vec-ffi.vec4f'
 local quatd = require 'vec-ffi.quatd'
 local Image = require 'image'
 local matrix_ffi = require 'matrix.ffi'
 local gl = require 'gl'
 local GLProgram = require 'gl.program'
+local GLGeometry = require 'gl.geometry'
 local GLSceneObject = require 'gl.sceneobject'
 local GLTex2D = require 'gl.tex2d'
 local GLArrayBuffer = require 'gl.arraybuffer'
@@ -18,6 +23,61 @@ local getTime = require 'ext.timer'.getTime
 local OBJLoader = require 'mesh.objloader'
 
 require 'glapp.view'.useBuiltinMatrixMath = true
+
+--[[
+so dilemma
+1) put each attr in a separate buffer
+	then we get SoA which is supposed to be fastest
+	but upon resize we have to resize per attribute
+	so resize is slowest
+2) put all in a struct
+	then we get AoS which is slower
+	but resize is faster
+	but what about vertexes?  those need to be in 4's
+	I can use gl_VertexID's lower 4 bits for that.
+--]]
+ffi.cdef[[
+typedef struct {
+	// attributes with divisor = 4
+	union {
+		struct {
+			uint8_t hflip : 1;
+			uint8_t vflip : 1;
+			uint8_t disableBillboard : 1;
+			uint8_t useSeeThru : 1;
+		};
+		uint8_t flags;
+	};
+	
+	// ... or store these in an array, indexed by sprite frame, and just put the sprite frame here ...
+	vec2f_t atlasTcPos;
+	vec2f_t atlasTcSize;
+	
+	vec2f_t drawCenter;
+	vec2f_t drawSize;
+	float drawAngle;
+	float angle;
+	vec3f_t pos;
+	vec3f_t spritePosOffset;
+	// TODO:
+	//vec4f_t colorMatrix[4];
+	// until then:
+	vec4f_t colorMatrixR;
+	vec4f_t colorMatrixG;
+	vec4f_t colorMatrixB;
+	vec4f_t colorMatrixA;
+} sprite_t;
+]]
+
+-- matches spriteShader
+ffi.cdef[[
+enum {
+	SPRITEFLAG_HFLIP				= 1,
+	SPRITEFLAG_VFLIP				= 2,
+	SPRITEFLAG_DISABLE_BILLBOARD	= 4,
+	SPRITEFLAG_USE_SEE_THRU			= 8,
+};
+]]
 
 local App = require 'gameapp':subclass()
 
@@ -142,31 +202,39 @@ function App:initGL()
 precision highp float;
 ]]
 
-	-- [[ load tex2ds for anim
+-- [=[ load sprite texture atlas
+	self.spriteAtlasTex = GLTex2D{
+		filename = 'sprites/atlas.png',
+		magFilter = gl.GL_LINEAR,
+		minFilter = gl.GL_NEAREST,
+	}
+	-- key/value from filename to rect
+	self.spriteAtlasMap = assert(fromlua(assert(path'sprites/atlas.lua':read())))
+--]=]
+
+-- [=[ load tex2ds for anim
 	local GLTex2D = require 'gl.tex2d'
 	local anim = require 'zelda.anim'
-	local totalPixels  = 0
 	for _,sprite in pairs(anim) do
 		for seqname,seq in pairs(sprite) do
 			if seqname ~= 'useDirs' then	-- skip properties
 				for _,frame in pairs(seq) do
 					local fn = frame.filename
 					if fn:sub(-4) == '.png' then
-						-- [[
+						--[[
 						frame.tex = GLTex2D{
 							filename = frame.filename,
 							magFilter = gl.GL_LINEAR,
 							minFilter = gl.GL_NEAREST,
 						}
 						--]]
-						-- [[
-						local image = require 'image'(frame.filename)
-						local thisPixels = image.width * image.height
---print(frame.filename, 'has', thisPixels , 'pixels')
-						totalPixels = totalPixels + thisPixels
-						--]]
+						-- .pos, .size
+						local rectsrc = assert(self.spriteAtlasMap[frame.filename])
+						-- atlas pos and size
+						frame.atlasTcPos = vec2f(table.unpack(rectsrc.pos))
+						frame.atlasTcSize = vec2f(table.unpack(rectsrc.size))
 					elseif fn:sub(-4) == '.obj' then
-print("WARNING - you're using .objs")						
+error("you're using .obj")
 						frame.mesh = OBJLoader():load(fn)
 					else
 						print("idk how to load this file")
@@ -175,11 +243,8 @@ print("WARNING - you're using .objs")
 			end
 		end
 	end
---print('total pixels', totalPixels)
---print('sqrt', math.sqrt(totalPixels))
-	--]]
-
-
+--]=]
+	
 	-- TODO would be nice per-hour-of-the-day ...
 	-- why am I not putting this in a texture?
 	-- because I also want a gradient for at-ground vs undergournd
@@ -242,39 +307,127 @@ void main() {
 
 	self.spriteShader = GLProgram{
 		vertexCode = self.glslHeader..[[
-in vec2 vertex;
-out vec2 texcoordv;
-out vec3 viewPosv;
+//in vec2 vertex; // just use 1st 2 bits of gl_VertexID
 
-uniform vec2 uvscale;
+// this sprite's texcoord pos and size in the atlas
+in vec2 atlasTcPos;
+in vec2 atlasTcSize;
+
+// matches ffi.cdef above
+#define SPRITEFLAG_HFLIP				1
+#define SPRITEFLAG_VFLIP				2
+#define SPRITEFLAG_DISABLE_BILLBOARD	4
+#define SPRITEFLAG_USE_SEE_THRU			8
+/*
+	default uvscale = (-1, 1)
+flip = flip uvscale.x
+mirror = flip uvscale.y
+disableBillboard = use world basis (rotated by 'angle') instead of view basis (rotated by 'drawAngle')
+*/
+in int flags;
 
 //what uv coordinates to center the sprite at (y=1 is bottom)
-uniform vec2 drawCenter;
+in vec2 drawCenter;
 
-uniform vec2 drawSize;
-uniform vec2 drawAngleDir;
-uniform vec2 angleDir;
-uniform vec3 pos;
+in vec2 drawSize;
+in float drawAngle;
+in float angle;
+in vec3 pos;
+in vec3 spritePosOffset;
+//I think the 4th row is always {0,0,0,alpha}
+in vec4 colorMatrixR;	
+in vec4 colorMatrixG;	
+in vec4 colorMatrixB;	
+in vec4 colorMatrixA;	
 
-// 0 = use world xy axis
-// 1 = use view xy axis
-uniform float disableBillboard;
+out vec2 texcoordv;
+out vec3 viewPosv;
+flat out mat4 colorMatrixv;
+flat out int useSeeThruv;
 
 uniform mat4 viewMat;
 uniform mat4 projMat;
+uniform vec2 atlasInvSize;
+
+const vec2 vertexes[6] = vec2[6](
+	vec2(0,0),
+	vec2(1,0),
+	vec2(0,1),
+	vec2(0,1),
+	vec2(1,0),
+	vec2(1,1)
+);
 
 void main() {
+	// can't just assign a mat4 varying to a mat4-of-col-vectors 
+	// ... can't assign the varying's individual col vectors either
+	// gotta assign a temp mat4 here first
+	mat4 colorMatrix = mat4(
+		colorMatrixR,
+		colorMatrixG,
+		colorMatrixB,
+		colorMatrixA);
+	colorMatrixv = colorMatrix;
+	useSeeThruv = ((flags & SPRITEFLAG_USE_SEE_THRU) != 0) ? 1 : 0;
+
+#if 0
+	// welp, quads is deprecated / not in ES
+	// so I have to draw quads in batches of 6 instead of 4
+	// so I can't just use bit operations ...
+	vec2 vertex = vec2(
+		float(gl_VertexID & 1),
+		float((gl_VertexID >> 1) & 1)
+	);
+#elif 0
+	/*
+	quad <-> tri uses indexes 
+	gl_VertexID%6	u	v
+	0 = 000b		{0,0}
+	1 = 001b		{1,0}
+	2 = 010b		{0,1}
+	3 = 011b		{0,1}
+	4 = 100b		{1,0}
+	5 = 101b		{1,1}
+	so 
+	u = (id>>2)&1 | (id==1)
+	v = (id>>1)&1 | (id==5)
+	*/
+	int idmod6 = gl_VertexID % 6;
+	vec2 vertex = vec2(
+		float(((idmod6 >> 2) & 1) | int(idmod6 == 1)),
+		float(((idmod6 >> 1) & 1) | int(idmod6 == 5))
+	);
+#else
+	vec2 vertex = vertexes[gl_VertexID % 6];
+#endif
+
+	vec2 uvscale = vec2(-1., 1.);
+	if ((flags & SPRITEFLAG_HFLIP) != 0) uvscale.x *= -1.;
+	if ((flags & SPRITEFLAG_VFLIP) != 0) uvscale.y *= -1.;
 	texcoordv = (vertex - .5) * uvscale + .5;
+	// convert from integer to texture-atlas space
+	texcoordv = (texcoordv * atlasTcSize + atlasTcPos) * atlasInvSize;
 
 	vec2 c = (drawCenter - vertex) * drawSize;
+
+	// hmm, faster to just store cos and sin outside and use cplx mul?
+	vec2 drawAngleDir = vec2(cos(drawAngle), sin(drawAngle));
 	c = vec2(
 		c.x * drawAngleDir.x - c.y * drawAngleDir.y,
 		c.x * drawAngleDir.y + c.y * drawAngleDir.x
 	);
-	vec4 worldpos = vec4(pos, 1.);
+	vec4 worldpos = vec4(pos + spritePosOffset, 1.);
 
-	vec3 ex = mix(vec3(viewMat[0].x, viewMat[1].x, viewMat[2].x), vec3(angleDir.x, angleDir.y, 0.), disableBillboard);
-	vec3 ey = mix(vec3(viewMat[0].y, viewMat[1].y, viewMat[2].y), vec3(-angleDir.y, angleDir.x, 0.), disableBillboard);
+	vec3 ex, ey;
+	if ((flags & SPRITEFLAG_DISABLE_BILLBOARD) != 0) {
+		// same question as drawAngleDir above ...
+		vec2 angleDir = vec2(cos(angle), sin(angle));
+		ex = vec3(angleDir.x, angleDir.y, 0.);
+		ey = vec3(-angleDir.y, angleDir.x, 0.);
+	} else {
+		ex = vec3(viewMat[0].x, viewMat[1].x, viewMat[2].x);
+		ey = vec3(viewMat[0].y, viewMat[1].y, viewMat[2].y);
+	}
 	worldpos.xyz += ex * c.x;
 	worldpos.xyz += ey * c.y;
 
@@ -288,25 +441,25 @@ void main() {
 		fragmentCode = self.glslHeader..[[
 in vec2 texcoordv;
 in vec3 viewPosv;
+flat in mat4 colorMatrixv;
+flat in int useSeeThruv;
 
 out vec4 fragColor;
 
 uniform sampler2D tex;
-uniform mat4 colorMatrix;
 
-uniform bool useSeeThru;
 uniform vec3 playerViewPos;
 
 const float cosClipAngle = .9;	// = cone with 25 degree from axis
 
 // gl_FragCoord is in pixel coordinates with origin at lower-left
 void main() {
-	fragColor = colorMatrix * texture(tex, texcoordv);
+	fragColor = colorMatrixv * texture(tex, texcoordv);
 
 	// alpha-testing
 	if (fragColor.a < .1) discard;
 
-	if (useSeeThru) {
+	if (useSeeThruv != 0) {
 		vec3 testViewPos = playerViewPos + vec3(0., 1., -2.);
 		if (normalize(viewPosv - testViewPos).z > cosClipAngle) {
 			//fragColor.w = .2;
@@ -317,18 +470,162 @@ void main() {
 ]],
 		uniforms = {
 			tex = 0,
-			colorMatrix = matrix_ffi({{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0,0,1}}, 'float').ptr,
+			atlasInvSize = {
+				1 / self.spriteAtlasTex.width,
+				1 / self.spriteAtlasTex.height,
+			},
 		},
 	}:useNone()
 
+
+	-- NOTICE these have a big perf hit when resizing ...
+	local vector = require 'ffi.cpp.vector'
+	self.spritesBufCPU = vector'sprite_t'
+	self.spritesBufCPU:reserve(60000)	-- TODO error on growing, like the map vectors, and TODO better vector<->GLArrayBuffer coupling + growing of GL buffers 
+	self.spritesBufGPU = GLArrayBuffer{
+		size = ffi.sizeof'sprite_t' * self.spritesBufCPU.capacity,
+		data = self.spritesBufCPU.v,
+		usage = gl.GL_DYNAMIC_DRAW,
+	}
+
+	-- hmm no resizing for now
+	self.spritesBufCPU.reserve = function(self, newcap)
+		if newcap <= self.capacity then return end
+		print('asked for resize to', newcap, 'when our cap was', self.capacity)
+		error'here'
+	end
+
 	self.spriteSceneObj = GLSceneObject{
-		geometry = self.quadGeom,
+		geometry = GLGeometry{
+			mode = gl.GL_TRIANGLES,
+			count = 0,
+		},
 		program = self.spriteShader,
+		-- TODO can I just copy the spriteShader.attrs and insert the buffer and offset?
 		attrs = {
-			vertex = self.quadVertexBuf,
+			flags = {
+--				divisor = 6,	-- 6 vtxs per 2 tris <-> 1 quad
+				size = 1,
+				type = gl.GL_INT,
+				normalize = false,
+				stride = ffi.sizeof'sprite_t',
+				offset = ffi.offsetof('sprite_t', 'flags'),
+				buffer = self.spritesBufGPU,
+			},
+			atlasTcPos = {
+--				divisor = 6,
+				size = 2,
+				type = gl.GL_FLOAT,
+				normalize = false,
+				stride = ffi.sizeof'sprite_t',
+				offset = ffi.offsetof('sprite_t', 'atlasTcPos'),
+				buffer = self.spritesBufGPU,
+			},
+			atlasTcSize = {
+--				divisor = 6,
+				size = 2,
+				type = gl.GL_FLOAT,
+				normalize = false,
+				stride = ffi.sizeof'sprite_t',
+				offset = ffi.offsetof('sprite_t', 'atlasTcSize'),
+				buffer = self.spritesBufGPU,
+			},
+			drawCenter = {
+--				divisor = 6,
+				size = 2,
+				type = gl.GL_FLOAT,
+				normalize = false,
+				stride = ffi.sizeof'sprite_t',
+				offset = ffi.offsetof('sprite_t', 'drawCenter'),
+				buffer = self.spritesBufGPU,
+			},	
+			drawSize = {
+--				divisor = 6,
+				size = 2,
+				type = gl.GL_FLOAT,
+				normalize = false,
+				stride = ffi.sizeof'sprite_t',
+				offset = ffi.offsetof('sprite_t', 'drawSize'),
+				buffer = self.spritesBufGPU,
+			},
+			drawAngle = {
+--				divisor = 6,
+				size = 1,
+				type = gl.GL_FLOAT,
+				normalize = false,
+				stride = ffi.sizeof'sprite_t',
+				offset = ffi.offsetof('sprite_t', 'drawAngle'),
+				buffer = self.spritesBufGPU,
+			},
+			angle = {
+--				divisor = 6,
+				size = 1,
+				type = gl.GL_FLOAT,
+				normalize = false,
+				stride = ffi.sizeof'sprite_t',
+				offset = ffi.offsetof('sprite_t', 'angle'),
+				buffer = self.spritesBufGPU,
+			},
+			pos = {
+--				divisor = 6,
+				size = 3,
+				type = gl.GL_FLOAT,
+				normalize = false,
+				stride = ffi.sizeof'sprite_t',
+				offset = ffi.offsetof('sprite_t', 'pos'),
+				buffer = self.spritesBufGPU,
+			},	
+			spritePosOffset = {
+--				divisor = 6,
+				size = 3,
+				type = gl.GL_FLOAT,
+				normalize = false,
+				stride = ffi.sizeof'sprite_t',
+				offset = ffi.offsetof('sprite_t', 'spritePosOffset'),
+				buffer = self.spritesBufGPU,
+			},
+			-- TODO use mat4
+			colorMatrixR = {
+--				divisor = 6,
+				size = 4,
+				type = gl.GL_FLOAT,
+				normalize = false,
+				stride = ffi.sizeof'sprite_t',
+				offset = ffi.offsetof('sprite_t', 'colorMatrixR'),
+				buffer = self.spritesBufGPU,
+			},
+			colorMatrixG = {
+--				divisor = 6,
+				size = 4,
+				type = gl.GL_FLOAT,
+				normalize = false,
+				stride = ffi.sizeof'sprite_t',
+				offset = ffi.offsetof('sprite_t', 'colorMatrixG'),
+				buffer = self.spritesBufGPU,
+			},	
+			colorMatrixB = {
+--				divisor = 6,
+				size = 4,
+				type = gl.GL_FLOAT,
+				normalize = false,
+				stride = ffi.sizeof'sprite_t',
+				offset = ffi.offsetof('sprite_t', 'colorMatrixB'),
+				buffer = self.spritesBufGPU,
+			},	
+			colorMatrixA = {
+--				divisor = 6,
+				size = 4,
+				type = gl.GL_FLOAT,
+				normalize = false,
+				stride = ffi.sizeof'sprite_t',
+				offset = ffi.offsetof('sprite_t', 'colorMatrixA'),
+				buffer = self.spritesBufGPU,
+			},	
 		},
 		texs = {},
 	}
+
+
 
 	self.meshShader = require 'mesh':makeShader{
 		glslHeader = self.glslHeader,
@@ -363,9 +660,123 @@ void main() {
 	}:unbind()
 
 
+	-- setup shader before creating chunks
+	local Chunk = require 'zelda.map'.Chunk
+	self.mapShader = GLProgram{
+		vertexCode = self.glslHeader..[[
+in vec3 vertex;
+in vec2 texcoord;
+in vec4 color;
+
+out vec3 worldPosv;
+out vec3 viewPosv;
+out vec2 texcoordv;
+out vec4 colorv;
+
+//model transform is ident for map
+// so this is just the view mat + proj mat
+uniform mat4 mvMat;
+uniform mat4 projMat;
+
+void main() {
+	texcoordv = texcoord;
+	colorv = color;
+	
+	worldPosv = vertex;
+	vec4 viewPos = mvMat * vec4(vertex, 1.);
+	viewPosv = viewPos.xyz;
+	
+	gl_Position = projMat * viewPos;
+}
+]],
+		fragmentCode = self.glslHeader..[[
+in vec3 worldPosv;
+in vec3 viewPosv;
+in vec2 texcoordv;
+in vec4 colorv;
+
+out vec4 fragColor;
+
+//tile texture
+uniform sampler2D tex;
+
+//cheap sunlighting
+uniform float sunAngle;
+uniform sampler2D sunAngleTex;
+uniform vec3 chunkSize;
+
+// map view clipping
+uniform bool useSeeThru;
+uniform vec3 playerViewPos;
+
+//lol, C standard is 'const' associates left
+//but GLSL requires it to associate right
+const float cosClipAngle = .9;	// = cone with 25 degree from axis 
+
+void main() {
+	fragColor = texture(tex, texcoordv);
+	fragColor.xyz *= colorv.xyz;
+
+	// technically I should also subtract the chunkPos
+	// but texcoords are fraational part, so the integer part is thrown away anyways ...
+	vec2 sunTc = worldPosv.xy / chunkSize.xy;
+	vec2 sunAngles = texture(sunAngleTex, sunTc).xy;
+	const float sunWidthInRadians = .1;
+	float sunlight = (
+		smoothstep(sunAngles.x - sunWidthInRadians, sunAngles.x + sunWidthInRadians, sunAngle)
+		- smoothstep(sunAngles.y - sunWidthInRadians, sunAngles.y + sunWidthInRadians, sunAngle)
+	) * .9 + .1;
+	fragColor.xyz *= sunlight;
+
+	// keep the dx dy outside the if block to prevent errors.
+	if (useSeeThru) {
+		vec3 dx = dFdx(viewPosv);
+		vec3 dy = dFdy(viewPosv);
+		vec3 testViewPos = playerViewPos + vec3(0., 0., 0.);
+		if (normalize(viewPosv - testViewPos).z > cosClipAngle) {
+			vec3 n = normalize(cross(dx, dy));
+			//if (dot(n, testViewPos - viewPosv) < -.01) 
+			{
+				fragColor.w = .1;
+				discard;
+			}
+		}
+	}
+}
+]],
+		uniforms = {
+			tex = 0,
+			sunAngleTex = 1,
+			chunkSize = {Chunk.size:unpack()},
+		},
+	}:useNone()
+
+
+	--[[
+	TODO here sprite uniform buffer
+	and/or attribute buffers
+
+	attributes: unit quad
+
+	uniforms:
+		vec2f uvscale - derived from bool hflip, bool vflip (unused) flags
+		bool disableBillboard
+		vec2f drawCenter
+		vec2f drawSize
+		vec2f drawAngleDir - derived from float drawAngle
+		vec2f angleDir - derived from float angle
+		vec3f pos - derived from vec3f pos + vec3f spritePosOffset
+		mat4x4f colorMatrix
+
+	another TODO:
+		dynamic resizing GL buffers
+	like std::vector but for GL
+	in fact, why not build it into thel GLBuffer class?
+	--]]
+
 	-- tex pack for the map
-	-- TODO put all sprites in here.
-	self.texpack = GLTex2D{
+	-- TODO merge with sprite texpack?
+	self.mapTexAtlas = GLTex2D{
 		filename = 'texpack.png',
 		magFilter = gl.GL_LINEAR,
 		minFilter = gl.GL_NEAREST,
