@@ -66,7 +66,7 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 		- sprites cast shadows on the ground?
 - physics
 	- heat modeling
-	- CFD/SPH fluids
+	- CFD/SPH fluids, water, magma, oil, acid, quicksand, poisonous gas
 		- drainage / aquifers / accumulate standing water / erosion modeling w/ landscape generation
 	- model collapsing of structures.  no more building a giant horizontal platform attached at a single point to the wall.
 	- GPU-driven physics.
@@ -101,10 +101,11 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 	- pokeballs
 	- train for fighting
 - gems.  metals.  pickaxe quality levels.
-- your own forge for making stuff.
-	- I guess you'll have to talk to Robin to build a forge.  j/k.  but it won't just be an anvil like Minecraft. You'll have to build more.
-    - or go to the guy in the town who is named Clint.
-	- or go to the Dwarf.
+- crafting
+	- your own forge for making stuff.
+		- I guess you'll have to talk to Robin to build a forge.  j/k.  but it won't just be an anvil like Minecraft. You'll have to build more.
+		- or go to the guy in the town who is named Clint.
+		- or go to the Dwarf.
 - caves
 	- better dungeon/cave area.  not just mindless simplex noise or caves.  more like floodfill dungeons on a coarser resolution (like 8x8x8).
 		- more monsters in caves than on surface.
@@ -116,15 +117,16 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 - generalize tile placement
 	- tile orientation is added, but make it do something.  won't matter until i get more than just half-blocks ...
 	- add material property to tiles ... either color, or some other way to change it based on the material ... and to store the material as well.
-- better linking/unlinking system than the current Lua-table-based
-	- maybe instead something like a per-tile linked-list (tho i need multiple lists per obj), or a ptr-per-tile that points to a list of objs
+- coding
+	- better linking/unlinking system than the current Lua-table-based
+		- maybe instead something like a per-tile linked-list (tho i need multiple lists per obj), or a ptr-per-tile that points to a list of objs
+	- map and sprite display buffers set to crash upon overflow.  mabye just top out, or even better, resize.
+	- some kind of game update to run while sleeping, not as intense as a full game update
 - player health
 	- proper glycemic index and blood sugar level ... [here](https://en.wikipedia.org/wiki/Glycemic_index) [here](https://en.wikipedia.org/wiki/Blood_sugar_level)
 		- also make sure this updates while sleeping.  in fact, fix the sleep cycle so it doesn't just set the time but calls :update() , but a limited form so it's not running monsters movements / physics...
 	- food points, blood sugar level, etc
 - add a grappling hook.
-- map and sprite display buffers set to crash upon overflow.  mabye just top out, or even better, resize.
-- some kind of game update to run while sleeping, not as intense as a full game update
 - app packaging
 	- fix the distinfo project overall to auto package windows + linux (+osx?) all in one package.  i'm hacking it r.n. with a script.
 - water
