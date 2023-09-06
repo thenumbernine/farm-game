@@ -547,29 +547,27 @@ function Obj:drawSprite(index)
 -- TODO later map objs <-> loc in buffer and only update what we need
 
 	-- until I get divisors working
-	for i=1,6 do
-		local sprite = app.spritesBufCPU:emplace_back()
-		sprite.atlasTcPos:set(frame.atlasTcPos:unpack())
-		sprite.atlasTcSize:set(frame.atlasTcSize:unpack())
-		sprite.hflip = frame.hflip and 1 or 0
-		sprite.vflip = self.vflip and 1 or 0
-		sprite.disableBillboard = self.displayBillboard and 1 or 0
-		sprite.useSeeThru = self.useSeeThru and 1 or 0
-		sprite.drawCenter:set(self.drawCenter:unpack())
-		sprite.drawSize:set(self.drawSize:unpack())
-		sprite.drawAngle = self.drawAngle
-		sprite.angle = self.angle
-		sprite.pos:set(self.pos:unpack())
-		sprite.spritePosOffset:set(self.spritePosOffset:unpack())
-		-- TODO store the color as mat4 
-		--ffi.copy(sprite.colorMatrix, self.colorMatrix.ptr, ffi.sizeof'float' * 16)
-		-- until then ...
-		-- col-major or row-major?
-		ffi.copy(sprite.colorMatrixR.s, self.colorMatrix.ptr + 0, ffi.sizeof'float' * 4)
-		ffi.copy(sprite.colorMatrixG.s, self.colorMatrix.ptr + 4, ffi.sizeof'float' * 4)
-		ffi.copy(sprite.colorMatrixB.s, self.colorMatrix.ptr + 8, ffi.sizeof'float' * 4)
-		ffi.copy(sprite.colorMatrixA.s, self.colorMatrix.ptr + 12, ffi.sizeof'float' * 4)
-	end
+	local sprite = app.spritesBufCPU:emplace_back()
+	sprite.atlasTcPos:set(frame.atlasTcPos:unpack())
+	sprite.atlasTcSize:set(frame.atlasTcSize:unpack())
+	sprite.hflip = frame.hflip and 1 or 0
+	sprite.vflip = self.vflip and 1 or 0
+	sprite.disableBillboard = self.displayBillboard and 1 or 0
+	sprite.useSeeThru = self.useSeeThru and 1 or 0
+	sprite.drawCenter:set(self.drawCenter:unpack())
+	sprite.drawSize:set(self.drawSize:unpack())
+	sprite.drawAngle = self.drawAngle
+	sprite.angle = self.angle
+	sprite.pos:set(self.pos:unpack())
+	sprite.spritePosOffset:set(self.spritePosOffset:unpack())
+	-- TODO store the color as mat4 
+	--ffi.copy(sprite.colorMatrix, self.colorMatrix.ptr, ffi.sizeof'float' * 16)
+	-- until then ...
+	-- col-major or row-major?
+	ffi.copy(sprite.colorMatrixR.s, self.colorMatrix.ptr + 0, ffi.sizeof'float' * 4)
+	ffi.copy(sprite.colorMatrixG.s, self.colorMatrix.ptr + 4, ffi.sizeof'float' * 4)
+	ffi.copy(sprite.colorMatrixB.s, self.colorMatrix.ptr + 8, ffi.sizeof'float' * 4)
+	ffi.copy(sprite.colorMatrixA.s, self.colorMatrix.ptr + 12, ffi.sizeof'float' * 4)
 --]=]
 end
 

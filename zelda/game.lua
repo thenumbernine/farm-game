@@ -494,14 +494,16 @@ function Game:draw()
 
 	local shader = app.spriteShader
 	shader:use()
-	app.spriteSceneObj.geometry.count = app.spritesBufCPU.size
 	app.spriteSceneObj:enableAndSetAttrs()	-- enable vao
 	gl.glUniformMatrix4fv(shader.uniforms.viewMat.loc, 1, gl.GL_FALSE, view.mvMat.ptr)
 	gl.glUniformMatrix4fv(shader.uniforms.projMat.loc, 1, gl.GL_FALSE, view.projMat.ptr)
 	gl.glUniform3fv(shader.uniforms.playerViewPos.loc, 1, self.playerViewPos.s)
 	
 	app.spriteAtlasTex:bind(0)
-	app.spriteSceneObj.geometry:draw()
+	
+	--app.spriteSceneObj.geometry.count = 6 * app.spritesBufCPU.size
+	--app.spriteSceneObj.geometry:draw()
+	gl.glDrawArraysInstanced(gl.GL_TRIANGLES, 0, 6, app.spritesBufCPU.size)
 
 	app.spriteSceneObj:disableAttrs()
 	shader:useNone()

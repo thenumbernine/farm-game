@@ -38,7 +38,6 @@ so dilemma
 --]]
 ffi.cdef[[
 typedef struct {
-	// attributes with divisor = 4
 	union {
 		struct {
 			uint8_t hflip : 1;
@@ -504,7 +503,7 @@ void main() {
 		-- TODO can I just copy the spriteShader.attrs and insert the buffer and offset?
 		attrs = {
 			flags = {
---				divisor = 6,	-- 6 vtxs per 2 tris <-> 1 quad
+				divisor = 1,	-- 6 vtxs per 2 tris <-> 1 quad
 				size = 1,
 				type = gl.GL_INT,
 				normalize = false,
@@ -513,7 +512,7 @@ void main() {
 				buffer = self.spritesBufGPU,
 			},
 			atlasTcPos = {
---				divisor = 6,
+				divisor = 1,
 				size = 2,
 				type = gl.GL_FLOAT,
 				normalize = false,
@@ -522,7 +521,7 @@ void main() {
 				buffer = self.spritesBufGPU,
 			},
 			atlasTcSize = {
---				divisor = 6,
+				divisor = 1,
 				size = 2,
 				type = gl.GL_FLOAT,
 				normalize = false,
@@ -531,7 +530,7 @@ void main() {
 				buffer = self.spritesBufGPU,
 			},
 			drawCenter = {
---				divisor = 6,
+				divisor = 1,
 				size = 2,
 				type = gl.GL_FLOAT,
 				normalize = false,
@@ -540,7 +539,7 @@ void main() {
 				buffer = self.spritesBufGPU,
 			},	
 			drawSize = {
---				divisor = 6,
+				divisor = 1,
 				size = 2,
 				type = gl.GL_FLOAT,
 				normalize = false,
@@ -549,7 +548,7 @@ void main() {
 				buffer = self.spritesBufGPU,
 			},
 			drawAngle = {
---				divisor = 6,
+				divisor = 1,
 				size = 1,
 				type = gl.GL_FLOAT,
 				normalize = false,
@@ -558,7 +557,7 @@ void main() {
 				buffer = self.spritesBufGPU,
 			},
 			angle = {
---				divisor = 6,
+				divisor = 1,
 				size = 1,
 				type = gl.GL_FLOAT,
 				normalize = false,
@@ -567,7 +566,7 @@ void main() {
 				buffer = self.spritesBufGPU,
 			},
 			pos = {
---				divisor = 6,
+				divisor = 1,
 				size = 3,
 				type = gl.GL_FLOAT,
 				normalize = false,
@@ -576,7 +575,7 @@ void main() {
 				buffer = self.spritesBufGPU,
 			},	
 			spritePosOffset = {
---				divisor = 6,
+				divisor = 1,
 				size = 3,
 				type = gl.GL_FLOAT,
 				normalize = false,
@@ -586,7 +585,7 @@ void main() {
 			},
 			-- TODO use mat4
 			colorMatrixR = {
---				divisor = 6,
+				divisor = 1,
 				size = 4,
 				type = gl.GL_FLOAT,
 				normalize = false,
@@ -595,7 +594,7 @@ void main() {
 				buffer = self.spritesBufGPU,
 			},
 			colorMatrixG = {
---				divisor = 6,
+				divisor = 1,
 				size = 4,
 				type = gl.GL_FLOAT,
 				normalize = false,
@@ -604,7 +603,7 @@ void main() {
 				buffer = self.spritesBufGPU,
 			},	
 			colorMatrixB = {
---				divisor = 6,
+				divisor = 1,
 				size = 4,
 				type = gl.GL_FLOAT,
 				normalize = false,
@@ -613,7 +612,7 @@ void main() {
 				buffer = self.spritesBufGPU,
 			},	
 			colorMatrixA = {
---				divisor = 6,
+				divisor = 1,
 				size = 4,
 				type = gl.GL_FLOAT,
 				normalize = false,
