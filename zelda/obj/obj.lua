@@ -550,20 +550,10 @@ function Obj:drawSprite(index)
 	local sprite = app.spritesBufCPU:emplace_back()
 	sprite.atlasTcPos:set(frame.atlasTcPos:unpack())
 	sprite.atlasTcSize:set(frame.atlasTcSize:unpack())
-	--[[	
 	sprite.hflip = frame.hflip and 1 or 0
 	sprite.vflip = self.vflip and 1 or 0
 	sprite.disableBillboard = self.displayBillboard and 1 or 0
 	sprite.useSeeThru = self.useSeeThru and 1 or 0
-	--]]
-	-- [[
-	sprite.flags = bit.bor(
-		frame.hflip and ffi.C.SPRITEFLAG_HFLIP or 0,
-		self.vflip and ffi.C.SPRITEFLAG_VFLIP or 0,
-		self.displayBillboard and ffi.C.SPRITEFLAG_DISABLE_BILLBOARD or 0,
-		self.useSeeThru and ffi.C.SPRITEFLAG_USE_SEE_THRU or 0
-	)
-	--]]
 	sprite.drawCenter:set(self.drawCenter:unpack())
 	sprite.drawSize:set(self.drawSize:unpack())
 	sprite.drawAngle = self.drawAngle

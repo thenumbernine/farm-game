@@ -37,21 +37,17 @@ so dilemma
 	I can use gl_VertexID's lower 4 bits for that.
 --]]
 ffi.cdef[[
-typedef union {
-	struct {
-		uint8_t hflip : 1;
-		uint8_t vflip : 1;
-		uint8_t disableBillboard : 1;
-		uint8_t useSeeThru : 1;
-	};
-	uint8_t flags;
-} spriteflags_t;
-]]
-assert(ffi.sizeof'spriteflags_t' == 1)
-ffi.cdef[[
 typedef struct {
-	uint8_t flags;
-	
+	union {
+		struct {
+			uint8_t hflip : 1;
+			uint8_t vflip : 1;
+			uint8_t disableBillboard : 1;
+			uint8_t useSeeThru : 1;
+		};
+		uint8_t flags;
+	};
+
 	// ... or store these in an array, indexed by sprite frame, and just put the sprite frame here ...
 	vec2f_t atlasTcPos;
 	vec2f_t atlasTcSize;

@@ -198,6 +198,7 @@ end
 local ffi = require 'ffi'
 local anim = require 'zelda.anim'
 function PlayingMenu:itemButton(itemInfo, bw, bh)
+	local app = self.app
 	ig.igSetCursorPos(ig.ImVec2(0,0))
 	local size = ig.ImVec2(bw, bh)
 	if itemInfo then
@@ -208,37 +209,45 @@ function PlayingMenu:itemButton(itemInfo, bw, bh)
 				local seq = sprite[cl.seq]
 				if seq then
 					local frame = seq[1]
-					if frame then
-						local tex = frame.tex
-						if tex then
-							--local tw, th = tex.width, tex.height
-							-- why isn't bw x bh the same for imagebutton and for button?
-							size = ig.ImVec2(bw, bh 
-								-- * th / tw	-- maybe not worth it ...
-							)
-							local cr,cg,cb = 1,1,1
-							-- assume the color matrix <-> scale matrix
-							-- hmm otherwise how to draw imgui icons?
-							if cl.colorMatrix then
-								-- will only color by the 1st row
-								cr,cg,cb = cl.colorMatrix.ptr[0], cl.colorMatrix.ptr[5], cl.colorMatrix.ptr[10]
-							end
-							local result = ig.igImageButton('',
-								ffi.cast('void*', tex.id),
-								size,		-- how come the image gets clipped?
-								ig.ImVec2(0,0),
-								ig.ImVec2(1,1),
-								ig.ImVec4(0,0,0,0),
-								ig.ImVec4(cr,cg,cb,1)) 
-							if itemInfo.count > 1 then
-								-- why isn't 0,0 the upper-left corner of text?
-								-- y-offset i'd understand (top vs bottom coordinate origin)
-								-- but why is it x-offset as well?
-								ig.igSetCursorPos(ig.ImVec2(8,4))
-								ig.igText('x'..itemInfo.count)
-							end
-							return result
+					if frame 
+					and frame.atlasTcPos
+					and frame.atlasTcSize
+					then
+						--local tw, th = tex.width, tex.height
+						-- why isn't bw x bh the same for imagebutton and for button?
+						size = ig.ImVec2(bw, bh 
+							-- * th / tw	-- maybe not worth it ...
+						)
+						local cr,cg,cb = 1,1,1
+						-- assume the color matrix <-> scale matrix
+						-- hmm otherwise how to draw imgui icons?
+						if cl.colorMatrix then
+							-- will only color by the 1st row
+							cr = cl.colorMatrix.ptr[0]
+							cg = cl.colorMatrix.ptr[5]
+							cb = cl.colorMatrix.ptr[10]
 						end
+						local result = ig.igImageButton('',
+							ffi.cast('void*', app.spriteAtlasTex.id),
+							size,		-- how come the image gets clipped?
+							ig.ImVec2(
+								frame.atlasTcPos.x / app.spriteAtlasTex.width,
+								frame.atlasTcPos.y / app.spriteAtlasTex.height
+							),
+							ig.ImVec2(
+								(frame.atlasTcPos.x + frame.atlasTcSize.x) / app.spriteAtlasTex.width,
+								(frame.atlasTcPos.y + frame.atlasTcSize.y) / app.spriteAtlasTex.height
+							),
+							ig.ImVec4(0,0,0,0),
+							ig.ImVec4(cr,cg,cb,1)) 
+						if itemInfo.count > 1 then
+							-- why isn't 0,0 the upper-left corner of text?
+							-- y-offset i'd understand (top vs bottom coordinate origin)
+							-- but why is it x-offset as well?
+							ig.igSetCursorPos(ig.ImVec2(8,4))
+							ig.igText('x'..itemInfo.count)
+						end
+						return result
 					end
 				end
 			end

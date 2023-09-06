@@ -84,7 +84,7 @@ function Player:update(dt)
 	local appPlayer = assert(self.player)
 
 	-- TODO dif activities use dif energy
-	self.food = math.max(0, self.food - dt * .1)
+	self.food = math.max(0, self.food - dt * .02)
 	if self.food <= 0 then
 		self:damage(dt * .1, self, self)
 		if self.dead then return end
