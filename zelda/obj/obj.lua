@@ -439,19 +439,16 @@ function Obj:draw()
 --print('seqname', seqname, 'seq', seq)
 				if seq and self.frame then
 					local frame = seq[self.frame]
-					self.currentFrame = frame
 					if frame.atlasTcPos then
-						--[[ draw immediately
-						self:drawSprite()
-						--]]
-						-- [[
-						game.spriteDrawList:insert(self)
+						-- [[ draw immediately
+						self:drawSprite(frame)
 						--]]
 					elseif frame.mesh then
+						error'here'
 						--[[
 						self:drawMesh()
 						--]]
-						-- [[
+						--[[
 						game.meshDrawList:insert(self)
 						--]]
 					else
@@ -464,16 +461,13 @@ function Obj:draw()
 end
 
 local identMat4 = matrix_ffi({4,4},'float'):lambda(function(i,j) return i==j and 1 or 0 end)
-function Obj:drawSprite(index)
-	local frame = self.currentFrame
+function Obj:drawSprite(frame)
 	local game = self.game
 	local app = game.app
 
 -- write all props to an attribute buffer
 -- write as we go and just update the whole buffer
 -- TODO later map objs <-> loc in buffer and only update what we need
-
-	-- until I get divisors working
 	local sprite = app.spritesBufCPU:emplace_back()
 	sprite.atlasTcPos:set(frame.atlasTcPos:unpack())
 	sprite.atlasTcSize:set(frame.atlasTcSize:unpack())
@@ -491,8 +485,7 @@ function Obj:drawSprite(index)
 	ffi.copy(sprite.colorMatrix[0].s, self.colorMatrix.ptr + 0, ffi.sizeof'float' * 16)
 end
 
-function Obj:drawMesh()
-	local frame = self.currentFrame
+function Obj:drawMesh(frame)
 	local map = self.map
 	local game = self.game
 	local app = game.app

@@ -378,11 +378,6 @@ function Game:init(args)
 
 	self.viewFollow = app.players[1].obj
 	--self.viewFollow = self.goomba
-
-
-	-- collect per-texture of sprites
-	self.spriteDrawList = table()
-	self.meshDrawList = table()
 end
 
 function Game:timeToStr()
@@ -460,13 +455,8 @@ function Game:draw()
 	-- with zero sprite rendering whatsoever i'm getting 30fps
 	-- so sprite rendering might not be our bottleneck ...
 	-- collect per-texture of sprites
-	for k in pairs(self.spriteDrawList) do
-		self.spriteDrawList[k] = nil
-	end
-	for k in pairs(self.meshDrawList) do
-		self.meshDrawList[k] = nil
-	end
 
+	app.spritesBufCPU:resize(0)
 
 --[[ draw all maps
 	for _,map in ipairs(self.maps) do
@@ -479,14 +469,8 @@ function Game:draw()
 	self.viewFollow.map:drawObjs()
 --]]
 
--- [[ accumulate into sprite buf
--- TODO this can be merged with map:draw like it used to be
-	app.spritesBufCPU:resize(0)
-	for i,obj in ipairs(self.spriteDrawList) do
-		obj:drawSprite(i-1)
-	end
-	self.numSpritesDrawn = #self.spriteDrawList
---]]
+	self.numSpritesDrawn = app.spritesBufCPU.size
+	
 	app.spritesBufGPU
 		:bind()
 		:updateData(0, app.spritesBufCPU.size * ffi.sizeof'sprite_t')
@@ -509,13 +493,7 @@ function Game:draw()
 	shader:useNone()
 
 	GLTex2D:unbind()
-
-	for _,obj in ipairs(self.meshDrawList) do
-		obj:drawMesh()
-	end
-
 	GLProgram:useNone()
-	GLTex2D:unbind()
 --]=]
 
 --]==]

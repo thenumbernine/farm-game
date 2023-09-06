@@ -651,7 +651,6 @@ function Map:getSaveData()
 				end
 			end
 			dstobjinfo.class = obj.class	-- 'require '..tolua(assert(obj.classname))	-- copy from class to obj
-			dstobjinfo.currentFrame = nil
 			dstobjinfo.game = nil		
 			dstobjinfo.map = nil
 			dstobjinfo.tiles = nil
