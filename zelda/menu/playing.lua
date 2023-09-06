@@ -17,7 +17,7 @@ function PlayingMenu:updateGUI()
 	local app = self.app
 	local game = app.game
 	local appPlayer = app.players[1]
-	local playerObj = appPlayer.obj
+	local player = appPlayer.obj
 
 	-- [[
 	ig.igSetNextWindowPos(ig.ImVec2(0, 0), 0, ig.ImVec2())
@@ -33,11 +33,11 @@ function PlayingMenu:updateGUI()
 	ig.igSetWindowFontScale(.5)
 
 	ig.igText('$'..appPlayer.money)
-	ig.igText('HP: '..playerObj.hp..'/'..playerObj.hpMax)
-	ig.igText('FP: '..playerObj.food..'/'..playerObj.foodMax)
+	ig.igText('HP: '..player.hp..'/'..player.hpMax)
+	ig.igText('FP: '..player.food..'/'..player.foodMax)
 	ig.igText(game:timeToStr())
 	if true then
-		ig.igText(tostring(playerObj.pos))
+		ig.igText(tostring(player.pos))
 		ig.igText('#sprites '..game.numSpritesDrawn)
 	end
 
@@ -80,7 +80,7 @@ function PlayingMenu:updateGUI()
 		or ig.igButton('run code')
 		then
 			print('executing...\n'..self.consoleBuffer)
-			local env = setmetatable({app=app, game=game, player=appPlayer}, {__index=_G})
+			local env = setmetatable({app=app, game=game, appPlayer=appPlayer}, {__index=_G})
 			local f, err = load(self.consoleBuffer, nil, nil, env)
 			if not f then
 				print(err)
@@ -113,15 +113,15 @@ function PlayingMenu:updateGUI()
 	else
 		local chestOpen = appPlayer.chestOpen
 		-- TODO this matches what's in zelda.obj.player ...
-		local maxItems = playerObj.numSelectableItems
+		local maxItems = player.numSelectableItems
 		if appPlayer.invOpen then
-			maxItems = playerObj.numInvItems
+			maxItems = player.numInvItems
 			if chestOpen then
 				maxItems = maxItems + chestOpen.numInvItems
 			end
 		end
 
-		local bw = math.floor(app.width / playerObj.numSelectableItems)
+		local bw = math.floor(app.width / player.numSelectableItems)
 		local bh = bw
 		local x = 0
 		local y = app.height - bh - 4
@@ -130,15 +130,15 @@ function PlayingMenu:updateGUI()
 		for iMinus1=0,maxItems-1 do
 			local i = iMinus1 + 1
 			local itemInfo
-			if i <= playerObj.numInvItems then
-				itemInfo = playerObj.items[i]
-			elseif i <= playerObj.numInvItems + chestOpen.numInvItems then
-				itemInfo = chestOpen.items[i - playerObj.numInvItems]
+			if i <= player.numInvItems then
+				itemInfo = player.items[i]
+			elseif i <= player.numInvItems + chestOpen.numInvItems then
+				itemInfo = chestOpen.items[i - player.numInvItems]
 			else
 				error("shouldn't be here")
 			end
 
-			local selected = playerObj.selectedItem == i
+			local selected = player.selectedItem == i
 			if selected then
 				local selectColor = ig.ImVec4(0,0,1,.5)
 				ig.igPushStyleColor_Vec4(ig.ImGuiCol_Button, selectColor)
@@ -166,7 +166,7 @@ function PlayingMenu:updateGUI()
 			--]]
 			ig.igPushID_Int(i)
 			if self:itemButton(itemInfo, bw, bh) then
-				playerObj.selectedItem = i
+				player.selectedItem = i
 			end
 			ig.igPopID()
 
@@ -181,10 +181,10 @@ function PlayingMenu:updateGUI()
 				ig.igPopStyleColor(1)
 			end
 
-			if iMinus1 % playerObj.numSelectableItems == playerObj.numSelectableItems-1 then
+			if iMinus1 % player.numSelectableItems == player.numSelectableItems-1 then
 				x = 0
 				y = y - bh
-				if i == playerObj.numInvItems then
+				if i == player.numInvItems then
 					y = y - math.floor(bh/2)
 				end
 			else

@@ -670,8 +670,8 @@ function Map:getSaveData()
 				if rawequal(x, x.class) then
 					return 'require '..tolua(x.classname)
 				end
-				for i,player in ipairs(app.players) do
-					if rawequal(x, player) then
+				for i,appPlayer in ipairs(app.players) do
+					if rawequal(x, appPlayer) then
 						return 'app.players['..i..']'
 					end			
 				end
