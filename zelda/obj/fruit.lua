@@ -19,4 +19,32 @@ Fruit.useSeeThru = false
 Fruit.itemTouch = true
 Fruit.drawSize = vec2f(.5,.5)
 
+local Game = require 'zelda.game'
+Fruit.growDuration = Game.secondsPerDay
+
+function Fruit:update(dt)
+	Fruit.super.update(self, dt)
+	local game = self.game
+	local growTime = game.time - self.createTime
+	local growFrac = growTime / self.growDuration
+	if growFrac > 1 then
+		self.ready = true
+	end
+end
+
+-- static method
+-- also in Plant (for vegs)
+function Fruit:useInInventory(player)
+	-- only run when the player pushes the button
+	-- TODO maybe the push vs hold functionality should be moved to the player code?
+	local appPlayer = player.player
+	if appPlayer.keyPress.useItem and appPlayer.keyPressLast.useItem then return end
+
+	-- heal and eat
+	assert(player:removeSelectedItem() == self)
+
+	player.hp = math.min(player.hp + self.hpGiven, player.hpMax)
+	player.food = math.min(player.food + self.foodGiven, player.foodMax)
+end
+
 return Fruit

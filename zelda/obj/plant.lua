@@ -82,10 +82,10 @@ function Plant:update(...)
 	local game = self.game
 
 	-- TODO how about < some frac (like 1/7th) show the seed
-	self.growTime = game.time - self.createTime
-	self.growFrac = self.growTime / self.growDuration
+	local growTime = game.time - self.createTime
+	local growFrac = growTime / self.growDuration
 	
-	if self.growFrac < 1/7 then
+	if growFrac < 1/7 then
 		-- seed-form:
 		self.sprite = 'seededground'
 		self.seq = 'stand'
@@ -99,9 +99,9 @@ function Plant:update(...)
 		self.sprite = self.plantType.sprite
 		self.seq = nil	-- fall back on class seq, generated class based on plantType
 		local sx, sy = self.plantType.drawSize:unpack()
-		if self.growFrac < 1 then
-			sx = sx * self.growFrac
-			sy = sy * self.growFrac
+		if growFrac < 1 then
+			sx = sx * growFrac
+			sy = sy * growFrac
 		end
 		self.drawSize:set(sx, sy)
 		self.bbox.min:set(-.49, -.49, 0)
@@ -110,26 +110,36 @@ function Plant:update(...)
 		self.drawCenter:set(self.class.drawCenter:unpack())
 	end
 
-	if self.plantType.sprite == 'vegetable'
-	then
-		self.shakeWhenNear = self.growFrac >= 1
+	if self.plantType.sprite == 'vegetable' then
+		self.shakeWhenNear = growFrac >= 1
+	elseif self.fruitClass then
+		self.shakeWhenNear = false
+		if self.fruitobjs then
+			for _,fruit in ipairs(self.fruitobjs) do
+				if fruit.ready then
+					self.shakeWhenNear = true
+					break
+				end
+			end
+		end
 	end
 
-	if self.fruitDuration
-	and self.growFrac >= 1 
+	-- TODO this for initially spawned trees with back-dated createTime's
+	if self.fruitClass
+	and growFrac >= 1 
 	and self.nextFruitTime < game.time
-	and (not self.fruit or #self.fruit < 3)	-- TODO max fruit ...
+	and (not self.fruitobjs or #self.fruitobjs < 3)	-- TODO max fruit ...
 	and math.random() < .01	-- TODO chance/frame of spawning a fruit 
 	then
 		self.nextFruitTime = game.time + self.fruitDuration
-		self.fruit = self.fruit or table()
-		self.fruit:insert(
+		self.fruitobjs = self.fruitobjs or table()
+		self.fruitobjs:insert(
 			self.map:newObj{
-				class = require 'zelda.obj.fruit',
+				class = self.fruitClass,
 				pos = self.pos + vec3f(
 					(math.random() - .5) * self.drawSize.x * .5,
 					(math.random() - .5) * self.drawSize.x * .5,
-					math.random() * self.drawSize.y * .5 + 1)
+					math.random() * self.drawSize.y * .5 + 1),
 			}
 		)
 	end
@@ -141,35 +151,45 @@ function Plant:update(...)
 end
 
 function Plant:interactInWorld(player)
-	if self.shakeWhenNear
-	and not player.pullUpPlantThread
-	then
-		local game = self.game
-		-- if this is a tree or bush and it has fruit ... 
-		-- ... drop the fruit
-		-- TODO draw it also
-		-- if this is a veg then pull it up
-		-- how about fruit?  same?
-		game.threads:add(function()
-			self.pos:set(player.pos:unpack())
-			local srcpos = self.pos:clone()
-			self.useSeeThru = false
-			game:fade(.5, function(x)
-				self.pos.z = srcpos.z + 2*x
+	if not self.shakeWhenNear then return end
+	
+	if self.fruitClass then
+		if self.fruitobjs then
+			for _,fruit in ipairs(self.fruitobjs) do
+				if fruit.ready then
+					fruit:toItem()
+				end
+			end
+		end
+	else
+		if not player.pullUpPlantThread then
+			local game = self.game
+			-- if this is a tree or bush and it has fruit ... 
+			-- ... drop the fruit
+			-- TODO draw it also
+			-- if this is a veg then pull it up
+			-- how about fruit?  same?
+			game.threads:add(function()
+				self.pos:set(player.pos:unpack())
+				local srcpos = self.pos:clone()
+				self.useSeeThru = false
+				game:fade(.5, function(x)
+					self.pos.z = srcpos.z + 2*x
+				end)
+				self.pos:set(srcpos:unpack())
+				self:toItem()
 			end)
-			self.pos:set(srcpos:unpack())
-			self:toItem()
-		end)
-		player.pullUpPlantThread = game.threads:add(function()
-			player.cantMove = true
-			player.seq = 'kneel'
-			game:sleep(.5)
-			player.seq = 'handsup'
-			game:sleep(.5)
-			player.seq = 'stand'
-			player.pullUpPlantThread = nil
-			player.cantMove = nil
-		end)
+			player.pullUpPlantThread = game.threads:add(function()
+				player.cantMove = true
+				player.seq = 'kneel'
+				game:sleep(.5)
+				player.seq = 'handsup'
+				game:sleep(.5)
+				player.seq = 'stand'
+				player.pullUpPlantThread = nil
+				player.cantMove = nil
+			end)
+		end
 	end
 end
 
@@ -186,6 +206,12 @@ function Plant:damage(amount, attacker, inflicter)
 end
 
 function Plant:die()
+	if self.fruitobjs then
+		for _,fruit in ipairs(self.fruitobjs) do
+			fruit:remove()
+		end
+	end
+
 	-- hmm, move this to takesdamage? or keep it specilized here?
 	-- takesdamage already has the goomba death in it ....
 	-- maybe put a bunch of canned deaths in takesdamage and have an arg to pick which one

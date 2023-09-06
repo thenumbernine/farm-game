@@ -20,7 +20,6 @@ function Item:toItemObj(args)
 		class = require 'zelda.obj.item',
 		itemClass = self.class,
 	}, args))
-	self:remove()
 end
 
 return Item

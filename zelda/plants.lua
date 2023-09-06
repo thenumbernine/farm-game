@@ -140,7 +140,15 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 
 	local Game = require 'zelda.game'
 
-	local fruitTypes = table()
+	local fruitClasses = table()
+	local Fruit = require 'zelda.obj.fruit'
+	fruitClasses:insert(
+		Fruit:subclass{
+			hpGiven = math.random(3,5),
+			foodGiven = math.random(3,5),
+		}
+	)
+	
 
 	if plantType.sprite == 'tree' then
 		plantType.numLogs = 10
@@ -152,7 +160,7 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 
 		if math.random() < .3 then
 			plantType.fruitDuration = 3 * Game.secondsPerDay
-			plantType.fruit = fruitTypes:pickRandom()
+			plantType.fruitClass = fruitClasses:pickRandom()
 		end
 	elseif plantType.sprite == 'bush' then
 		plantType.numLogs = 2
@@ -163,7 +171,8 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 		
 		if math.random() < .3 then
 			plantType.fruitDuration = 4 * Game.secondsPerDay
-			plantType.fruit = fruitTypes:pickRandom()
+			-- TODO mutilpe? grafting?
+			plantType.fruitClass = fruitClasses:pickRandom()
 		end
 	else	-- plant/veg
 		plantType.inflictTypes = {axe=true, sword=true}
@@ -172,13 +181,9 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 			plantType.drawSize = plantType.drawSize * .5
 			plantType.drawCenter = vec2f(.5, .5)
 		end
-		
-		-- TODO ... how to do this ...
-		plantType.fruit = fruitTypes:pickRandom()
+		plantType.hpGiven = math.random(3,5)
+		plantType.foodGiven = math.random(3,5)
 	end
-
-	plantType.hpGiven = math.random(3,5)
-	plantType.foodGiven = math.random(3,5)
 
 	plantType.objClass = require 'zelda.obj.plant':subclass(plantType)
 	plantType.objClass.plantType = plantType

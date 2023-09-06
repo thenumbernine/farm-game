@@ -89,3 +89,6 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 - proper glycemic index and blood sugar level ... [here](https://en.wikipedia.org/wiki/Glycemic_index) [here](https://en.wikipedia.org/wiki/Blood_sugar_level)
 	- also make sure this updates while sleeping.  in fact, fix the sleep cycle so it doesn't just set the time but calls :update() , but a limited form so it's not running monsters movements / physics...
 - add a grappling hook.
+- map and sprite display buffers set to crash upon overflow.  mabye just top out, or even better, resize.
+- food points, blood sugar level, etc
+- some kind of game update to run while sleeping, not as intense as a full game update
