@@ -206,6 +206,7 @@ function Plant:damage(amount, attacker, inflicter)
 end
 
 function Plant:die()
+	-- cut down a tree ... drop fruit?
 	if self.fruitobjs then
 		for _,fruit in ipairs(self.fruitobjs) do
 			fruit:remove()

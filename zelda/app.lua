@@ -58,13 +58,7 @@ typedef struct {
 	float angle;
 	vec3f_t pos;
 	vec3f_t spritePosOffset;
-	// TODO:
-	//vec4f_t colorMatrix[4];
-	// until then:
-	vec4f_t colorMatrixR;
-	vec4f_t colorMatrixG;
-	vec4f_t colorMatrixB;
-	vec4f_t colorMatrixA;
+	vec4f_t colorMatrix[4];
 } sprite_t;
 ]]
 
@@ -352,11 +346,11 @@ void main() {
 	// can't just assign a mat4 varying to a mat4-of-col-vectors 
 	// ... can't assign the varying's individual col vectors either
 	// gotta assign a temp mat4 here first
-	mat4 colorMatrix = mat4(
+	mat4 colorMatrix = transpose(mat4(
 		colorMatrixR,
 		colorMatrixG,
 		colorMatrixB,
-		colorMatrixA);
+		colorMatrixA));
 	colorMatrixv = colorMatrix;
 	useSeeThruv = flags & SPRITEFLAG_USE_SEE_THRU;
 
@@ -419,10 +413,13 @@ void main() {
 	if (fragColor.a < .1) discard;
 
 	if (useSeeThruv != 0) {
-		vec3 testViewPos = playerViewPos + vec3(0., 1., -2.);
-		if (normalize(viewPosv - testViewPos).z > cosClipAngle) {
-			//fragColor.w = .2;
-			discard;
+		// flatten the cone = no clipping near the player
+		if (viewPosv.z > playerViewPos.z + .4) {
+			vec3 testViewPos = playerViewPos + vec3(0., 1., -2.);
+			if (normalize(viewPosv - testViewPos).z > cosClipAngle) {
+				//fragColor.w = .2;
+				discard;
+			}
 		}
 	}
 }
@@ -554,7 +551,7 @@ void main() {
 				type = gl.GL_FLOAT,
 				normalize = false,
 				stride = ffi.sizeof'sprite_t',
-				offset = ffi.offsetof('sprite_t', 'colorMatrixR'),
+				offset = ffi.offsetof('sprite_t', 'colorMatrix'),
 				buffer = self.spritesBufGPU,
 			},
 			colorMatrixG = {
@@ -563,7 +560,7 @@ void main() {
 				type = gl.GL_FLOAT,
 				normalize = false,
 				stride = ffi.sizeof'sprite_t',
-				offset = ffi.offsetof('sprite_t', 'colorMatrixG'),
+				offset = ffi.offsetof('sprite_t', 'colorMatrix') + ffi.sizeof'float' * 4,
 				buffer = self.spritesBufGPU,
 			},	
 			colorMatrixB = {
@@ -572,7 +569,7 @@ void main() {
 				type = gl.GL_FLOAT,
 				normalize = false,
 				stride = ffi.sizeof'sprite_t',
-				offset = ffi.offsetof('sprite_t', 'colorMatrixB'),
+				offset = ffi.offsetof('sprite_t', 'colorMatrix') + ffi.sizeof'float' * 8,
 				buffer = self.spritesBufGPU,
 			},	
 			colorMatrixA = {
@@ -581,7 +578,7 @@ void main() {
 				type = gl.GL_FLOAT,
 				normalize = false,
 				stride = ffi.sizeof'sprite_t',
-				offset = ffi.offsetof('sprite_t', 'colorMatrixA'),
+				offset = ffi.offsetof('sprite_t', 'colorMatrix') + ffi.sizeof'float' * 12,
 				buffer = self.spritesBufGPU,
 			},	
 		},
@@ -695,7 +692,11 @@ void main() {
 	if (useSeeThru) {
 		vec3 dx = dFdx(viewPosv);
 		vec3 dy = dFdy(viewPosv);
-		vec3 testViewPos = playerViewPos + vec3(0., 0., 0.);
+		vec3 testViewPos = playerViewPos;
+			// this is the sprite playerViewPos offset
+			// but I don't think it looks as good in the map
+			// you get some big ellipses of clipped region above the view
+			// + vec3(0., 1., -2.);
 		if (normalize(viewPosv - testViewPos).z > cosClipAngle) {
 			vec3 n = normalize(cross(dx, dy));
 			//if (dot(n, testViewPos - viewPosv) < -.01) 

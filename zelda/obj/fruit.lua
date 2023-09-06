@@ -32,7 +32,7 @@ function Fruit:update(dt)
 	end
 end
 
--- static method
+-- static method (so self = subclass)
 -- also in Plant (for vegs)
 function Fruit:useInInventory(player)
 	-- only run when the player pushes the button

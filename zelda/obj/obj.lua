@@ -466,83 +466,10 @@ end
 local identMat4 = matrix_ffi({4,4},'float'):lambda(function(i,j) return i==j and 1 or 0 end)
 function Obj:drawSprite(index)
 	local frame = self.currentFrame
-	local map = self.map
 	local game = self.game
 	local app = game.app
-	local view = app.view
 
---[=[ old GL uniform way
-	local shader = app.spriteShader
-	local uscale = -1
-	local vscale = 1
-	if frame.hflip then uscale = uscale * -1 end
-	if self.vflip then vscale = vscale * -1 end
-	
-	gl.glUniform2f(shader.uniforms.uvscale.loc, uscale, vscale)
-	gl.glUniform2f(shader.uniforms.drawCenter.loc, self.drawCenter:unpack()) 
-	gl.glUniform2f(shader.uniforms.drawSize.loc, self.drawSize:unpack()) 
-	gl.glUniform1f(shader.uniforms.disableBillboard.loc, self.disableBillboard and 1 or 0)
-	
-	-- angle to apply relative to billboard in view space
-	gl.glUniform2f(shader.uniforms.drawAngleDir.loc, math.cos(self.drawAngle), math.sin(self.drawAngle))
-	
-	-- angle cos&sin ... angle is for models, but for sprites will be used when disableBillboard is set. 
-	gl.glUniform2f(shader.uniforms.angleDir.loc, math.cos(self.angle), math.sin(self.angle))
-	
-	gl.glUniform3f(shader.uniforms.pos.loc,
-		self.pos.x + self.spritePosOffset.x,
-		self.pos.y + self.spritePosOffset.y,
-		self.pos.z + self.spritePosOffset.z)
-	
--- [[ 
-	-- vector
-	--gl.glUniform4f(shader.uniforms.color.loc, self.color:unpack())
-	-- matrix
-	gl.glUniformMatrix4fv(shader.uniforms.colorMatrix.loc, 1, gl.GL_FALSE, self.colorMatrix.ptr)
---]] 
---[[ cheap hack for cheap lighting
-	-- TODO update for colorMatrix
-	local cr, cg, cb, ca = self.color:unpack()
-	local x = math.floor(self.pos.x)
-	local y = math.floor(self.pos.y)
-	local z = math.floor(self.pos.z)
-	if x >= 0 and x < map.size.x
-	and y >= 0 and y < map.size.y
-	then
-		local cx = bit.rshift(x, map.Chunk.bitsize.x)
-		local dx = bit.band(x, map.Chunk.bitmask.x)
-		local cy = bit.rshift(y, map.Chunk.bitsize.y)
-		local dy = bit.band(y, map.Chunk.bitmask.y)
-		local cz = map.sizeInChunks.z-1
-		local chunk = map.chunks[cx + map.sizeInChunks.x * (cy + map.sizeInChunks.y * cz)]
-		local surface = chunk.surface[dx + map.Chunk.size.x * dy]
-		local sunAngle = 2 * math.pi * ((game.time / game.secondsPerDay) % 1)
-		local sunlight = sunAngle > surface.minAngle and sunAngle < surface.maxAngle and 1 or .2
-		
-		local sunWidthInRadians = .1	-- also in map shader
-		local sunlight = (
-			smoothstep(surface.minAngle - sunWidthInRadians, surface.minAngle + sunWidthInRadians, sunAngle)
-			- smoothstep(surface.maxAngle - sunWidthInRadians, surface.maxAngle + sunWidthInRadians, sunAngle)
-		) * .9 + .1
-	
-		if sunlight < 1 then
-			cr = cr * sunlight
-			cg = cg * sunlight
-			cb = cb * sunlight
-		end
-	end
-	gl.glUniform4f(shader.uniforms.color.loc, cr, cg, cb, ca)
---]]	
-	
-	gl.glUniform1i(shader.uniforms.useSeeThru.loc, self.useSeeThru and 1 or 0)
-
-	-- TODO buffer all these?
-	-- or store positions (or 4x for vertexes) in a GL buffer?
-	app.spriteSceneObj.geometry:draw()
-
-	--glreport'here'
---]=]
--- [=[ next: write all props to an attribute buffer
+-- write all props to an attribute buffer
 -- write as we go and just update the whole buffer
 -- TODO later map objs <-> loc in buffer and only update what we need
 
@@ -560,15 +487,8 @@ function Obj:drawSprite(index)
 	sprite.angle = self.angle
 	sprite.pos:set(self.pos:unpack())
 	sprite.spritePosOffset:set(self.spritePosOffset:unpack())
-	-- TODO store the color as mat4 
-	--ffi.copy(sprite.colorMatrix, self.colorMatrix.ptr, ffi.sizeof'float' * 16)
-	-- until then ...
-	-- col-major or row-major?
-	ffi.copy(sprite.colorMatrixR.s, self.colorMatrix.ptr + 0, ffi.sizeof'float' * 4)
-	ffi.copy(sprite.colorMatrixG.s, self.colorMatrix.ptr + 4, ffi.sizeof'float' * 4)
-	ffi.copy(sprite.colorMatrixB.s, self.colorMatrix.ptr + 8, ffi.sizeof'float' * 4)
-	ffi.copy(sprite.colorMatrixA.s, self.colorMatrix.ptr + 12, ffi.sizeof'float' * 4)
---]=]
+	-- col or row major?
+	ffi.copy(sprite.colorMatrix[0].s, self.colorMatrix.ptr + 0, ffi.sizeof'float' * 16)
 end
 
 function Obj:drawMesh()
