@@ -139,10 +139,10 @@ function Plant:update(...)
 				class = self.fruitClass,
 				pos = vec3f(self.pos:unpack()),
 				drawSize = vec2f(.5, .5),
---				drawCenter = vec3f(
---					(math.random() - .5) * self.drawSize.x * .5,
---					(math.random() - .5) * self.drawSize.y * .5,
---					-.01),
+				drawCenter = vec3f(
+					(math.random() - .5) * self.drawSize.x,
+					(math.random() * .5 + .5) * self.drawSize.y,
+					.1),
 			}
 		)
 	end

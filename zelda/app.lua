@@ -367,11 +367,9 @@ void main() {
 
 	// hmm, faster to just store cos and sin outside and use cplx mul?
 	vec2 drawAngleDir = vec2(cos(drawAngle), sin(drawAngle));
-	c = vec3(
+	c.xy = vec2(
 		c.x * drawAngleDir.x - c.y * drawAngleDir.y,
-		c.x * drawAngleDir.y + c.y * drawAngleDir.x,
-		c.z
-	);
+		c.x * drawAngleDir.y + c.y * drawAngleDir.x);
 	vec4 worldpos = vec4(pos + spritePosOffset, 1.);
 
 	vec3 ex, ey, ez;
