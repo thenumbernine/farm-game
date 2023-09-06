@@ -140,12 +140,14 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 
 	local Game = require 'zelda.game'
 
+	local fruitSeqNames = table.keys(anim.fruit)
 	local fruitClasses = table()
 	local Fruit = require 'zelda.obj.fruit'
 	fruitClasses:insert(
 		Fruit:subclass{
 			hpGiven = math.random(3,5),
 			foodGiven = math.random(3,5),
+			seq = fruitSeqNames:pickRandom(),
 		}
 	)
 	

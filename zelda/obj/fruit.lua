@@ -38,7 +38,7 @@ end
 function Fruit:useInInventory(player)
 	-- only run when the player pushes the button
 	-- TODO maybe the push vs hold functionality should be moved to the player code?
-	local appPlayer = player.player
+	local appPlayer = player.appPlayer
 	if appPlayer.keyPress.useItem and appPlayer.keyPressLast.useItem then return end
 
 	-- heal and eat

@@ -52,7 +52,7 @@ Player.rotateViewAmount = .25 * math.pi
 function Player:init(args, ...)
 	Player.super.init(self, args, ...)
 
-	self.player = assert(args.player)
+	self.appPlayer = assert(args.appPlayer)
 
 	self.food = self.foodMax
 
@@ -81,7 +81,7 @@ function Player:update(dt)
 	local map = self.map
 	local game = self.game
 	local app = game.app
-	local appPlayer = assert(self.player)
+	local appPlayer = assert(self.appPlayer)
 
 	-- TODO dif activities use dif energy
 	self.food = math.max(0, self.food - dt * .02)

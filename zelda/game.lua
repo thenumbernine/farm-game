@@ -175,15 +175,15 @@ TODO how to handle multiple maps with objects-in-map ...
 			map.size.x*.95,
 			map.size.y*.5,
 			map.size.z-.5),
-		interactInWorld = function(interactObj, playerObj)
-			local appPlayer = playerObj.player
+		interactInWorld = function(interact, player)
+			local appPlayer = player.appPlayer
 			local ig = require 'imgui'
 			appPlayer.gamePrompt = function()
 				local function buy(plantType, amount)
 					assert(amount > 0)
 					local cost = plantType.cost * amount
 					if cost <= appPlayer.money then
-						if playerObj:addItem(plantType.seedClass, amount) then
+						if player:addItem(plantType.seedClass, amount) then
 							appPlayer.money = appPlayer.money - cost
 						else
 							appPlayer:dialogPrompt("new room in inventory", "sorry")
@@ -354,7 +354,7 @@ function Game:init(args)
 					class = require(objsrcinfo.classname),
 				}))
 				-- TODO what if it's a dif player?
-				if objsrcinfo.player == app.players[1] then
+				if objsrcinfo.appPlayer == app.players[1] then
 					app.players[1].obj = newobj
 				end
 			end
@@ -372,7 +372,7 @@ function Game:init(args)
 				farmMap.size.x*.5,
 				farmMap.size.y*.5,
 				farmMap.size.z-.5),
-			player = assert(app.players[1]),
+			appPlayer = assert(app.players[1]),
 		}
 	end
 
@@ -640,8 +640,8 @@ end
 
 function Game:event(event, ...)
 	local app = self.app
-	local playerObj = app.players[1].obj
-	if not playerObj then return end
+	local player = app.players[1].obj
+	if not player then return end
 	if event.type == sdl.SDL_KEYDOWN
 	or event.type == sdl.SDL_KEYUP
 	then
@@ -656,13 +656,13 @@ function Game:event(event, ...)
 			if event.key.keysym.sym >= ('1'):byte()
 			and event.key.keysym.sym <= ('9'):byte()
 			then
-				playerObj.selectedItem = event.key.keysym.sym - ('1'):byte() + 1
+				player.selectedItem = event.key.keysym.sym - ('1'):byte() + 1
 			elseif event.key.keysym.sym == ('0'):byte() then
-				playerObj.selectedItem = 10
+				player.selectedItem = 10
 			elseif event.key.keysym.sym == ('-'):byte() then
-				playerObj.selectedItem = 11
+				player.selectedItem = 11
 			elseif event.key.keysym.sym == ('='):byte() then
-				playerObj.selectedItem = 12
+				player.selectedItem = 12
 			end
 		end
 	end

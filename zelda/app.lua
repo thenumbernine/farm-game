@@ -97,7 +97,7 @@ keyPress.s:
 	- talk/interact
 		... this could be same as pick-up, but for NPCs ...
 
-TODO in gameapp put these in Player
+TODO in gameapp put these in App.Player
 and then have zelda/player subclass them
 --]]
 local PlayerKeysEditor = require 'gameapp.menu.playerkeys'
@@ -180,8 +180,8 @@ MainMenu.menuOptions:insert(4, {
 
 App.url = 'https://github.com/thenumbernine/zelda3d-lua'
 
-local Player = require 'zelda.player'
-App.Player = Player
+local AppPlayer = require 'zelda.player'
+App.Player = AppPlayer
 
 function App:initGL()
 	-- instead of proj * mv , imma separate into: proj view model
@@ -758,7 +758,7 @@ function App:resetGame(dontMakeGame)
 	self.playcfg = table(self.cfg):setmetatable(nil)
 
 	self.players = range(self.playcfg.numPlayers):mapi(function(i)
-		return Player{index=i, app=self}
+		return AppPlayer{index=i, app=self}
 	end)
 
 	-- TODO put this in parent class

@@ -10,7 +10,7 @@ local function placeableTile(parent)
 	function cl:useInInventory(player)
 		local map = player.map
 		-- only place upon button press
-		local appPlayer = player.player
+		local appPlayer = player.appPlayer
 		if not (appPlayer.keyPress.useItem and not appPlayer.keyPressLast.useItem) then return end
 
 		-- TODO traceline and then step back

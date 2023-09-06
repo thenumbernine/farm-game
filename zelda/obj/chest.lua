@@ -25,8 +25,8 @@ function Chest:init(args)
 end
 
 function Chest:interactInWorld(player)
-	player.player.chestOpen = self
-	player.player.invOpen = true
+	player.appPlayer.chestOpen = self
+	player.appPlayer.invOpen = true
 end
 
 return Chest

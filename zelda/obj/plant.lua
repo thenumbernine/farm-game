@@ -188,9 +188,9 @@ function Plant:interactInWorld(player)
 			player.pullUpPlantThread = game.threads:add(function()
 				player.cantMove = true
 				player.seq = 'kneel'
-				game:sleep(.5)
+				game:sleep(.4)
 				player.seq = 'handsup'
-				game:sleep(.5)
+				game:sleep(.2)
 				player.seq = 'stand'
 				player.pullUpPlantThread = nil
 				player.cantMove = nil
@@ -275,7 +275,7 @@ end
 function Plant:useInInventory(player)
 	-- only run when the player pushes the button
 	-- TODO maybe the push vs hold functionality should be moved to the player code?
-	local appPlayer = player.player
+	local appPlayer = player.appPlayer
 	if appPlayer.keyPress.useItem and appPlayer.keyPressLast.useItem then return end
 
 	-- heal and eat
