@@ -8,7 +8,7 @@ merge or something
 local Tile = require 'zelda.tile'
 local Item = require 'zelda.item.item'
 
-local Dirt = Obj:subclass()
+local Dirt = Item:subclass()
 Dirt.classname = 'zelda.item.dirt'
 
 Dirt.name = 'Dirt'

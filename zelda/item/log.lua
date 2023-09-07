@@ -18,6 +18,7 @@ Log.classname = 'zelda.item.log'
 
 Log.name = 'log'
 Log.sprite = 'log'
+Log.seq = 'stand'
 Log.tileType = assert(Tile.typeValues.Wood)
 
 return Log

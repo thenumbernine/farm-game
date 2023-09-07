@@ -1,5 +1,9 @@
--- anim[sprite][seq][frame]
+local table = require 'ext.table'
+local string = require 'ext.string'
+local path = require 'ext.path'
+local fromlua = require 'ext.fromlua'
 
+-- anim[sprite][seq][frame]
 local anim = {
 	link = {
 		useDirs = true,
@@ -71,7 +75,8 @@ local anim = {
 }
 
 -- auto-add.  i think this was below but below also had udlr stuff meh.
-local path = require 'ext.path'
+local atlas = assert(fromlua(assert(path'sprites/atlas.lua':read())))
+local atlaskeys = table.keys(atlas)
 for _,dir in ipairs{
 	'tree',
 	'plant',
@@ -80,16 +85,17 @@ for _,dir in ipairs{
 	'item',
 	'vegetable',
 } do
-	if (path'sprites'/dir):isdir() then
-		local sprite = {}
-		for f in (path'sprites'/dir):dir() do
-			local fbase = path(f):getext()
+	local sprite = {}
+	for _,f in ipairs(atlaskeys) do
+		local prefix = 'sprites/'..dir..'/'
+		if f:match('^'..string.patescape(prefix)) then
+			local fbase = path(f:sub(#prefix+1)):getext()
 			sprite[fbase] = {
-				{filename = tostring(path'sprites'/dir/f)},
+				{filename = f},
 			}
 		end
-		anim[dir] = sprite
 	end
+	anim[dir] = sprite
 end
 
 

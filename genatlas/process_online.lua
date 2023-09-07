@@ -8,14 +8,13 @@ local path = require 'ext.path'
 local table = require 'ext.table'
 local Image = require 'image'
 
-local srcdir = path'srcsprites'
+local srcdir = path'src_online'
 local fs = srcdir:rdir()
 for _,srcfn in ipairs(fs) do
 	local src = path(srcfn)
-	local dstfn = assert(srcfn:gsub('^srcsprites', 'dstsprites'))
+	local dstfn = assert(srcfn:gsub('^src_online', 'sprites'))
 	local dst = path(dstfn):setext'png'
 	path((dst:getdir())):mkdir(true)
-
 
 	print('convert "'..src..'" "'..dst..'"')
 	--[[ imagemagick looks like it takes a lot of work to do this ...
@@ -118,8 +117,8 @@ print('targetsize', targetsize)
 	dstimg:save(tostring(dst))
 	--]]
 	
-	-- [[ last, copy it into its dst live folder ... ?
-	local dst2 = path(assert(dst.path:gsub('^dstsprites', '../sprites'))):setext'png'
+	--[[ last, copy it into its dst live folder ... ?
+	local dst2 = path(assert(dst.path:gsub('^sprites', '../sprites'))):setext'png'
 	path((dst2:getdir())):mkdir(true)
 	
 	print('also saving to', dst2)
