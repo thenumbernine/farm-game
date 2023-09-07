@@ -114,7 +114,7 @@ local StoneTile = SolidTile:subclass{name='Stone'}
 StoneTile.texrects = getTexRects'cavestone'
 
 local GrassTile = SolidTile:subclass{name='Grass'}
-GrassTile.texrects = getTexRects'cavestone'
+GrassTile.texrects = getTexRects'grass'
 
 local WoodTile = SolidTile:subclass{name='Wood'}
 WoodTile.texrects = getTexRects'wood'

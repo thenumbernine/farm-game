@@ -94,8 +94,8 @@ TODO how to handle multiple maps with objects-in-map ...
 					if c < .5 then
 						voxelType =
 							k >= half-1
-							and Tile.typeForName.Stone
-							or Tile.typeForName.Grass
+							and Tile.typeForName.Grass
+							or Tile.typeForName.Stone
 					end
 					--local index = ijk:dot(step)
 					local voxel = assert(map:getTile(i,j,k))
@@ -236,8 +236,7 @@ TODO how to handle multiple maps with objects-in-map ...
 			local voxel
 			while k >= 0 do
 				voxel = map:getTile(i,j,k)
-				if voxel.type ~= Tile.typeValues.Empty
-				and voxel.tex == 0	-- grass tex
+				if voxel.type == Tile.typeValues.Grass
 				then
 					break
 				end
