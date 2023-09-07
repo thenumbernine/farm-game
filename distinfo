@@ -7,7 +7,6 @@ files = {
 	['.'] = {
 		'run.lua',
 		'README.md',
-		'texpack.png',
 		'splash.png',
 		'sprites',
 		'music',
