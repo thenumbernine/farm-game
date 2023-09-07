@@ -119,8 +119,12 @@ GrassTile.texrects = getTexRects'grass'
 local WoodTile = SolidTile:subclass{name='Wood'}
 WoodTile.texrects = getTexRects'wood'
 
-local WaterTile = SolidTile:subclass{name='Water'}
+local WaterTile = Tile:subclass{name='Water'}
 WaterTile.texrects = getTexRects'water'
+-- TODO auto flag this if any texrect have a transparent pixel
+WaterTile.transparent = true
+-- TODO contents = ... vacuum, air, poison gas, water, acid, lava, oil, ... plasma ... einstein-bose condensate ... quantum spin-liquid ... quark matter ... hole in the fabric of spacetime ... 
+WaterTile.contents = 'water'
 
 --[[
 what do i want ...

@@ -45,6 +45,11 @@ TODO how to handle multiple maps with objects-in-map ...
 		math.floor(map.size.y*3/4),
 		math.floor(map.size.z/2) + houseSize.z)
 
+	local lakeCenter = vec3f(
+		math.floor(map.size.x*.1),
+		math.floor(map.size.y*.1),
+		math.floor(map.size.z/2))
+
 	-- copied in game's init
 	local npcPos = vec3f(
 		map.size.x*.95,
@@ -52,7 +57,8 @@ TODO how to handle multiple maps with objects-in-map ...
 		map.size.z-.5)
 
 	do
-		local simplexnoise = require 'simplexnoise.3d'
+		local noise2d = require 'simplexnoise.2d'
+		local noise3d = require 'simplexnoise.3d'
 	--print'generating map'
 		local maptexs = {
 			grass = 0,
@@ -61,42 +67,67 @@ TODO how to handle multiple maps with objects-in-map ...
 		}
 
 		-- simplex noise resolution
-		local blockSize = 8
+		local blockBits = 3
+		local blockSize = bit.lshift(1, blockBits)
 		local half = bit.rshift(map.size.z, 1)
 		--local step = vec3i(1, map.size.x, map.size.x * map.size.y)
 		--local ijk = vec3i()
 		local xyz = vec3f()
 		for k=0,map.size.z-1 do
 			--ijk.z = k
-			xyz.z = k / blockSize
+			xyz.z = (k - bit.rshift(map.size.z,1)) / blockSize	-- z=0 <=> midpoint
 			for j=0,map.size.y-1 do
 				--ijk.y = j
-				xyz.y = j / blockSize
+				xyz.y = (j - bit.rshift(map.size.y,1))  / blockSize
 				for i=0,map.size.x-1 do
 					--ijk.x = i
-					xyz.x = i / blockSize
-					local c = simplexnoise(xyz:unpack())
-					local voxelType = Tile.typeForName.Empty
-					if k >= half then
-						c = c + (k - half) * .5
-					end
+					xyz.x = (i - bit.rshift(map.size.x,1)) / blockSize
+					-- noise range should be between [-1,1] (with gradients bound to [-1,1] as well) 
+					local c = noise2d(xyz.x, xyz.y)
+					-- map to [0,1]
+					c = c * .25
+					
 
-					-- [[ make the top flat?
-					if k >= half
-					and (
+					-- [[ make it flat around the house and NPC
+					if (
 						(vec2f(i,j) - vec2f(houseCenter.x, houseCenter.y)):length() < 15
 						or (vec2f(i,j) - vec2f(npcPos.x, npcPos.y)):length() < 5
 					) then
-						c = k == half and 0 or 1
+						-- make it flat ground
+						-- TODO falloff around borders
+						c = 0
+					end
+					--]]
+				
+					-- put zero halfway up the map
+					c = xyz.z + c
+				
+					-- lower the lake
+					local inLake = (vec2f(i,j) - vec2f(lakeCenter.x, lakeCenter.y)):length() < 15 
+					if inLake then
+						c = c + .7
+					end
+
+					local voxelType
+					if c < 0 then
+						voxelType = Tile.typeForName.Stone
+					elseif c < .1 then
+						voxelType = Tile.typeForName.Grass
+					else
+						voxelType = Tile.typeForName.Empty
+					end
+					
+					-- [[ make it a hole where the lake will be
+					-- TODO again, use a gaussian surface 
+					if inLake then
+						if k <= map.size.z*.5 - 2
+						and voxelType == Tile.typeForName.Empty
+						then
+							voxelType = Tile.typeForName.Water
+						end
 					end
 					--]]
 
-					if c < .5 then
-						voxelType =
-							k >= half-1
-							and Tile.typeForName.Grass
-							or Tile.typeForName.Stone
-					end
 					--local index = ijk:dot(step)
 					local voxel = assert(map:getTile(i,j,k))
 					voxel.type = voxelType.index
@@ -163,7 +194,9 @@ TODO how to handle multiple maps with objects-in-map ...
 	--print'init done'
 	end
 
+	-- hmm I should redo my maps as 2d noise ...
 	-- TODO around here, make a river or something.
+
 
 	-- don't require until app.game is created
 	local plantTypes = require 'zelda.plants'
@@ -238,14 +271,14 @@ TODO how to handle multiple maps with objects-in-map ...
 			local voxel
 			while k >= 0 do
 				voxel = map:getTile(i,j,k)
-				if voxel.type == Tile.typeValues.Grass
-				then
+				if voxel.type ~= Tile.typeValues.Empty then
 					break
 				end
 				k = k - 1
 			end
 			if k >= 0 
 			and voxel
+			and voxel.type == Tile.typeValues.Grass 
 			then
 				-- found a grass tile
 				local r = math.random()

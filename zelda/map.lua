@@ -170,7 +170,7 @@ function Chunk:buildDrawArrays()
 										local nx = i + ofsx
 										local ny = j + ofsy
 										local nz = k + ofsz
-										local nbhdVoxelIsUnitCube
+										local drawFace = true
 										-- TODO test if it's along the sides, if not just use offset + step
 										-- if so then use map:getType
 										local nbhdVoxel = map:getTile(nx, ny, nz)
@@ -183,11 +183,20 @@ function Chunk:buildDrawArrays()
 											then
 												local nbhdVoxelType = Tile.types[nbhdVoxelTypeIndex]
 												if nbhdVoxelType then
-													nbhdVoxelIsUnitCube = nbhdVoxelType.isUnitCube
+													-- if we're a cube but our neighbor isn't then build our surface
+													if nbhdVoxelType.isUnitCube
+													-- or if we're a cube and our neighbor is also ... but one of us is transparent, and our types are different
+													and not (
+														(voxelType.transparent or nbhdVoxelType.transparent)
+														and voxelType ~= nbhdVoxelType
+													)
+													then
+														drawFace = false
+													end
 												end
 											end
 										end
-										if not nbhdVoxelIsUnitCube then
+										if drawFace then
 											-- 2 triangles x 3 vtxs per triangle
 											for ti=1,6 do
 												local vi = Tile.unitQuadTriIndexes[ti]

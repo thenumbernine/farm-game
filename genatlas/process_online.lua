@@ -38,7 +38,7 @@ for _,srcfn in ipairs(fs) do
 		-- make water transparent
 		if frame:match'^water' then
 			local r,g,b,a = dstimg:split()
-			a = a * .3
+			a = a * .7
 			dstimg = Image.combine(r,g,b,a)
 		end
 	else
