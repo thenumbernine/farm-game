@@ -4,15 +4,15 @@ local HoedGround = require 'zelda.obj.hoedground'
 local Plant = require 'zelda.obj.plant'
 local Item = require 'zelda.item.item'
 
-local ItemHoe = Item:subclass()
-ItemHoe.classname = 'zelda.item.hoe'
+local Hoe = Item:subclass()
+Hoe.classname = 'zelda.item.hoe'
 
-ItemHoe.name = 'hoe'
-ItemHoe.sprite = 'item'
-ItemHoe.seq = 'hoe'
+Hoe.name = 'hoe'
+Hoe.sprite = 'item'
+Hoe.seq = 'hoe'
 
--- static method
-function ItemHoe:useInInventory(player)
+-- static method, 'self' is subclass
+function Hoe:useInInventory(player)
 	local map = player.map
 	
 	local x,y,z = (player.pos + vec3f(
@@ -40,4 +40,4 @@ function ItemHoe:useInInventory(player)
 	end
 end
 
-return ItemHoe 
+return Hoe 

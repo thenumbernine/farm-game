@@ -1,3 +1,4 @@
+local ffi = require 'ffi'
 local gl = require 'gl'
 local class = require 'ext.class'
 local table = require 'ext.table'
@@ -35,6 +36,7 @@ Player.attackEndTime = -1
 Player.attackDuration = .35
 
 Player.jumpVel = 5
+Player.swimUpVel = 1
 
 -- how many items?
 -- minecraft inventory: 9x4 = 36
@@ -68,7 +70,7 @@ function Player:init(args, ...)
 		require 'zelda.item.axe',
 		require 'zelda.item.hoe',
 		require 'zelda.item.wateringcan',
-		require 'zelda.obj.chest',
+		require 'zelda.item.fishingpole',
 	}:mapi(function(cl)
 		return {
 			class = cl,
@@ -184,7 +186,9 @@ function Player:update(dt)
 		if appPlayer.keyPress.jump then
 			-- swing?  jump?  block?  anything?
 			-- self.vel.z = self.vel.z - 10
-			if bit.band(self.collideFlags, sides.flags.zm) ~= 0 then
+			if self.inWater then
+				self.vel.z = self.vel.z + self.swimUpVel
+			elseif bit.band(self.collideFlags, sides.flags.zm) ~= 0 then
 				self.vel.z = self.vel.z + self.jumpVel
 			end
 		end
@@ -365,6 +369,28 @@ function Player:draw(...)
 		gl.glDepthMask(gl.GL_TRUE)
 		buf:unbind()
 		shader:useNone()
+	end
+
+	if self.fishing then
+		local app = self.game.app
+		local frame = self.getFrame('item', 'fishingpole', 1)
+		
+		-- draw the fishing pole over the player
+		local sprite = app.spritesBufCPU:emplace_back()
+		sprite.atlasTcPos:set(frame.atlasTcPos:unpack())
+		sprite.atlasTcSize:set(frame.atlasTcSize:unpack())
+		local hflip = (math.abs((self.angle - app.viewYaw) % (2 * math.pi) - math.pi) < .5 * math.pi)
+		sprite.hflip = hflip and 1 or 0
+		sprite.vflip = 0
+		sprite.disableBillboard = 0
+		sprite.useSeeThru = 0
+		sprite.drawCenter:set(hflip and .2 or .8, 1.25, .1)
+		sprite.drawSize:set(1.5, 1.5)
+		sprite.drawAngle = 0	-- TODO animate for the cast
+		sprite.angle = 0
+		sprite.pos:set(self.pos:unpack())
+		sprite.spritePosOffset:set(0, 0, 0)
+		ffi.copy(sprite.colorMatrix[0].s, self.identMat4.ptr, ffi.sizeof'float' * 16)
 	end
 end
 

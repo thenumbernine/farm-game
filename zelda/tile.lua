@@ -121,6 +121,7 @@ WoodTile.texrects = getTexRects'wood'
 
 local WaterTile = Tile:subclass{name='Water'}
 WaterTile.texrects = getTexRects'water'
+WaterTile.isUnitCube = true	-- put in Tile?
 -- TODO auto flag this if any texrect have a transparent pixel
 WaterTile.transparent = true
 -- TODO contents = ... vacuum, air, poison gas, water, acid, lava, oil, ... plasma ... einstein-bose condensate ... quantum spin-liquid ... quark matter ... hole in the fabric of spacetime ... 

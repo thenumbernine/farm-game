@@ -40,6 +40,15 @@ typedef struct {
 assert(ffi.sizeof'voxel_t' == ffi.sizeof'voxel_basebits_t')
 
 
+local voxel_t = ffi.metatype('voxel_t', {
+	__index = {
+		tileClass = function(self)
+			return Tile.types[self.type]
+		end,
+	},
+})
+
+
 local Chunk = class()
 
 -- static member
@@ -551,6 +560,7 @@ function Map:buildAlts()
 	end
 end
 
+-- i,j,k integers
 -- return the ptr to the map tile
 -- TODO rename to 'getPtr' or 'getVoxel' or something
 function Map:getTile(i,j,k)

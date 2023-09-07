@@ -678,10 +678,12 @@ void main() {
 	vec2 sunTc = worldPosv.xy / chunkSize.xy;
 	vec2 sunAngles = texture(sunAngleTex, sunTc).xy;
 	const float sunWidthInRadians = .1;
-	float sunlight = (
+	const float ambient = .5;
+	float sunlight = mix(
 		smoothstep(sunAngles.x - sunWidthInRadians, sunAngles.x + sunWidthInRadians, sunAngle)
-		- smoothstep(sunAngles.y - sunWidthInRadians, sunAngles.y + sunWidthInRadians, sunAngle)
-	) * .9 + .1;
+		- smoothstep(sunAngles.y - sunWidthInRadians, sunAngles.y + sunWidthInRadians, sunAngle),
+		1.,
+		ambient);
 	fragColor.xyz *= sunlight;
 
 	// keep the dx dy outside the if block to prevent errors.

@@ -314,11 +314,35 @@ function Obj:update(dt)
 	or self.itemTouch
 	then
 		self:move(self.vel, dt)
+
+		-- TODO always check?
+		-- or if only upon move, also check upon init?
+		self.inWater = false
+		local voxel = self.map:getTile(
+			math.floor(self.pos.x),
+			math.floor(self.pos.y),
+			math.floor(self.pos.z))
+		if voxel then
+			local voxelType = voxel:tileClass()
+			if voxelType
+			and voxelType.contents == 'water'
+			then
+				self.inWater = true
+				local velVisc = .7
+				self.vel.x = self.vel.x * velVisc
+				self.vel.y = self.vel.y * velVisc
+				self.vel.z = self.vel.z * velVisc
+			end
+		end
 	end
 
 	if self.useGravity
 	and 0 == bit.band(self.collideFlags, sides.flags.zm)
 	then
+		local gravity = self.gravity
+		if self.inWater then
+			gravity = gravity * .3
+		end
 		self.vel.z = self.vel.z + self.gravity * dt
 	end
 end
@@ -417,50 +441,55 @@ local dirSeqSuffixes = {'_r', '_u', '_l', '_d'}
 
 local matrix_ffi = require 'matrix.ffi'
 local modelMat = matrix_ffi({4,4},'float'):zeros():setIdent()
+local identMat4 = matrix_ffi({4,4},'float'):lambda(function(i,j) return i==j and 1 or 0 end)
+Obj.identMat4 = identMat4
+
+-- static method, no class, convenient to have in the namespace
+function Obj.getFrame(spriteName, seqName, frameIndex, angle, app)
+		if not spriteName then return end
+		if not seqName then return end
+		if not frameIndex then return end
+		local sprite = anim[spriteName]
+		if not sprite then return end
+		if sprite.useDirs then	-- enable this for sequences that use _u _d _l _r etc (TODO search by default?)
+			local relAngle = angle - app.viewYaw
+			local angleIndex = math.floor(relAngle / (.5 * math.pi) + .5) % 4 + 1
+			seqName = seqName .. dirSeqSuffixes[angleIndex]
+--print('angle', self.angle, 'index', angleIndex, 'seqName', seqName)
+		end
+		local seq = sprite[seqName]
+--print('seqName', seqName, 'seq', seq)
+		if not seq then return end
+		return seq[frameIndex]
+end
 
 function Obj:draw()
-	local map = self.map
-	local game = self.game
-	local app = game.app
-
 --print('drawing', self.sprite, self.seq, self.frame, self.angle)
-	if self.sprite then
-		local sprite = anim[self.sprite]
-		if sprite then
-			local seqname = self.seq
-			if seqname then
-				if sprite.useDirs then	-- enable this for sequences that use _u _d _l _r etc (TODO search by default?)
-					local relAngle = self.angle - app.viewYaw
-					local angleIndex = math.floor(relAngle / (.5 * math.pi) + .5) % 4 + 1
-					seqname = seqname .. dirSeqSuffixes[angleIndex]
---print('angle', self.angle, 'index', angleIndex, 'seqname', seqname)
-				end
-				local seq = sprite[seqname]
---print('seqname', seqname, 'seq', seq)
-				if seq and self.frame then
-					local frame = seq[self.frame]
-					if frame.atlasTcPos then
-						-- [[ draw immediately
-						self:drawSprite(frame)
-						--]]
-					elseif frame.mesh then
-						error'here'
-						--[[
-						self:drawMesh()
-						--]]
-						-- [[
-						game.meshDrawList:insert(self)
-						--]]
-					else
-						error("hmm error in frame table")
-					end
-				end
-			end
-		end
+	local frame = Obj.getFrame(
+		self.sprite,
+		self.seq,
+		self.frame,
+		self.angle,
+		self.game.app)
+	if not frame then return end
+					
+	if frame.atlasTcPos then
+		-- [[ draw immediately
+		self:drawSprite(frame)
+		--]]
+	elseif frame.mesh then
+		error'here'
+		--[[
+		self:drawMesh()
+		--]]
+		-- [[
+		self.game.meshDrawList:insert(self)
+		--]]
+	else
+		error("hmm error in frame table")
 	end
 end
 
-local identMat4 = matrix_ffi({4,4},'float'):lambda(function(i,j) return i==j and 1 or 0 end)
 function Obj:drawSprite(frame)
 	local app = self.game.app
 
@@ -481,7 +510,7 @@ function Obj:drawSprite(frame)
 	sprite.pos:set(self.pos:unpack())
 	sprite.spritePosOffset:set(self.spritePosOffset:unpack())
 	-- col or row major?
-	ffi.copy(sprite.colorMatrix[0].s, self.colorMatrix.ptr + 0, ffi.sizeof'float' * 16)
+	ffi.copy(sprite.colorMatrix[0].s, self.colorMatrix.ptr, ffi.sizeof'float' * 16)
 end
 
 function Obj:drawMesh(frame)

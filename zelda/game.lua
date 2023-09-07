@@ -263,6 +263,11 @@ TODO how to handle multiple maps with objects-in-map ...
 		class = require 'zelda.obj.bed',
 		pos = houseCenter + vec3f(houseSize.x-1, -(houseSize.y-1), -(houseSize.z-1)) + .5,
 	}
+	map:newObj{
+		class = require 'zelda.obj.chest',
+		pos = houseCenter + vec3f(houseSize.x-1, houseSize.y-1, -(houseSize.z-1)) + .5,
+	}
+
 
 	-- [[ plants
 	for j=0,map.size.y-1 do
