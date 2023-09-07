@@ -34,6 +34,13 @@ for _,srcfn in ipairs(fs) do
 	local dstimg
 	if sprite == 'maptiles' then
 		dstimg = srcimg
+			:setChannels(4)
+		-- make water transparent
+		if frame:match'^water' then
+			local r,g,b,a = dstimg:split()
+			a = a * .3
+			dstimg = Image.combine(r,g,b,a)
+		end
 	else
 		local hist = srcimg:getHistogram()
 		local bgcount, bgcolor = table.sup(hist)
