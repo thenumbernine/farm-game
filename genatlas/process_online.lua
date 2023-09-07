@@ -6,11 +6,13 @@
 local ffi = require 'ffi'
 local path = require 'ext.path'
 local table = require 'ext.table'
+local string = require 'ext.string'
 local Image = require 'image'
 
 local srcdir = path'src_online'
-local fs = srcdir:rdir()
+local fs = srcdir:rdir()		-- TODO will rdir use / or \ in Windows? I'm assuming / always, like path() uses
 for _,srcfn in ipairs(fs) do
+	local _, sprite, frame = string.split(srcfn, '/'):unpack()
 	local src = path(srcfn)
 	local dstfn = assert(srcfn:gsub('^src_online', 'sprites'))
 	local dst = path(dstfn):setext'png'
@@ -27,63 +29,69 @@ for _,srcfn in ipairs(fs) do
 	-- [[ so I'll just use my own 
 	local srcimg = Image(tostring(src))
 	--print(require 'ext.tolua'(srcimg))
-	
-	local hist = srcimg:getHistogram()
-	local bgcount, bgcolor = table.sup(hist)
-	local br, bg, bb = bgcolor:byte(1,3)
 
-	local dstimg = srcimg
-		:setChannels(4)
-	
-	-- [=[
-	for j=0,dstimg.height-1 do
-		for i=0,dstimg.width-1 do
-			local p = dstimg.buffer + 4 * (i + dstimg.width * j)
-			local r,g,b = p[0], p[1], p[2]
-			-- TODO colorspace for measuring distance?
-			local dist = math.sqrt((br - r)^2 + (bg - g)^2 + (bb - b)^2)
-			if dist < 30 then
-				p[0] = 0
-				p[1] = 0
-				p[2] = 0
-				p[3] = 0
-			else
-				p[3] = 255
+	-- don't cut background out of 'maptiles'
+	local dstimg
+	if sprite == 'maptiles' then
+		dstimg = srcimg
+	else
+		local hist = srcimg:getHistogram()
+		local bgcount, bgcolor = table.sup(hist)
+		local br, bg, bb = bgcolor:byte(1,3)
+
+		dstimg = srcimg
+			:setChannels(4)
+		
+		-- [=[
+		for j=0,dstimg.height-1 do
+			for i=0,dstimg.width-1 do
+				local p = dstimg.buffer + 4 * (i + dstimg.width * j)
+				local r,g,b = p[0], p[1], p[2]
+				-- TODO colorspace for measuring distance?
+				local dist = math.sqrt((br - r)^2 + (bg - g)^2 + (bb - b)^2)
+				if dist < 30 then
+					p[0] = 0
+					p[1] = 0
+					p[2] = 0
+					p[3] = 0
+				else
+					p[3] = 255
+				end
 			end
 		end
-	end
-	--]=]
-	
--- [[ blob-detection because it looks like there's a lot of pixel blobs that could stand to be filtered out
-	local blobs = dstimg:getBlobs{
-		classify = function(p)
-			return p[3]			-- classify blobs by alpha
-		end,
-	}
---]]
-
-	print('#blobs', #blobs)
-	--print(table(blobs):map(function(blob,k,t) return blob:calcArea(), #t+1 end):sort():concat', ')
-
--- [=[
-	local tmp = Image(dstimg.width, dstimg.height, 4, 'unsigned char')
-		:clear()
-	-- [[
-	for _,blob in pairs(blobs) do
-		if blob.cl > 0 then
-			local area = blob:calcArea()
-			if area > 3000 then
-				blob:copyToImage(tmp, dstimg)
-			end
-		end
-	end
+		--]=]
+		
+	-- [[ blob-detection because it looks like there's a lot of pixel blobs that could stand to be filtered out
+		local blobs = dstimg:getBlobs{
+			classify = function(p)
+				return p[3]			-- classify blobs by alpha
+			end,
+		}
 	--]]
-	dstimg = tmp
---]=]
 
--- [=[
-	-- zealous-crop
-	dstimg = dstimg:zealousCrop()
+		print('#blobs', #blobs)
+		--print(table(blobs):map(function(blob,k,t) return blob:calcArea(), #t+1 end):sort():concat', ')
+
+	-- [=[
+		local tmp = Image(dstimg.width, dstimg.height, 4, 'unsigned char')
+			:clear()
+		-- [[
+		for _,blob in pairs(blobs) do
+			if blob.cl > 0 then
+				local area = blob:calcArea()
+				if area > 3000 then
+					blob:copyToImage(tmp, dstimg)
+				end
+			end
+		end
+		--]]
+		dstimg = tmp
+	--]=]
+
+	-- [=[
+		-- zealous-crop
+		dstimg = dstimg:zealousCrop()
+	end
 
 	local w, h = dstimg:size()
 	local s = math.max(w, h)
@@ -95,7 +103,6 @@ for _,srcfn in ipairs(fs) do
 		y = math.floor((s - h) / 2),
 	}
 	--]]
-
 
 	local targetsize = 64
 	local planttype = 'plant'

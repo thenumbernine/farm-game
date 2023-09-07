@@ -206,7 +206,6 @@ precision highp float;
 --]=]
 
 -- [=[ load tex2ds for anim
-	local GLTex2D = require 'gl.tex2d'
 	local anim = require 'zelda.anim'
 	for _,sprite in pairs(anim) do
 		for seqname,seq in pairs(sprite) do
@@ -214,13 +213,6 @@ precision highp float;
 				for _,frame in pairs(seq) do
 					local fn = frame.filename
 					if fn:sub(-4) == '.png' then
-						--[[
-						frame.tex = GLTex2D{
-							filename = frame.filename,
-							magFilter = gl.GL_LINEAR,
-							minFilter = gl.GL_NEAREST,
-						}
-						--]]
 						-- .pos, .size
 						local texrect = assert(spriteAtlasMap[frame.filename])
 						-- atlas pos and size
@@ -726,20 +718,6 @@ void main() {
 	like std::vector but for GL
 	in fact, why not build it into thel GLBuffer class?
 	--]]
-
-	-- TODO you can store this in app if you'd like
-	-- based on the sprite atlas
-	-- map from voxel tile-texture-index to rect
-	self.spriteAtlasRectForMapTexIndex = {}
-	for i,f in ipairs{
-		'grass',
-		'stone',
-		'wood',
-		'zstone',
-	} do
-		self.spriteAtlasRectForMapTexIndex[i-1] = assert(spriteAtlasMap['sprites/maptiles/'..f..'.png'])
-	end
-
 
 	gl.glEnable(gl.GL_DEPTH_TEST)
 	gl.glEnable(gl.GL_CULL_FACE)

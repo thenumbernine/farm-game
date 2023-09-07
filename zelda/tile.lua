@@ -78,20 +78,23 @@ Tile.unitquad = unitquad
 Tile.unitQuadTris = unitQuadTris
 Tile.unitQuadTriIndexes = unitQuadTriIndexes
 Tile.unitQuadTriStripIndexes = unitQuadTriStripIndexes 
+Tile.texrects = {}
 
-Tile.types = {}
-Tile.typeValues = {}
+Tile.types = {}				-- index => obj
+Tile.typeForName = {}		-- name => obj
+Tile.typeValues = {}		-- name => index
 
 
 local spriteAtlasMap = require 'zelda.atlas'
 local spriteAtlasKeys = table.keys(spriteAtlasMap)
+-- returns a 0-based table, indexed with voxel.tex
 local function getTexRects(sprite)
 	local prefix = 'sprites/maptiles/'..sprite
 	return spriteAtlasKeys:filter(function(k)
 		return k:sub(1,#prefix) == prefix
 	end):mapi(function(fn)
 		return spriteAtlasMap[fn]
-	end)
+	end):setmetatable(nil)
 end
 
 
@@ -114,7 +117,7 @@ local GrassTile = SolidTile:subclass{name='Grass'}
 GrassTile.texrects = getTexRects'cavestone'
 
 local WoodTile = SolidTile:subclass{name='Wood'}
-GrassTile.texrects = getTexRects'wood'
+WoodTile.texrects = getTexRects'wood'
 
 local WaterTile = SolidTile:subclass{name='Water'}
 WaterTile.texrects = getTexRects'water'
@@ -133,10 +136,14 @@ Tile.types[0] = EmptyTile()
 table.insert(Tile.types, StoneTile())
 table.insert(Tile.types, GrassTile())
 table.insert(Tile.types, WoodTile())
+table.insert(Tile.types, WaterTile())
 
--- pairs cuz 0 exists
-for index,obj in pairs(Tile.types) do
+-- 0 exists
+for index=0,#Tile.types do
+	local obj = Tile.types[index]
+	obj.index = index
 	Tile.typeValues[obj.name] = index
+	Tile.typeForName[obj.name] = obj
 end
 
 return Tile

@@ -26,7 +26,7 @@ local function placeableTile(parent)
 			if tile and tile.type == Tile.typeValues.Empty then
 				player:removeSelectedItem()
 				tile.type = assert(self.tileType)
-				tile.tex = 2	--maptexs.wood
+				tile.tex = math.random(#tile.texrects)-1
 				map:buildDrawArrays(
 					dst.x, dst.y, dst.z,
 					dst.x, dst.y, dst.z)

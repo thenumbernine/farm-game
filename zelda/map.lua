@@ -22,8 +22,8 @@ local sides = require 'zelda.sides'
 ffi.cdef[[
 typedef uint16_t voxel_basebits_t;
 typedef struct {
-	voxel_basebits_t type : 7;	// map-type, this maps to zelda.tiles, which now holds {[0]=empty, stone, grass, wood}
-	voxel_basebits_t tex : 2;	// tex = atlas per-tile to use
+	voxel_basebits_t type : 5;	// map-type, this maps to zelda.tiles, which now holds {[0]=empty, stone, grass, wood}
+	voxel_basebits_t tex : 4;	// tex = atlas per-tile to use
 	voxel_basebits_t half : 1;	// set this to use a half-high tile.  TODO eventually slopes, and make this the 'shape' field. also add 45' and 90' slopes.
 	voxel_basebits_t rotx : 2;	// Euler angles, in 90' increments
 	voxel_basebits_t roty : 2;
@@ -156,81 +156,30 @@ function Chunk:buildDrawArrays()
 				if voxelTypeIndex > 0 then	-- skip empty
 					local voxelType = Tile.types[voxelTypeIndex]
 					if voxelType then
-						local texrect = assert(app.spriteAtlasRectForMapTexIndex[voxel.tex])
-
-						if voxelType.isUnitCube then
-							if voxel.half == 0 then
-								-- full cube
-								assert(voxelType.cubeFaces)
-								-- faceIndex is 1-based but lines up with sides bitflags
-								for faceIndex,faces in ipairs(voxelType.cubeFaces) do
-									local ofsx, ofsy, ofsz = sides.dirs[faceIndex]:unpack()
-									local nx = i + ofsx
-									local ny = j + ofsy
-									local nz = k + ofsz
-									local nbhdVoxelIsUnitCube
-									-- TODO test if it's along the sides, if not just use offset + step
-									-- if so then use map:getType
-									local nbhdVoxel = map:getTile(nx, ny, nz)
-									if nbhdVoxel 
-									and nbhdVoxel.half == 0
-									then
-										local nbhdVoxelTypeIndex = nbhdVoxel.type
-										-- only if the neighbor is solid ...
-										if nbhdVoxelTypeIndex > 0
-										then
-											local nbhdVoxelType = Tile.types[nbhdVoxelTypeIndex]
-											if nbhdVoxelType then
-												nbhdVoxelIsUnitCube = nbhdVoxelType.isUnitCube
-											end
-										end
-									end
-									if not nbhdVoxelIsUnitCube then
-										-- 2 triangles x 3 vtxs per triangle
-										for ti=1,6 do
-											local vi = Tile.unitQuadTriIndexes[ti]
-											local vtxindex = faces[vi]
-											local v = voxelType.cubeVtxs[vtxindex+1]
-
-											local c = self.colors:emplace_back()
-											local l = 255 * v[3]
-											c:set(l, l, l, 255)
-
-											local tc = self.texcoords:emplace_back()
-											tc:set(
-												(texrect.pos[1] + voxelType.unitquad[vi][1] * texrect.size[1] + .5) * atlasDx,
-												(texrect.pos[2] + voxelType.unitquad[vi][2] * texrect.size[2] + .5) * atlasDy
-											)
-
-											local vtx = self.vtxs:emplace_back()
-											vtx:set(i + v[1], j + v[2], k + v[3])
-										end
-									end
-								end
-							else
-								-- half cube
-								-- TODO generalize all this by having side bigflags for this voxel blocks
-								-- vs side bitflags for what our neighbor blocks
-								-- and then if the neighbors flag's opposite matches this flag then skip this side.
-								assert(voxelType.cubeFaces)
-								-- faceIndex is 1-based but lines up with sides bitflags
-								for faceIndex,faces in ipairs(voxelType.cubeFaces) do
-									
-									local ofsx, ofsy, ofsz = sides.dirs[faceIndex]:unpack()
-									local nx = i + ofsx
-									local ny = j + ofsy
-									local nz = k + ofsz
-									
-									local nbhdVoxelIsUnitCube
-									-- for half-tile we can only block the bottom
-									-- so TODO only do this test when faceIndex is the bottom
-									if faceIndex == sides.indexes.zm then
+						local texrect = voxelType.texrects[voxel.tex+1]
+						if not texrect then
+							print("voxelType "..voxelTypeIndex.." has "..#voxelType.texrects.." texrects but index was "..voxel.tex)
+						else
+							if voxelType.isUnitCube then
+								if voxel.half == 0 then
+									-- full cube
+									assert(voxelType.cubeFaces)
+									-- faceIndex is 1-based but lines up with sides bitflags
+									for faceIndex,faces in ipairs(voxelType.cubeFaces) do
+										local ofsx, ofsy, ofsz = sides.dirs[faceIndex]:unpack()
+										local nx = i + ofsx
+										local ny = j + ofsy
+										local nz = k + ofsz
+										local nbhdVoxelIsUnitCube
+										-- TODO test if it's along the sides, if not just use offset + step
+										-- if so then use map:getType
 										local nbhdVoxel = map:getTile(nx, ny, nz)
-										if nbhdVoxel then
+										if nbhdVoxel 
+										and nbhdVoxel.half == 0
+										then
 											local nbhdVoxelTypeIndex = nbhdVoxel.type
 											-- only if the neighbor is solid ...
 											if nbhdVoxelTypeIndex > 0
-											and nbhdVoxel.half == 0
 											then
 												local nbhdVoxelType = Tile.types[nbhdVoxelTypeIndex]
 												if nbhdVoxelType then
@@ -238,35 +187,89 @@ function Chunk:buildDrawArrays()
 												end
 											end
 										end
-									end
-									--]]
-									if not nbhdVoxelIsUnitCube then
-										-- 2 triangles x 3 vtxs per triangle
-										for ti=1,6 do
-											local vi = Tile.unitQuadTriIndexes[ti]
-											local vtxindex = faces[vi]
-											local v = voxelType.cubeVtxs[vtxindex+1]
+										if not nbhdVoxelIsUnitCube then
+											-- 2 triangles x 3 vtxs per triangle
+											for ti=1,6 do
+												local vi = Tile.unitQuadTriIndexes[ti]
+												local vtxindex = faces[vi]
+												local v = voxelType.cubeVtxs[vtxindex+1]
 
-											local c = self.colors:emplace_back()
-											local l = 255 * v[3]
-											c:set(l, l, l, 255)
+												local c = self.colors:emplace_back()
+												local l = 255 * v[3]
+												c:set(l, l, l, 255)
 
-											local tc = self.texcoords:emplace_back()
-											tc:set(
-												(texrect.pos[1] + voxelType.unitquad[vi][1] * texrect.size[1] + .5) * atlasDx,
-												(texrect.pos[2] + voxelType.unitquad[vi][2] * texrect.size[2] + .5) * atlasDy
-											)
+												local tc = self.texcoords:emplace_back()
+												tc:set(
+													(texrect.pos[1] + voxelType.unitquad[vi][1] * texrect.size[1] + .5) * atlasDx,
+													(texrect.pos[2] + voxelType.unitquad[vi][2] * texrect.size[2] + .5) * atlasDy
+												)
 
-											local vtx = self.vtxs:emplace_back()
-											vtx:set(i + v[1], j + v[2], k + v[3] * .5)
+												local vtx = self.vtxs:emplace_back()
+												vtx:set(i + v[1], j + v[2], k + v[3])
+											end
 										end
 									end
-								end						
+								else
+									-- half cube
+									-- TODO generalize all this by having side bigflags for this voxel blocks
+									-- vs side bitflags for what our neighbor blocks
+									-- and then if the neighbors flag's opposite matches this flag then skip this side.
+									assert(voxelType.cubeFaces)
+									-- faceIndex is 1-based but lines up with sides bitflags
+									for faceIndex,faces in ipairs(voxelType.cubeFaces) do
+										
+										local ofsx, ofsy, ofsz = sides.dirs[faceIndex]:unpack()
+										local nx = i + ofsx
+										local ny = j + ofsy
+										local nz = k + ofsz
+										
+										local nbhdVoxelIsUnitCube
+										-- for half-tile we can only block the bottom
+										-- so TODO only do this test when faceIndex is the bottom
+										if faceIndex == sides.indexes.zm then
+											local nbhdVoxel = map:getTile(nx, ny, nz)
+											if nbhdVoxel then
+												local nbhdVoxelTypeIndex = nbhdVoxel.type
+												-- only if the neighbor is solid ...
+												if nbhdVoxelTypeIndex > 0
+												and nbhdVoxel.half == 0
+												then
+													local nbhdVoxelType = Tile.types[nbhdVoxelTypeIndex]
+													if nbhdVoxelType then
+														nbhdVoxelIsUnitCube = nbhdVoxelType.isUnitCube
+													end
+												end
+											end
+										end
+										--]]
+										if not nbhdVoxelIsUnitCube then
+											-- 2 triangles x 3 vtxs per triangle
+											for ti=1,6 do
+												local vi = Tile.unitQuadTriIndexes[ti]
+												local vtxindex = faces[vi]
+												local v = voxelType.cubeVtxs[vtxindex+1]
 
+												local c = self.colors:emplace_back()
+												local l = 255 * v[3]
+												c:set(l, l, l, 255)
+
+												local tc = self.texcoords:emplace_back()
+												tc:set(
+													(texrect.pos[1] + voxelType.unitquad[vi][1] * texrect.size[1] + .5) * atlasDx,
+													(texrect.pos[2] + voxelType.unitquad[vi][2] * texrect.size[2] + .5) * atlasDy
+												)
+
+												local vtx = self.vtxs:emplace_back()
+												vtx:set(i + v[1], j + v[2], k + v[3] * .5)
+											end
+										end
+									end						
+
+								end
+							else
+								-- arbitrary geometry
+								print'TODO'
 							end
-						else
-							-- arbitrary geometry
-							print'TODO'
 						end
 					end
 				end

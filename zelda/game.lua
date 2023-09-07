@@ -76,10 +76,7 @@ TODO how to handle multiple maps with objects-in-map ...
 					--ijk.x = i
 					xyz.x = i / blockSize
 					local c = simplexnoise(xyz:unpack())
-					local voxelTypeIndex = Tile.typeValues.Empty
-					local maptex = k >= half-1
-						and maptexs.grass
-						or maptexs.stone
+					local voxelType = Tile.typeForName.Empty
 					if k >= half then
 						c = c + (k - half) * .5
 					end
@@ -95,15 +92,15 @@ TODO how to handle multiple maps with objects-in-map ...
 					--]]
 
 					if c < .5 then
-						voxelTypeIndex =
-							maptex == maptexs.stone
-							and Tile.typeValues.Stone
-							or Tile.typeValues.Grass
+						voxelType =
+							k >= half-1
+							and Tile.typeForName.Stone
+							or Tile.typeForName.Grass
 					end
 					--local index = ijk:dot(step)
 					local voxel = assert(map:getTile(i,j,k))
-					voxel.type = voxelTypeIndex
-					voxel.tex = maptex
+					voxel.type = voxelType.index
+					voxel.tex = math.random(#voxelType.texrects)-1
 				end
 			end
 		end
@@ -133,6 +130,7 @@ TODO how to handle multiple maps with objects-in-map ...
 		end
 
 		do
+			local WoodTile = Tile.typeForName.Wood
 			for x=houseCenter.x-houseSize.x,houseCenter.x+houseSize.x do
 				for y=houseCenter.y-houseSize.y, houseCenter.y+houseSize.y do
 					for z=houseCenter.z-houseSize.z, houseCenter.z+houseSize.z do
@@ -142,8 +140,8 @@ TODO how to handle multiple maps with objects-in-map ...
 						local linf = math.max(adx/houseSize.x, ady/houseSize.y, adz/houseSize.z)
 						if linf == 1 then
 							local voxel = assert(map:getTile(x,y,z))
-							voxel.type = Tile.typeValues.Wood
-							voxel.tex = maptexs.wood
+							voxel.type = WoodTile.index
+							voxel.tex = math.random(#WoodTile.texrects)-1
 							voxel.half = 0
 						end
 					end
