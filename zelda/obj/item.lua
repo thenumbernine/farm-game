@@ -46,9 +46,6 @@ function Item:init(args)
 
 	self.itemClass = assert(args.itemClass)
 	
-	-- TODO get rid of?
-	self.itemCount = args.itemCount or 1
-	
 	-- use the same sprite? or a dif one?
 	self.sprite = self.itemClass.sprite
 	self.seq = self.itemClass.seq
@@ -58,11 +55,15 @@ function Item:init(args)
 end
 
 function Item:touch(other)
+	-- TODO this test here or before calling :touch() ?
+	if self.removeFlag then return end
+	if other.removeFlag then return end
+	
 	if other.addItem
 	and not other.dead
 	and not other.removeFlag
 	then
-		if other:addItem(self.itemClass, self.itemCount) then
+		if other:addItem(self.itemClass) then
 			self:remove()
 		end
 	end

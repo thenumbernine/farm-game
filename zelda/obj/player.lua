@@ -133,7 +133,6 @@ function Player:update(dt)
 					map:newObj{
 						class = require 'zelda.obj.item',
 						itemClass = cl,
-						itemCount = 1,
 						pos = dstpos,
 					}
 				end
