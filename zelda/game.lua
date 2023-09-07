@@ -163,6 +163,8 @@ TODO how to handle multiple maps with objects-in-map ...
 	--print'init done'
 	end
 
+	-- TODO around here, make a river or something.
+
 	-- don't require until app.game is created
 	local plantTypes = require 'zelda.plants'
 

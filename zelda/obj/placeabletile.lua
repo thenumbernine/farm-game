@@ -23,10 +23,13 @@ local function placeableTile(parent)
 		-- opposite order as tools remove tiles
 		for dz=-1,1 do
 			local tile = map:getTile(dst.x, dst.y, dst.z+dz)
-			if tile and tile.type == Tile.typeValues.Empty then
+			if tile
+			and tile.type == Tile.typeValues.Empty
+			then
 				player:removeSelectedItem()
 				tile.type = assert(self.tileType)
-				tile.tex = math.random(#tile.texrects)-1
+				local tileClass = Tile.types[self.tileType]
+				tile.tex = math.random(#tileClass.texrects)-1
 				map:buildDrawArrays(
 					dst.x, dst.y, dst.z,
 					dst.x, dst.y, dst.z)
