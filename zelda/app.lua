@@ -360,7 +360,7 @@ void main() {
 	if ((flags & SPRITEFLAG_VFLIP) != 0) uvscale.y *= -1.;
 	texcoordv = (vertex - .5) * uvscale + .5;
 	// convert from integer to texture-atlas space
-	texcoordv = (texcoordv * atlasTcSize + atlasTcPos) * atlasInvSize;
+	texcoordv = (texcoordv * atlasTcSize + atlasTcPos + .5) * atlasInvSize;
 
 	vec3 c = drawCenter;
 	c.xy -= vertex;

@@ -28,6 +28,9 @@ function Fruit:update(dt)
 	local game = self.game
 	local growTime = game.time - self.createTime
 	local growFrac = growTime / self.growDuration
+	self.drawSize:set(
+		self.class.drawSize.x * math.min(growFrac, 1),
+		self.class.drawSize.y * math.min(growFrac, 1))
 	if growFrac > 1 then
 		self.ready = true
 	end
