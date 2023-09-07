@@ -1,7 +1,6 @@
 local table = require 'ext.table'
 local string = require 'ext.string'
 local path = require 'ext.path'
-local fromlua = require 'ext.fromlua'
 
 -- anim[sprite][seq][frame]
 local anim = {
@@ -75,8 +74,8 @@ local anim = {
 }
 
 -- auto-add.  i think this was below but below also had udlr stuff meh.
-local atlas = assert(fromlua(assert(path'sprites/atlas.lua':read())))
-local atlaskeys = table.keys(atlas)
+local spriteAtlasMap = require 'zelda.atlas'
+local spriteAtlasKeys = table.keys(spriteAtlasMap)
 for _,dir in ipairs{
 	'tree',
 	'plant',
@@ -86,7 +85,7 @@ for _,dir in ipairs{
 	'vegetable',
 } do
 	local sprite = {}
-	for _,f in ipairs(atlaskeys) do
+	for _,f in ipairs(spriteAtlasKeys) do
 		local prefix = 'sprites/'..dir..'/'
 		if f:match('^'..string.patescape(prefix)) then
 			local fbase = path(f:sub(#prefix+1)):getext()

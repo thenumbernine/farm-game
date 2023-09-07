@@ -83,6 +83,17 @@ Tile.types = {}
 Tile.typeValues = {}
 
 
+local spriteAtlasMap = require 'zelda.atlas'
+local spriteAtlasKeys = table.keys(spriteAtlasMap)
+local function getTexRects(sprite)
+	local prefix = 'sprites/maptiles/'..sprite
+	return spriteAtlasKeys:filter(function(k)
+		return k:sub(1,#prefix) == prefix
+	end):mapi(function(fn)
+		return spriteAtlasMap[fn]
+	end)
+end
+
 
 local EmptyTile = Tile:subclass()
 EmptyTile.name = 'Empty'	-- excluding 'Tile' suffix of all Tile classes ...
@@ -97,10 +108,16 @@ SolidTile.isUnitCube = true	-- render shorthand for side occlusion
 assert(SolidTile.cubeFaces)
 
 local StoneTile = SolidTile:subclass{name='Stone'}
+StoneTile.texrects = getTexRects'cavestone'
 
 local GrassTile = SolidTile:subclass{name='Grass'}
-local WoodTile = SolidTile:subclass{name='Wood'}
+GrassTile.texrects = getTexRects'cavestone'
 
+local WoodTile = SolidTile:subclass{name='Wood'}
+GrassTile.texrects = getTexRects'wood'
+
+local WaterTile = SolidTile:subclass{name='Water'}
+WaterTile.texrects = getTexRects'water'
 
 --[[
 what do i want ...

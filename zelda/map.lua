@@ -22,12 +22,12 @@ local sides = require 'zelda.sides'
 ffi.cdef[[
 typedef uint16_t voxel_basebits_t;
 typedef struct {
-	voxel_basebits_t type : 7;
-	voxel_basebits_t half : 1;	// set this to use a half-high tile
+	voxel_basebits_t type : 7;	// map-type, this maps to zelda.tiles, which now holds {[0]=empty, stone, grass, wood}
+	voxel_basebits_t tex : 2;	// tex = atlas per-tile to use
+	voxel_basebits_t half : 1;	// set this to use a half-high tile.  TODO eventually slopes, and make this the 'shape' field. also add 45' and 90' slopes.
 	voxel_basebits_t rotx : 2;	// Euler angles, in 90' increments
 	voxel_basebits_t roty : 2;
 	voxel_basebits_t rotz : 2;
-	voxel_basebits_t tex : 2;	// right now I just have 4 map textures ... 
 } voxel_t;
 
 typedef struct {

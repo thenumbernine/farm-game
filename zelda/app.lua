@@ -2,7 +2,6 @@ local ffi = require 'ffi'
 local bit = require 'bit'
 local range = require 'ext.range'
 local table = require 'ext.table'
-local fromlua = require 'ext.fromlua'
 local path = require 'ext.path'
 local sdl = require 'ffi.req' 'sdl'
 local ig = require 'imgui'
@@ -203,7 +202,7 @@ precision highp float;
 		minFilter = gl.GL_NEAREST,
 	}
 	-- key/value from filename to rect
-	self.spriteAtlasMap = assert(fromlua(assert(path'sprites/atlas.lua':read())))
+	local spriteAtlasMap = require 'zelda.atlas'
 --]=]
 
 -- [=[ load tex2ds for anim
@@ -223,7 +222,7 @@ precision highp float;
 						}
 						--]]
 						-- .pos, .size
-						local texrect = assert(self.spriteAtlasMap[frame.filename])
+						local texrect = assert(spriteAtlasMap[frame.filename])
 						-- atlas pos and size
 						frame.atlasTcPos = vec2f(table.unpack(texrect.pos))
 						frame.atlasTcSize = vec2f(table.unpack(texrect.size))
@@ -738,7 +737,7 @@ void main() {
 		'wood',
 		'zstone',
 	} do
-		self.spriteAtlasRectForMapTexIndex[i-1] = assert(self.spriteAtlasMap['sprites/maptiles/'..f..'.png'])
+		self.spriteAtlasRectForMapTexIndex[i-1] = assert(spriteAtlasMap['sprites/maptiles/'..f..'.png'])
 	end
 
 
