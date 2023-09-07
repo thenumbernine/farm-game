@@ -29,15 +29,15 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 
 ## TODO:
 
+- fishing.
+- chest
+	- don't allow it to be broken into an item if it has anything ... or you'll lose its contents.
 - digging:
 	- if you dig ground, (or remove stone or wood or any tile), it should remove sprites on top of the ground (hoed, watered, seeded)
 	- or if you try to dig ground that has a bush/tree on it, it should fail to dig.
 	- half-step voxels for grass and stone, and maybe some slope tiles, and maybe rotate them in any of the 4 directions, so I don't have to jump everywhere (stupid Minecraft, why did you make that a standard?)
 	- support rotating of half-step voxels
 	- rotating/placing of non-cuboid voxels?  do i have any of these yet?  un-animated things, like beds etc? 
-- make sure hoed / watered / seeded always render in correct order (z-sort by altitude? or store and render as attribut list per-tile?)
-	- maybe overhaul rendering, esp the more modifiers to tiles that I add?
-	- maybe make hoed/watered as bitflags, and have the map chunk system handle them?
 - biomes
 	- make plants randomly seed neighboring ground... only if they naturally grow in this biome ofc.
 - stats system.  level system.  weapon-skill-level system.  skill tree ofc because.
@@ -58,6 +58,9 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 - super duper customizable character sprite
 - probably better align billboard sprites with where in 3D they are.
 - rendering
+	- make sure hoed / watered / seeded always render in correct order (z-sort by altitude? or store and render as attribut list per-tile?)
+		- maybe overhaul rendering, esp the more modifiers to tiles that I add?
+		- maybe make hoed/watered as bitflags, and have the map chunk system handle them?
 	- lighting
 		- better map lighting.  underground lighting.  any kind of falloff lighting.  any kind of better daylight shadow lighting.
 		- bump-mapping on sprites?  parallax mapping?
@@ -85,6 +88,13 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 - plants
 	- redo all the tree / bush / plant pics procedurally or something, esp to have one per 792 plants listed at the store right now.
 	- unique seed sprites, to go with the unique veg and plant and fruit sprites.
+	- only grow plants if their ground is watered
+		- rain also waters
+		- so does sprinklers
+		- so does near a body of water (lake, river, etc)
+			- irrigation also waters
+	- if a plant isn't watered, if it's native to the biome then it still grows
+	- maybe something about plant root system vs soil moisture vs Ph balance etc ... 
 - economy
 	- limit the seed shop to a subset of all seeds.  maybe multiple seed shops?
 		- higher price for more exotic seeds?

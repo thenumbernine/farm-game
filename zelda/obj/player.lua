@@ -1,6 +1,7 @@
 local ffi = require 'ffi'
 local gl = require 'gl'
 local class = require 'ext.class'
+local math = require 'ext.math'
 local table = require 'ext.table'
 local vec2f = require 'vec-ffi.vec2f'
 local vec3f = require 'vec-ffi.vec3f'
@@ -276,6 +277,75 @@ function Player:update(dt)
 		end
 	end
 
+
+	local castLineLength = 20	-- 10' to 30'
+	local maxLineLength = 80	-- 80' to 90'
+	local reelInRate = 5		-- some forum said 1.5 - 4 mph = 2.2 - 5.9 feet/second
+	local fishingCastDuration = .5
+	local fishingTugDuration = .5
+	--local fishBiteRate = .003
+	local fishBiteRate = .05
+	if self.fishing == 'casting' then
+		-- TODO fishing thread, alpha over this duration for animating the fishing rod and extending the line ...
+		if game.time - self.fishingCastTime > fishingCastDuration then
+			self.fishing = 'lineout'
+print'CASTING -> LINE OUT'
+			self.fishingLineLength = castLineLength
+		end
+	elseif self.fishing == 'lineout' then
+		if math.random() < fishBiteRate then
+			self.fishing = 'tugged'
+print'LINE OUT -> TUGGED'
+			self.fishingTugTime = game.time
+			-- TODO HERE
+			-- tug source
+			-- fish, snag, ... osprey ... Odell Lake
+		end
+		-- useItem == reel-in-button
+		if appPlayer.keyPress.useItem then
+			self.fishingLineLength = math.max(0, self.fishingLineLength - dt * reelInRate) -- feet per second
+			if self.fishingLineLength == 0 then
+print'LINE OUT -> REELED IN FULLY'
+				self.fishing = nil
+			end
+		end
+	elseif self.fishing == 'tugged' then
+		if game.time - self.fishingTugTime > fishingTugDuration then
+			-- if it's a snag ... keep tugging indefinitely until the player yanks the line or something idk
+			-- if it's a fish ... stop
+			self.fishing = 'lineout'
+print'TUGGED -> LINE OUT '
+		end
+		-- TODO in this time period, if the player pushes the 'pull back to set the hook' button (which one will that be?)
+		-- then we got a fish on
+		-- TODO TODO make sure the key input handler above doen't mess ith this / doensn't run while fishing / or just move this there ?
+		-- useItem == reel-in-button
+		if appPlayer.keyPress.useItem then
+			self.fishing = 'fishon'
+print'TUGGED -> FISH ON'
+		end
+	elseif self.fishing == 'fishon' then
+		local fishPullStrength = math.cos(game.time / 10) * .5 + .5
+		-- if the fish is pulling then add tension to the line
+		-- if the player reels in then that also adds tension
+		-- if the player lets line out then that releases tension
+		-- if the tension rises too high then the fish breaks free
+		local changeInLine = 0
+		if appPlayer.keyPress.useItem then
+			changeInLine = changeInLine - reelInRate
+		end
+		if appPlayer.keyPress.interact then
+			changeInLine = changeInLine + reelInRate
+		end
+		-- TODO Here if the fish pull - changeInLine is too high then the fish gets away
+		self.fishingLineLength = math.clamp(self.fishingLineLength + dt * changeInLine, 0, maxLineLength)
+		if self.fishingLineLength == 0 then
+print'YOU CAUGHT A FISH'
+			-- TODO add to inventory
+			self.fishing = nil
+		end
+	end
+
 	-- copy current to last keypress
 	-- do this here or in a separate update after object :update()'s?
 	for k,v in pairs(appPlayer.keyPress) do
@@ -372,7 +442,6 @@ function Player:draw(...)
 	end
 
 	if self.fishing then
-		local app = self.game.app
 		local frame = self.getFrame('item', 'fishingpole', 1)
 		
 		-- draw the fishing pole over the player
@@ -387,6 +456,9 @@ function Player:draw(...)
 		sprite.drawCenter:set(hflip and .2 or .8, 1.25, .1)
 		sprite.drawSize:set(1.5, 1.5)
 		sprite.drawAngle = 0	-- TODO animate for the cast
+		if self.fishing == 'tugged' then
+			sprite.drawAngle = math.rad(30) * math.sin(game.time * 10)
+		end
 		sprite.angle = 0
 		sprite.pos:set(self.pos:unpack())
 		sprite.spritePosOffset:set(0, 0, 0)

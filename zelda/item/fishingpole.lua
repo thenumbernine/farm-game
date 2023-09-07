@@ -8,6 +8,7 @@ FishingPole.seq = 'fishingpole'
 
 -- static method, 'self' is subclass
 function FishingPole:useInInventory(player)
+	local game = player.game
 	local appPlayer = player.appPlayer
 	if not (appPlayer.keyPress.useItem and not appPlayer.keyPressLast.useItem) then return end
 	-- TODO here, when we cast, gotta draw the fishing line ...
@@ -17,13 +18,16 @@ function FishingPole:useInInventory(player)
 	- not fishing
 	- casting (animation)
 	- line is out
-	- line is being pulled on
+	- line is being tugged (from fish or bottom or snag ...)
 	- fish is on
 	--]]
 	if not player.fishing then
 		player.fishing = 'casting'
-	else
-		player.fishing = nil
+		player.fishingCastTime = game.time
+print'CASTING'	
+	--else
+	--	player.fishing = nil
+	-- handled in player update
 	end
 end
 
