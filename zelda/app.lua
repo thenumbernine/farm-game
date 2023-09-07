@@ -196,6 +196,7 @@ precision highp float;
 ]]
 
 -- [=[ load sprite texture atlas
+	-- TODO rename to just 'atlasTex'
 	self.spriteAtlasTex = GLTex2D{
 		filename = 'sprites/atlas.png',
 		magFilter = gl.GL_LINEAR,
@@ -222,10 +223,10 @@ precision highp float;
 						}
 						--]]
 						-- .pos, .size
-						local rectsrc = assert(self.spriteAtlasMap[frame.filename])
+						local texrect = assert(self.spriteAtlasMap[frame.filename])
 						-- atlas pos and size
-						frame.atlasTcPos = vec2f(table.unpack(rectsrc.pos))
-						frame.atlasTcSize = vec2f(table.unpack(rectsrc.size))
+						frame.atlasTcPos = vec2f(table.unpack(texrect.pos))
+						frame.atlasTcSize = vec2f(table.unpack(texrect.size))
 					elseif fn:sub(-4) == '.obj' then
 error("you're using .obj")
 						frame.mesh = OBJLoader():load(fn)
@@ -727,14 +728,18 @@ void main() {
 	in fact, why not build it into thel GLBuffer class?
 	--]]
 
-	-- tex pack for the map
-	-- TODO merge with sprite texpack?
-	self.mapTexAtlas = GLTex2D{
-		filename = 'texpack.png',
-		magFilter = gl.GL_LINEAR,
-		minFilter = gl.GL_NEAREST,
-	}
-
+	-- TODO you can store this in app if you'd like
+	-- based on the sprite atlas
+	-- map from voxel tile-texture-index to rect
+	self.spriteAtlasRectForMapTexIndex = {}
+	for i,f in ipairs{
+		'grass',
+		'stone',
+		'wood',
+		'zstone',
+	} do
+		self.spriteAtlasRectForMapTexIndex[i-1] = assert(self.spriteAtlasMap['sprites/maptiles/'..f..'.png'])
+	end
 
 
 	gl.glEnable(gl.GL_DEPTH_TEST)

@@ -27,7 +27,7 @@ typedef struct {
 	voxel_basebits_t rotx : 2;	// Euler angles, in 90' increments
 	voxel_basebits_t roty : 2;
 	voxel_basebits_t rotz : 2;
-	voxel_basebits_t tex : 2;	// right now mapTexAtlas is 2x2 ... 
+	voxel_basebits_t tex : 2;	// right now I just have 4 map textures ... 
 } voxel_t;
 
 typedef struct {
@@ -50,8 +50,7 @@ Chunk.volume = Chunk.size:volume()	-- same as 1 << bitsize:sum() (if i had a :su
 
 function Chunk:init(args)
 	local map = assert(args.map)
-	local game = map.game
-	local app = game.app
+	local app = map.game.app
 	self.map = map
 	self.pos = vec3i(assert(args.pos))
 	
@@ -139,11 +138,12 @@ end
 -- 2) grow-gl-buffers functionality 
 function Chunk:buildDrawArrays()
 	local map = self.map
+	local app = map.game.app
 	self.vtxs:resize(0)
 	self.texcoords:resize(0)
 	self.colors:resize(0)
-	local texpackDx = 1/tonumber(map.texpackSize.x)
-	local texpackDy = 1/tonumber(map.texpackSize.y)
+	local atlasDx = 1/tonumber(app.spriteAtlasTex.width)
+	local atlasDy = 1/tonumber(app.spriteAtlasTex.height)
 	local index = 0
 	for dk=0,self.size.z-1 do
 		local k = bit.bor(dk, bit.lshift(self.pos.z, self.bitsize.z))
@@ -156,9 +156,7 @@ function Chunk:buildDrawArrays()
 				if voxelTypeIndex > 0 then	-- skip empty
 					local voxelType = Tile.types[voxelTypeIndex]
 					if voxelType then
-						local texIndex = tonumber(voxel.tex)
-						local texIndexX = texIndex % map.texpackSize.x
-						local texIndexY = (texIndex - texIndexX) / map.texpackSize.x
+						local texrect = assert(app.spriteAtlasRectForMapTexIndex[voxel.tex])
 
 						if voxelType.isUnitCube then
 							if voxel.half == 0 then
@@ -200,8 +198,8 @@ function Chunk:buildDrawArrays()
 
 											local tc = self.texcoords:emplace_back()
 											tc:set(
-												(texIndexX + voxelType.unitquad[vi][1]) * texpackDx,
-												(texIndexY + voxelType.unitquad[vi][2]) * texpackDy
+												(texrect.pos[1] + voxelType.unitquad[vi][1] * texrect.size[1]) * atlasDx,
+												(texrect.pos[2] + voxelType.unitquad[vi][2] * texrect.size[2]) * atlasDy
 											)
 
 											local vtx = self.vtxs:emplace_back()
@@ -255,8 +253,8 @@ function Chunk:buildDrawArrays()
 
 											local tc = self.texcoords:emplace_back()
 											tc:set(
-												(texIndexX + voxelType.unitquad[vi][1]) * texpackDx,
-												(texIndexY + voxelType.unitquad[vi][2]) * texpackDy
+												(texrect.pos[1] + voxelType.unitquad[vi][1] * texrect.size[1]) * atlasDx,
+												(texrect.pos[2] + voxelType.unitquad[vi][2] * texrect.size[2]) * atlasDy
 											)
 
 											local vtx = self.vtxs:emplace_back()
@@ -323,7 +321,7 @@ function Chunk:draw(app, game)
 	local timeOfDay = (game.time / game.secondsPerDay) % 1
 	self.sceneObj.uniforms.sunAngle = 2 * math.pi * timeOfDay
 	-- just bind as we go, not in sceneObj
-	--self.sceneObj.texs[1] = app.mapTexAtlas
+	--self.sceneObj.texs[1] = app.spriteAtlasTex
 	--self.sceneObj.texs[2] = self.sunAngleTex
 	self.sceneObj:draw()
 end
@@ -442,13 +440,12 @@ function Map:init(args)
 	self.game = assert(args.game)
 	local game = self.game
 	local app = game.app
-	
+
 	self.objs = table()
 	
 	-- key = index in map.objsPerTileIndex = offset of the tile in the map
 	-- value = list of all objects on that tile
 	self.objsPerTileIndex = {}
-
 
 	self.sizeInChunks = vec3i(assert(args.sizeInChunks))
 	self.chunkVolume = self.sizeInChunks:volume()
@@ -482,8 +479,6 @@ function Map:init(args)
 			ffi.copy(chunk.v, p + chunkIndex * Chunk.volume, Chunk.volume * ffi.sizeof'voxel_t')
 		end
 	end
-	
-	self.texpackSize = vec2i(2, 2)
 end
 
 local timer = require 'ext.timer'
@@ -518,7 +513,7 @@ end
 function Map:draw()
 	local game = self.game
 	local app = game.app
-	app.mapTexAtlas:bind(0)
+	app.spriteAtlasTex:bind(0)
 	for chunkIndex=0,self.chunkVolume-1 do
 		local chunk = self.chunks[chunkIndex]
 		chunk.sunAngleTex:bind(1)
