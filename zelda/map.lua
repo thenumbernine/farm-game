@@ -198,8 +198,8 @@ function Chunk:buildDrawArrays()
 
 											local tc = self.texcoords:emplace_back()
 											tc:set(
-												(texrect.pos[1] + voxelType.unitquad[vi][1] * texrect.size[1]) * atlasDx,
-												(texrect.pos[2] + voxelType.unitquad[vi][2] * texrect.size[2]) * atlasDy
+												(texrect.pos[1] + voxelType.unitquad[vi][1] * texrect.size[1] + .5) * atlasDx,
+												(texrect.pos[2] + voxelType.unitquad[vi][2] * texrect.size[2] + .5) * atlasDy
 											)
 
 											local vtx = self.vtxs:emplace_back()
@@ -253,8 +253,8 @@ function Chunk:buildDrawArrays()
 
 											local tc = self.texcoords:emplace_back()
 											tc:set(
-												(texrect.pos[1] + voxelType.unitquad[vi][1] * texrect.size[1]) * atlasDx,
-												(texrect.pos[2] + voxelType.unitquad[vi][2] * texrect.size[2]) * atlasDy
+												(texrect.pos[1] + voxelType.unitquad[vi][1] * texrect.size[1] + .5) * atlasDx,
+												(texrect.pos[2] + voxelType.unitquad[vi][2] * texrect.size[2] + .5) * atlasDy
 											)
 
 											local vtx = self.vtxs:emplace_back()
