@@ -159,6 +159,8 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 		plantType.shakeOnHit = true
 		plantType.tipOnDie = true
 		plantType.growDuration = Game.secondsPerYear
+		-- 2x as big as other plants
+		plantType.drawSize = framesize / 10
 
 		if math.random() < .3 then
 			plantType.fruitDuration = 3 * Game.secondsPerDay

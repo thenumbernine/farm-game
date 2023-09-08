@@ -681,8 +681,8 @@ end
 
 function Game:event(event, ...)
 	local app = self.app
-	local player = app.players[1].obj
-	if not player then return end
+	local appPlayer = app.players[1]
+	if not appPlayer then return end
 	if event.type == sdl.SDL_KEYDOWN
 	or event.type == sdl.SDL_KEYUP
 	then
@@ -697,13 +697,13 @@ function Game:event(event, ...)
 			if event.key.keysym.sym >= ('1'):byte()
 			and event.key.keysym.sym <= ('9'):byte()
 			then
-				player.selectedItem = event.key.keysym.sym - ('1'):byte() + 1
+				appPlayer.selectedItem = event.key.keysym.sym - ('1'):byte() + 1
 			elseif event.key.keysym.sym == ('0'):byte() then
-				player.selectedItem = 10
+				appPlayer.selectedItem = 10
 			elseif event.key.keysym.sym == ('-'):byte() then
-				player.selectedItem = 11
+				appPlayer.selectedItem = 11
 			elseif event.key.keysym.sym == ('='):byte() then
-				player.selectedItem = 12
+				appPlayer.selectedItem = 12
 			end
 		end
 	end

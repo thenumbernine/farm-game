@@ -29,4 +29,13 @@ function Chest:interactInWorld(player)
 	player.appPlayer.invOpen = true
 end
 
+function Chest:damage(amount, attacker, inflicter)
+	-- don't break if we have anything inside
+	for i=1,self.numInvItems do
+		if self.items[i] ~= nil then return end
+	end
+
+	return Chest.super.damage(self, amount, attacker, inflicter)
+end
+
 return Chest

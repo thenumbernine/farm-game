@@ -118,7 +118,7 @@ for _,srcfn in ipairs(fs) do
 	elseif tostring(src):find'item' then
 		planttype = 'item'	-- really this is not a plantType, but it goes in this sprite folder
 	elseif tostring(src):find'tree' then
-		targetsize = 256
+		targetsize = 128
 		planttype = 'tree'
 	elseif tostring(src):find'bush' then
 		planttype = 'bush'

@@ -30,8 +30,14 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 ## TODO:
 
 - fishing.
+	- casting line animation
+	- test for water where the line lands, tangle the line in bushes otherwise
+	- prepare / gut fish before cooking 
+	- cook fish (over fireplace / stove + with pan)
 	- fish tanks
-	- fish ponds
+	- live fish should run out of air on dry land
+	- fish ponds for collecting fish
+- cooking
 - animals
 	- pokeballs
 	- when you buy an animal from the market, you should get a tether to walk it back to the farm. 
@@ -41,6 +47,10 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 		- some animals graze <-> have food points <-> can starve and die (same as you)
 	- wild animals like coyotes, wolves, etc eat your chickens and cats if you don't keep them safe.
 	- dingos eat your babies
+	- butcher to gt ....
+		- meat -> (cook over fireplace / stove + with pan)
+		- skinning
+			- tanning
 - scarecrows to protect your crops
 - hunting weapons
 	- guns
@@ -51,12 +61,18 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 	- crossbow
 		- bolts
 	- traps
-		- mortal 
-		- live traps
-	- domesticate
-		- train for fighting
-- chest
-	- don't allow it to be broken into an item if it has anything ... or you'll lose its contents.
+		- mortal
+		- live trapping animals
+		- domesticate
+			- train for fighting
+- traceline 
+	- for placement of items / tiles (preview where they'll go)
+	- for determining where weapon/tool swings will land
+	- for determining NPC interaction / talking
+	- mix traceline with push() and walking
+	- make walking step over half-tiles
+	- make the default block placement / excavation be half-tile at a time
+
 - digging:
 	- if you dig ground, (or remove stone or wood or any tile), it should remove sprites on top of the ground (hoed, watered, seeded)
 	- or if you try to dig ground that has a bush/tree on it, it should fail to dig.
@@ -143,6 +159,7 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 		- more monsters in caves than on surface.
 	- underground biome
 		- plantable mushrooms, plump helmets, etc
+- disasters
 - rodents, crop fungus, hurricaines... goblin raiding party.
 - give logs plant-type. color them too just like seeds.  and add all those trees to the plant list.
 - Better separate game-player from game-obj-player.  move all the UI stuff / clientside-only to game-player, all serverside to game-obj-player.
@@ -164,11 +181,11 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 - water
 	- refilling the watering can
 	- irrigation & sprinklers
-	- fishing
-		- fish farms
-	- swimming
-	- diving
+	- fish farms
+	- air supply while swimming / drowning
+	- scuba diving
 		- seafloor farming
+		- buried treasure and sunken ships
 
 ## Music
 

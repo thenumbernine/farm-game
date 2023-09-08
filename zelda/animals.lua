@@ -11,7 +11,7 @@ end):mapi(function(sprite)
 	
 	local colorMatrix = matrix_ffi({4,4},'float'):zeros()
 		:setRotate(
-			.1 * (math.random() - .5)*2*math.pi,
+			.2 * (math.random() - .5)*2*math.pi,
 			1 + .2 * (math.random() - .5),
 			1 + .2 * (math.random() - .5),
 			1 + .2 * (math.random() - .5))

@@ -139,7 +139,7 @@ function PlayingMenu:updateGUI()
 				error("shouldn't be here")
 			end
 
-			local selected = player.selectedItem == i
+			local selected = appPlayer.selectedItem == i
 			if selected then
 				local selectColor = ig.ImVec4(0,0,1,.5)
 				ig.igPushStyleColor_Vec4(ig.ImGuiCol_Button, selectColor)
@@ -167,7 +167,7 @@ function PlayingMenu:updateGUI()
 			--]]
 			ig.igPushID_Int(i)
 			if self:itemButton(itemInfo, bw, bh) then
-				player.selectedItem = i
+				appPlayer.selectedItem = i
 			end
 			ig.igPopID()
 

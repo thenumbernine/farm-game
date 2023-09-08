@@ -63,7 +63,7 @@ function Player:init(args, ...)
 	how should inventory work?
 	for key based
 	--]]
-	self.selectedItem = 1
+	self.appPlayer.selectedItem = 1
 	self.items = table{
 		require 'zelda.item.sword',
 		require 'zelda.item.pickaxe',
@@ -109,20 +109,20 @@ function Player:update(dt)
 			end
 
 			if appPlayer.keyPress.right and not appPlayer.keyPressLast.right then
-				self.selectedItem = self.selectedItem + 1
-				self.selectedItem = (self.selectedItem - 1) % maxItems + 1
+				appPlayer.selectedItem = appPlayer.selectedItem + 1
+				appPlayer.selectedItem = (appPlayer.selectedItem - 1) % maxItems + 1
 			end
 			if appPlayer.keyPress.left and not appPlayer.keyPressLast.left then
-				self.selectedItem = self.selectedItem - 1 
-				self.selectedItem = (self.selectedItem - 1) % maxItems + 1
+				appPlayer.selectedItem = appPlayer.selectedItem - 1 
+				appPlayer.selectedItem = (appPlayer.selectedItem - 1) % maxItems + 1
 			end
 			if appPlayer.keyPress.up and not appPlayer.keyPressLast.up then
-				self.selectedItem = self.selectedItem + self.numSelectableItems
-				self.selectedItem = (self.selectedItem - 1) % maxItems + 1
+				appPlayer.selectedItem = appPlayer.selectedItem + self.numSelectableItems
+				appPlayer.selectedItem = (appPlayer.selectedItem - 1) % maxItems + 1
 			end
 			if appPlayer.keyPress.down and not appPlayer.keyPressLast.down then
-				self.selectedItem = self.selectedItem - self.numSelectableItems
-				self.selectedItem = (self.selectedItem - 1) % maxItems + 1
+				appPlayer.selectedItem = appPlayer.selectedItem - self.numSelectableItems
+				appPlayer.selectedItem = (appPlayer.selectedItem - 1) % maxItems + 1
 			end	
 			-- drop item
 			if appPlayer.keyPress.interact and not appPlayer.keyPressLast.interact then
@@ -141,7 +141,7 @@ function Player:update(dt)
 				end
 			end
 		else
-			self.selectedItem = (self.selectedItem-1) % self.numSelectableItems + 1
+			appPlayer.selectedItem = (appPlayer.selectedItem-1) % self.numSelectableItems + 1
 			
 			local dx = 0
 			local dy = 0
@@ -238,10 +238,10 @@ function Player:update(dt)
 			end
 		end
 		if appPlayer.keyPress.invLeft and not appPlayer.keyPressLast.invLeft then
-			self.selectedItem = ((self.selectedItem-1 - 1)%self.numSelectableItems)+1
+			appPlayer.selectedItem = ((appPlayer.selectedItem-1 - 1)%self.numSelectableItems)+1
 		end
 		if appPlayer.keyPress.invRight and not appPlayer.keyPressLast.invRight then
-			self.selectedItem = ((self.selectedItem-1 + 1)%self.numSelectableItems)+1
+			appPlayer.selectedItem = ((appPlayer.selectedItem-1 + 1)%self.numSelectableItems)+1
 		end
 		if appPlayer.keyPress.openInventory and not appPlayer.keyPressLast.openInventory then
 			-- TODO put all clientside stuff in appPlayer
@@ -361,7 +361,7 @@ print'YOU CAUGHT A FISH'
 end
 
 function Player:useItem()
-	local itemInfo = self.items[self.selectedItem]
+	local itemInfo = self.items[self.appPlayer.selectedItem]
 	if itemInfo then
 		local cl = itemInfo.class
 		if cl.useInInventory then
@@ -395,11 +395,11 @@ function Player:addItem(cl, count)
 end
 
 function Player:removeSelectedItem()
-	local itemInfo = self.items[self.selectedItem]
+	local itemInfo = self.items[self.appPlayer.selectedItem]
 	if not itemInfo then return end
 	itemInfo.count = itemInfo.count - 1
 	if itemInfo.count <= 0 then
-		self.items[self.selectedItem] = nil
+		self.items[self.appPlayer.selectedItem] = nil
 	end
 	return itemInfo.class
 end
