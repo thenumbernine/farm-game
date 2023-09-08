@@ -9,13 +9,16 @@ for f=0,1,.05 do
 			1,
 			1,
 			1)
-	print(colorMatrix)
-	print(colorMatrix * matrix_ffi{1,1,1,1})
-	print(colorMatrix * matrix_ffi{0,0,0,1})
-	print(colorMatrix * matrix_ffi{1,0,0,1})
-	print(colorMatrix * matrix_ffi{0,1,0,1})
-	print(colorMatrix * matrix_ffi{0,0,1,1})
-	print()
+	local function f(x)
+		return math.floor(require 'ext.math'.clamp(x, 0, 1) * 100) / 100
+	end
+	--print(colorMatrix)
+	--print(colorMatrix * matrix_ffi{1,1,1,1})	-- unchanged
+	--print(colorMatrix * matrix_ffi{0,0,0,1})	-- unchanged
+	--print((colorMatrix * matrix_ffi{1,0,0,1}):map(f))
+	--print((colorMatrix * matrix_ffi{0,1,0,1}):map(f))
+	print((colorMatrix * matrix_ffi{0,0,1,1}):map(f))
+	--print()
 end
 os.exit()
 --]]

@@ -30,61 +30,27 @@ local anim = {
 		handsup_l = {{filename = 'sprites/link/handsup.png', hflip=true}},
 		handsup_d = {{filename = 'sprites/link/handsup.png'}},
 	},
-	goomba = {
-		stand = {
-			{filename = 'sprites/goomba/stand.png'},
-		},
-	},
-	
-	-- [[ ground sprites
-	hoed = {
-		stand = {
-			--{filename = 'sprites/hoed/stand.obj'},
-			{filename = 'sprites/hoed/stand.png'},
-		},
-	},
-	watered = {
-		stand = {
-			--{filename = 'sprites/watered/stand.obj'},
-			{filename = 'sprites/watered/stand.png'},
-		},
-	},
-	seededground = {
-		stand = {
-			--{filename = 'sprites/seededground/stand.obj'},
-			{filename = 'sprites/seededground/stand.png'},
-		},
-	},
-	log = {
-		stand = {
-			{filename = 'sprites/log/stand.png'},
-		},
-	},
-	bed = {
-		stand = {
-			{filename = 'sprites/bed/stand.png'},
-		},
-	},
-	chest = {
-		stand = {
-			{filename = 'sprites/chest/stand.png'},
-		},
-	},
-	--]]
 }
 
--- auto-add.  i think this was below but below also had udlr stuff meh.
+--[[
+auto-add.  i think this was below but below also had udlr stuff meh.
+TODO 
+- auto determine frame numbers in sequences
+- auto determine when sequence is using up/down/right (and flip)
+- store 'usedirs' per frame, not per sprite or per seq
+--]]
 local Atlas = require 'zelda.atlas'
 local spriteAtlasMap = Atlas.atlasMap
 local spriteAtlasKeys = Atlas.atlasKeys
-for _,dir in ipairs{
-	'tree',
-	'plant',
-	'bush',
-	'fruit',
-	'item',
-	'vegetable',
-} do
+local spriteNames = {}
+for _,fn in ipairs(spriteAtlasKeys) do
+	local base, sprite, seq = string.split(fn, '/'):unpack()
+	spriteNames[sprite] = true
+end
+-- because I just added it manually
+-- TODO the TODO above so I can add it automatically
+spriteNames.link = nil
+for _,dir in ipairs(table.keys(spriteNames)) do
 	local sprite = {}
 	local prefix = 'sprites/'..dir..'/'
 	for _,f in ipairs(Atlas.getAllKeys(prefix)) do
@@ -95,36 +61,5 @@ for _,dir in ipairs{
 	end
 	anim[dir] = sprite
 end
-
-
--- TODO use the filesystem for the whole thing? and no table?
--- or TODO use spritesheets?
---[[
-local path = require 'ext.path'
-for _,spritename in ipairs{'goomba'} do
-	local sprite = {}
-	anim[spritename] = sprite
-	for f in path('sprites/'..spritename):dir() do
-		local base, ext = path(f):getext()
-		local seqname, frameindex = base:match'^(.-)(%d*)$'
-		frameindex = tonumber(frameindex) or frameindex
-		-- TODO auto group sequences of numbers?
-		sprite[seqname] = sprite[seqname] or {}
-		table.insert(sprite[seqname], {
-			filename = 'sprites/'..spritename..'/'..f, 
-			index = frameindex,
-		})
-	end
-	for seqname,seq in pairs(sprite) do
-		table.sort(seq, function(a,b) return a.index < b.index end)
-	end
-	-- I don't need the frames after sorting, right?
-	for seqname,seq in pairs(sprite) do
-		for index,frame in ipairs(seq) do
-			frame.index = nil
-		end
-	end
-end
---]]
 
 return anim
