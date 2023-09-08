@@ -6,13 +6,12 @@ Fish.name = 'fish'
 Fish.sprite ='fish'
 
 -- TODO all fish subclasses / pick a fish
+-- or merge this with animals?
 do
 	local prefix = 'sprites/fish/'
-	local fishseqs = require 'zelda.atlas'.getAllKeys(prefix)
-	print(require'ext.tolua'(fishseqs))
-	local seq = fishseqs:pickRandom():sub(#prefix+1):match'^(.*)%.png$'
-	print('fish seq', seq)
-	Fish.seq = seq
+	local seqnames = require 'zelda.atlas'.getAllKeys(prefix)
+	local seqname = seqnames:pickRandom():sub(#prefix+1):match'^(.*)%.png$'
+	Fish.seq = seqname
 end
 
 -- just like fruit/veg, you have to subclass to specify these

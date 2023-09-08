@@ -47,9 +47,11 @@ for _,fn in ipairs(spriteAtlasKeys) do
 	local base, sprite, seq = string.split(fn, '/'):unpack()
 	spriteNames[sprite] = true
 end
+
 -- because I just added it manually
 -- TODO the TODO above so I can add it automatically
 spriteNames.link = nil
+
 for _,dir in ipairs(table.keys(spriteNames)) do
 	local sprite = {}
 	local prefix = 'sprites/'..dir..'/'

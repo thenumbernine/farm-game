@@ -51,6 +51,7 @@ Plant.collidesWithTiles = false	-- this slows things down a lot.  so just turn o
 Plant.collidesWithObjects = false --?
 Plant.useSeeThru = true
 
+-- TODO generalize item drops, not just logs
 Plant.numLogs = 0
 
 --[[ default
@@ -65,6 +66,7 @@ function Plant:init(args, ...)
 	Plant.super.init(self, args, ...)
 
 	-- TODO maybe move these to takesdamage
+	-- or move these into plantType
 	-- have objects pick their own custom on-damage and on-death
 	self.shakeOnHit = args.shakeOnHit
 	self.tipOnDie = args.tipOnDie

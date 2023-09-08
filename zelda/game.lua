@@ -200,23 +200,23 @@ TODO how to handle multiple maps with objects-in-map ...
 
 	-- don't require until app.game is created
 	local plantTypes = require 'zelda.plants'
+	local animalTypes = require 'zelda.animals'
 
 	local NPC = require 'zelda.obj.npc'
 	map:newObj{
 		class = NPC,
-		pos = vec3f(
-			map.size.x*.95,
-			map.size.y*.5,
-			map.size.z-.5),
+		pos = npcPos:clone(),
 		interactInWorld = function(interact, player)
 			local appPlayer = player.appPlayer
 			local ig = require 'imgui'
 			appPlayer.gamePrompt = function()
-				local function buy(plantType, amount)
+				-- objDesc is plantType or animalType
+				local function buy(objDesc, amount)
 					assert(amount > 0)
-					local cost = plantType.cost * amount
+					local cost = objDesc.cost * amount
 					if cost <= appPlayer.money then
-						if player:addItem(plantType.seedClass, amount) then
+						local cl = objDesc.seedClass or objDesc.objClass
+						if player:addItem(cl, amount) then
 							appPlayer.money = appPlayer.money - cost
 						else
 							appPlayer:dialogPrompt("new room in inventory", "sorry")
@@ -239,14 +239,18 @@ TODO how to handle multiple maps with objects-in-map ...
 					appPlayer.gamePrompt = nil
 				end
 
-				for i,plantType in ipairs(plantTypes) do
+				for i,objDesc in ipairs(
+					table()
+					:append(plantTypes)
+					:append(animalTypes)
+				) do
 					for _,x in ipairs{1, 10, 100} do
 						if ig.igButton('x'..x..'###'..i..'x'..x) then
-							buy(plantType, x)
+							buy(objDesc, x)
 						end
 						ig.igSameLine()
 					end
-					ig.igText('$'..plantType.cost..': '..plantType.name)
+					ig.igText('$'..objDesc.cost..': '..objDesc.name)
 				end
 
 				if ig.igButton'Ok' then

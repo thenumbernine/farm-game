@@ -20,6 +20,12 @@ function FishingPole:useInInventory(player)
 	- line is out
 	- line is being tugged (from fish or bottom or snag ...)
 	- fish is on
+	
+	I could code all fishing as a coroutine right here
+	buuut
+	coroutines aren't so easy to serialize
+	and its locals are harder to access/debug than obj.player state vars
+	so ...
 	--]]
 	if not player.fishing then
 		player.fishing = 'casting'

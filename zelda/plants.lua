@@ -187,6 +187,7 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 		plantType.foodGiven = math.random(3,5)
 	end
 
+	-- subclass and copy all fields of 'plantTyp' into our class
 	plantType.objClass = require 'zelda.obj.plant':subclass(plantType)
 	plantType.objClass.plantType = plantType
 
