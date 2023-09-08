@@ -30,20 +30,24 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 ## TODO:
 
 - fishing.
-- animals
-	- pokeballs
-	- buy from market / livestock.
-		- fences and gates to keep livestock from getting away.
-	- coyotes eat your chickens if you don't keep them safe
-	- dingos eat your babies
-	- scarecrows to protect your crops
 	- fish tanks
 	- fish ponds
-- hunting
+- animals
+	- pokeballs
+	- when you buy an animal from the market, you should get a tether to walk it back to the farm. 
+	- need fences and gates to keep livestock from getting away.
+		- some animals trample your garden
+		- some animals trample grass <-> dirt
+		- some animals graze <-> have food points <-> can starve and die (same as you)
+	- wild animals like coyotes, wolves, etc eat your chickens and cats if you don't keep them safe.
+	- dingos eat your babies
+- scarecrows to protect your crops
+- hunting weapons
 	- guns
 		- bullets
 	- bow
 		- arrows
+	- sling
 	- crossbow
 		- bolts
 	- traps

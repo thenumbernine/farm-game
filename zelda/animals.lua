@@ -1,20 +1,12 @@
 local table = require 'ext.table'
 local matrix_ffi = require 'matrix.ffi'
-local Atlas = require 'zelda.atlas'
 
-local animals = table{
-	'bovine',
-	'cat',
-	'chicken',
-	'coyote',
-	'deer',
-	'dog',
-	'elk',
-	'fox',
-	'goomba',
-	'moose',
-	'wolf',
-}:mapi(function(sprite)
+local Atlas = require 'zelda.atlas'
+local spriteNames = Atlas.spriteNames
+
+local animals = spriteNames:filter(function(name)
+	return name:match'^animal_'
+end):mapi(function(sprite)
 	local animalType = {}
 	
 	local colorMatrix = matrix_ffi({4,4},'float'):zeros()
@@ -25,7 +17,7 @@ local animals = table{
 			1 + .2 * (math.random() - .5))
 	animalType.colorMatrix = colorMatrix
 	
-	animalType.name = sprite
+	animalType.name = sprite:match'^animal_(.*)$'
 	animalType.sprite = sprite
 	animalType.cost = 10
 

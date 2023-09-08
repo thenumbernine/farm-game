@@ -1,5 +1,4 @@
 local table = require 'ext.table'
-local string = require 'ext.string'
 local path = require 'ext.path'
 
 -- anim[sprite][seq][frame]
@@ -42,17 +41,12 @@ TODO
 local Atlas = require 'zelda.atlas'
 local spriteAtlasMap = Atlas.atlasMap
 local spriteAtlasKeys = Atlas.atlasKeys
-local spriteNames = {}
-for _,fn in ipairs(spriteAtlasKeys) do
-	local base, sprite, seq = string.split(fn, '/'):unpack()
-	spriteNames[sprite] = true
-end
-
+local spriteNames = table(Atlas.spriteNames)
 -- because I just added it manually
 -- TODO the TODO above so I can add it automatically
-spriteNames.link = nil
+spriteNames:removeObject'link'
 
-for _,dir in ipairs(table.keys(spriteNames)) do
+for _,dir in ipairs(spriteNames) do
 	local sprite = {}
 	local prefix = 'sprites/'..dir..'/'
 	for _,f in ipairs(Atlas.getAllKeys(prefix)) do

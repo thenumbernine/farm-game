@@ -214,7 +214,7 @@ precision highp float;
 					local fn = frame.filename
 					if fn:sub(-4) == '.png' then
 						-- .pos, .size
-						local texrect = assert(spriteAtlasMap[frame.filename])
+						local texrect = assert(spriteAtlasMap[frame.filename], "failed to find map for sprite "..require'ext.tolua'(frame.filename))
 						-- atlas pos and size
 						frame.atlasTcPos = vec2f(table.unpack(texrect.pos))
 						frame.atlasTcSize = vec2f(table.unpack(texrect.size))

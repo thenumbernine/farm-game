@@ -5,7 +5,7 @@ Goomba.classname = 'zelda.obj.goomba'
 
 Goomba.name = 'Goomba'	-- TODO require name?
 
-Goomba.sprite = 'goomba'
+Goomba.sprite = 'animal_goomba'
 --Goomba.seq = 'walk'
 Goomba.walkSpeed = 0
 
