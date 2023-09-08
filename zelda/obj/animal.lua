@@ -3,7 +3,11 @@ details / subclasses are in zelda/animals [].objClass
 --]]
 local Obj = require 'zelda.obj.obj'
 
-local Animal = require 'zelda.obj.takesdamage'(Obj):subclass()
+local Animal = require 'zelda.obj.placeableobj'(
+	require 'zelda.obj.takesdamage'(
+		Obj
+	)
+):subclass()
 Animal.classname = 'zelda.obj.animal'
 
 Animal.name = 'Animal'

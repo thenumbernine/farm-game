@@ -241,8 +241,8 @@ TODO how to handle multiple maps with objects-in-map ...
 
 				for i,objDesc in ipairs(
 					table()
-					:append(plantTypes)
 					:append(animalTypes)
+					:append(plantTypes)
 				) do
 					for _,x in ipairs{1, 10, 100} do
 						if ig.igButton('x'..x..'###'..i..'x'..x) then
