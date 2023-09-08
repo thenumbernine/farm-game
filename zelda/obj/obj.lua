@@ -160,7 +160,10 @@ function Obj:unlink()
 end
 
 function Obj:remove()
+	if self.removeFlag then return end
 	self.removeFlag = true
+	self:unlink()
+	return self
 end
 
 function Obj:setPos(x,y,z)
@@ -314,6 +317,7 @@ function Obj:update(dt)
 	or self.itemTouch
 	then
 		self:move(self.vel, dt)
+		if self.removeFlag then return end
 
 		-- TODO always check?
 		-- or if only upon move, also check upon init?
@@ -415,11 +419,18 @@ function Obj:move(vel, dt)
 											-- TODO set obj.collideFlags also?
 											if self.touch then
 												self:touch(obj)
+												if self.removeFlag then 
+													goto touchDone
+													--return
+												end
 											end
 											if not obj.removeFlag 
-											and not self.removeFlag 
 											and obj.touch then
 												obj:touch(self)
+												if self.removeFlag then 
+													goto touchDone
+													--return 
+												end
 											end
 										end
 									end
@@ -431,7 +442,7 @@ function Obj:move(vel, dt)
 			end
 		end
 	end
-
+::touchDone::
 	self:link()
 end
 

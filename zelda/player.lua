@@ -68,4 +68,15 @@ function Player:dialogPrompt(msg, title)
 	end
 end
 
+-- only call on another thread / mainloop?
+function Player:setMap(destMap, destPos)
+	local player = assert(self.obj)
+	player:unlink()
+	player.map.objs:removeObject(player)
+	player.map = assert(destMap)
+	player.map.objs:insert(player)
+	player.pos:set(destPos)
+	player:link()
+end
+
 return Player

@@ -11,10 +11,12 @@ local gl = require 'gl'
 local GLTex2D = require 'gl.tex2d'
 local GLProgram = require 'gl.program'
 local glreport = require 'gl.report'
+local ThreadManager = require 'threadmanager'
+local noise2d = require 'simplexnoise.2d'
+local noise3d = require 'simplexnoise.3d'
 local Map = require 'zelda.map'
 local Tile = require 'zelda.tile'
 local Obj = require 'zelda.obj.obj'
-local ThreadManager = require 'threadmanager'
 
 local function hexcolor(i)
 	return
@@ -26,8 +28,6 @@ end
 
 
 local function makeFarmMap(game)
-	local app = game.app
-
 --[[
 TODO how to handle multiple maps with objects-in-map ...
 - should I create all objs in mem, store them per-map, and update all objects?
@@ -57,8 +57,6 @@ TODO how to handle multiple maps with objects-in-map ...
 		map.size.z-.5)
 
 	do
-		local noise2d = require 'simplexnoise.2d'
-		local noise3d = require 'simplexnoise.3d'
 	--print'generating map'
 		local maptexs = {
 			grass = 0,
@@ -330,6 +328,107 @@ TODO how to handle multiple maps with objects-in-map ...
 	return map
 end
 
+function makeTownMap(game)
+	local map = Map{
+		game = game,
+		sizeInChunks = vec3i(3, 2, 1),
+	}
+
+	local buildingSizes = table{
+		vec3f(3, 3, 2),
+	}
+	local buildingPoss = table{
+		vec3f(
+			math.floor(map.size.x/2),
+			math.floor(map.size.y*3/4),
+			math.floor(map.size.z/2) + buildingSizes[1].z),
+	} 
+
+	-- simplex noise resolution
+	local blockBits = 3
+	local blockSize = bit.lshift(1, blockBits)
+	local half = bit.rshift(map.size.z, 1)
+	local xyz = vec3f()
+	local ij = vec2f()
+	for k=0,map.size.z-1 do
+		xyz.z = (k - bit.rshift(map.size.z,1)) / blockSize	-- z=0 <=> midpoint
+		for j=0,map.size.y-1 do
+			xyz.y = (j - bit.rshift(map.size.y,1))  / blockSize
+			ij.y = j
+			for i=0,map.size.x-1 do
+				xyz.x = (i - bit.rshift(map.size.x,1)) / blockSize
+				ij.x = i
+				-- noise range should be between [-1,1] (with gradients bound to [-1,1] as well) 
+				local c = noise2d(xyz.x, xyz.y)
+				-- map to [0,1]
+				c = c * .25
+
+				-- [[ make it flat around the house and NPC
+				for _,buildingPos in ipairs(buildingPoss) do
+					if (
+						(ij - vec2f(buildingPos.x, buildingPos.y)):length() < 15
+					) then
+						-- make it flat ground
+						-- TODO falloff around borders
+						c = 0
+					end
+				end
+				--]]
+			
+				-- put zero halfway up the map
+				c = xyz.z + c
+			
+				local voxelType
+				if c < 0 then
+					voxelType = Tile.typeForName.Stone
+				elseif c < .1 then
+					voxelType = Tile.typeForName.Grass
+				else
+					voxelType = Tile.typeForName.Empty
+				end
+				
+				local voxel = assert(map:getTile(i,j,k))
+				voxel.type = voxelType.index
+				voxel.tex = math.random(#voxelType.texrects)-1
+			end
+		end
+	end
+
+	local WoodTile = Tile.typeForName.Wood
+	for i,buildingPos in ipairs(buildingPoss) do
+		local buildingSize = buildingSizes[i]
+		for x=buildingPos.x-buildingSize.x,buildingPos.x+buildingSize.x do
+			for y=buildingPos.y-buildingSize.y, buildingPos.y+buildingSize.y do
+				for z=buildingPos.z-buildingSize.z, buildingPos.z+buildingSize.z do
+					local adx = math.abs(x - buildingPos.x)
+					local ady = math.abs(y - buildingPos.y)
+					local adz = math.abs(z - buildingPos.z)
+					local linf = math.max(adx/buildingSize.x, ady/buildingSize.y, adz/buildingSize.z)
+					if linf == 1 then
+						local voxel = assert(map:getTile(x,y,z))
+						voxel.type = WoodTile.index
+						voxel.tex = math.random(#WoodTile.texrects)-1
+						voxel.half = 0
+					end
+				end
+			end
+			local t = assert(map:getTile(buildingPos.x, buildingPos.y - buildingSize.y, buildingPos.z - buildingSize.z + 1))
+			t.type = 0
+			t.tex = 0
+			local t = assert(map:getTile(buildingPos.x, buildingPos.y - buildingSize.y, buildingPos.z - buildingSize.z + 2))
+			t.type = 0
+			t.tex = 0
+		end
+	end
+
+	map:buildDrawArrays(
+		0,0,0,
+		map.size.x-1, map.size.y-1, map.size.z-1)
+	map:buildAlts()
+
+	return map
+end
+
 
 local Game = class()
 
@@ -401,10 +500,40 @@ function Game:init(args)
 			end
 		end
 	else
-		local farmMap = makeFarmMap(self)
-		
 		-- start off the map
+		local farmMap = makeFarmMap(self)
 		self.maps:insert(farmMap)
+		
+		local townMap = makeTownMap(self)
+		self.maps:insert(townMap)
+		
+		-- [[ doors
+		farmMap:newObj{
+			class = require 'zelda.obj.door',
+			pos = vec3f(
+				farmMap.size.x-1,
+				farmMap.size.y/2,
+				farmMap.size.z/2+1),
+			destMap = townMap,
+			destMapPos = vec3f(
+				1,
+				townMap.size.y/2,
+				townMap.size.z/2+1),
+		}
+
+		townMap:newObj{
+			class = require 'zelda.obj.door',
+			pos = vec3f(
+				0,
+				townMap.size.y/2,
+				townMap.size.z/2+1),
+			destMap = farmMap,
+			destMapPos = vec3f(
+				farmMap.size.x-2,
+				farmMap.size.y/2,
+				farmMap.size.z/2+1),
+		}
+		--]]
 
 		local PlayerObj = require 'zelda.obj.player'
 		app.players[1].obj = farmMap:newObj{
@@ -631,7 +760,8 @@ function Game:update(dt)
 		for i=#map.objs,1,-1 do
 			local obj = map.objs[i]
 			if obj.removeFlag then
-				obj:unlink()
+				obj:unlink()	-- should be already unlinked
+				--assert(next(obj.tiles) == nil)
 				table.remove(map.objs, i)
 			end
 		end
@@ -683,6 +813,7 @@ function Game:event(event, ...)
 	local app = self.app
 	local appPlayer = app.players[1]
 	if not appPlayer then return end
+	if app.playingMenu.consoleOpen then return end
 	if event.type == sdl.SDL_KEYDOWN
 	or event.type == sdl.SDL_KEYUP
 	then

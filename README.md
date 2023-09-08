@@ -29,6 +29,15 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 
 ## TODO:
 
+- town
+	- fishing store
+	- livestock store
+	- seed store
+	- food store
+	- blacksmith
+	- ... tanner ?
+	- ... brewer ?
+	- ... all those other DF jobs?
 - fishing.
 	- casting line animation
 	- test for water where the line lands, tangle the line in bushes otherwise
@@ -39,6 +48,7 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 	- fish ponds for collecting fish
 - cooking
 - animals
+	- packs wander through
 	- pokeballs
 	- when you buy an animal from the market, you should get a tether to walk it back to the farm. 
 	- need fences and gates to keep livestock from getting away.
@@ -51,7 +61,8 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 		- meat -> (cook over fireplace / stove + with pan)
 		- skinning
 			- tanning
-- scarecrows to protect your crops
+- birds to peck at your crops
+	- scarecrows to protect your crops
 - hunting weapons
 	- guns
 		- bullets
@@ -65,14 +76,13 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 		- live trapping animals
 		- domesticate
 			- train for fighting
-- traceline 
+- traceline
 	- for placement of items / tiles (preview where they'll go)
 	- for determining where weapon/tool swings will land
 	- for determining NPC interaction / talking
 	- mix traceline with push() and walking
 	- make walking step over half-tiles
 	- make the default block placement / excavation be half-tile at a time
-
 - digging:
 	- if you dig ground, (or remove stone or wood or any tile), it should remove sprites on top of the ground (hoed, watered, seeded)
 	- or if you try to dig ground that has a bush/tree on it, it should fail to dig.
@@ -81,6 +91,9 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 	- rotating/placing of non-cuboid voxels?  do i have any of these yet?  un-animated things, like beds etc? 
 - biomes
 	- make plants randomly seed neighboring ground... only if they naturally grow in this biome ofc.
+	- also overcrowding of plants 
+		- ... don't seed / lower lifespan if it is too dense.
+		- density is based only on local region (proportional to plant size) of plants with like size. i.e. small plants won't contribute to large plant densiy, so they can grow between.
 - stats system.  level system.  weapon-skill-level system.  skill tree ofc because.
 	- lots of equipment slots.  materia.
 	- good battle system .
@@ -129,6 +142,8 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 	- hail.
 		- golfball/tennisball sized hail which destroys crops
 - plants
+	- sword swings shouldn't damage tubers/vegetables ... maybe just bushes?
+	- bushes shouldn't give you wood, only trees.
 	- redo all the tree / bush / plant pics procedurally or something, esp to have one per 792 plants listed at the store right now.
 	- unique seed sprites, to go with the unique veg and plant and fruit sprites.
 	- only grow plants if their ground is watered

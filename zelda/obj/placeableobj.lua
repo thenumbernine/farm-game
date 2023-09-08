@@ -29,7 +29,6 @@ local function placeableObj(parent)
 		end
 	end
 
-	
 	-- fake-takesdamage?
 	-- or TODO use real takesdamage?
 	cl.takesDamage = true

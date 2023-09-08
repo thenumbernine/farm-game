@@ -1,10 +1,18 @@
 -- plantTypes table
 -- TODO planttypes.lua ?
 -- used with item/seeds .plant, obj/seededground .plant etc
+local table = require 'ext.table'
+local path = require 'ext.path'
+local string = require 'ext.string'
 local vec2f = require 'vec-ffi.vec2f'
 local vec3f = require 'vec-ffi.vec3f'
+local CSV = require 'csv'
 local matrix_ffi = require 'matrix.ffi'
-local table = require 'ext.table'
+local anim = require 'zelda.anim'
+local Game = require 'zelda.game'
+local Fruit = require 'zelda.obj.fruit'
+local Plant = require 'zelda.obj.plant'
+local ItemSeeds = require 'zelda.item.seeds'
 
 --[[
 name = name
@@ -88,10 +96,7 @@ growType
 
 cost = how much to buy/sell
 --]]
-local path = require 'ext.path'
-local string = require 'ext.string'
-
-local plantcsv = require 'csv'.file'plants.csv'
+local plantcsv = CSV.file'plants.csv'
 local fields = plantcsv.rows:remove(1)
 plantcsv:setColumnNames(fields)
 
@@ -127,7 +132,6 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 	}:pickWeighted().sprite
 
 	-- pick a random sequence <-> plant sub-type
-	local anim = require 'zelda.anim'
 	local sprite = assert(anim[plantType.sprite])
 	local seqnames = table.keys(sprite)
 	local seqname = seqnames:pickRandom()
@@ -138,11 +142,9 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 	local framesize = assert(frame.atlasTcSize)
 	plantType.drawSize = framesize / 20
 
-	local Game = require 'zelda.game'
 
 	local fruitSeqNames = table.keys(anim.fruit)
 	local fruitClasses = table()
-	local Fruit = require 'zelda.obj.fruit'
 	fruitClasses:insert(
 		Fruit:subclass{
 			hpGiven = math.random(3,5),
@@ -190,10 +192,10 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 	end
 
 	-- subclass and copy all fields of 'plantTyp' into our class
-	plantType.objClass = require 'zelda.obj.plant':subclass(plantType)
+	plantType.objClass = Plant:subclass(plantType)
 	plantType.objClass.plantType = plantType
 
-	plantType.seedClass = require 'zelda.item.seeds':subclass{
+	plantType.seedClass = ItemSeeds:subclass{
 		name = plantType.name..' '..plantType.growType,
 		plantType = plantType,
 	}

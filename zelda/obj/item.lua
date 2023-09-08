@@ -30,7 +30,7 @@ Item.collidesWithTiles = false
 Item.collidesWithObjects = false	-- won't block other objects
 Item.itemTouch = true			-- will trigger touch of other moving objects, but won't push.
 
-Item.min = box3f{
+Item.bbox = box3f{
 	min = {-.3, -.3, 0},
 	max = {.3, .3, .6},
 }
@@ -55,13 +55,8 @@ function Item:init(args)
 end
 
 function Item:touch(other)
-	-- TODO this test here or before calling :touch() ?
-	if self.removeFlag then return end
-	if other.removeFlag then return end
-	
 	if other.addItem
 	and not other.dead
-	and not other.removeFlag
 	then
 		if other:addItem(self.itemClass) then
 			self:remove()

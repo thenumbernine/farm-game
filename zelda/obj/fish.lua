@@ -1,3 +1,14 @@
+--[[
+TODO move Fish into zelda.obj.animal ?
+but also, don't create fish objs until you actually go fishing ...
+then they're in-map, and make them go away after a while .. ?
+
+because fish+animals
+	- need food / constantly eat
+	- need to breathe ... tho i don't have this in either
+	- ... rewrite animal movement to include swim, fly, and walk
+		- swimming+breathing ... = swim on top of water?
+--]]
 local Obj = require 'zelda.obj.obj'
 local Fish = Obj:subclass()
 
@@ -16,6 +27,7 @@ end
 
 -- just like fruit/veg, you have to subclass to specify these
 -- another reason I should just make inventory story objects, not Item's
+-- TODO instead how about a separate 'meat' item ... then fish / animal meat?
 Fish.foodGiven = 2
 Fish.hpGiven = 2
 
