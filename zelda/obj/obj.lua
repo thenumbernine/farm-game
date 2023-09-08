@@ -446,21 +446,21 @@ Obj.identMat4 = identMat4
 
 -- static method, no class, convenient to have in the namespace
 function Obj.getFrame(spriteName, seqName, frameIndex, angle, app)
-		if not spriteName then return end
-		if not seqName then return end
-		if not frameIndex then return end
-		local sprite = anim[spriteName]
-		if not sprite then return end
-		if sprite.useDirs then	-- enable this for sequences that use _u _d _l _r etc (TODO search by default?)
-			local relAngle = angle - app.viewYaw
-			local angleIndex = math.floor(relAngle / (.5 * math.pi) + .5) % 4 + 1
-			seqName = seqName .. dirSeqSuffixes[angleIndex]
+	if not spriteName then return end
+	if not seqName then return end
+	if not frameIndex then return end
+	local sprite = anim[spriteName]
+	if not sprite then return end
+	if sprite.useDirs then	-- enable this for sequences that use _u _d _l _r etc (TODO search by default?)
+		local relAngle = angle - app.viewYaw
+		local angleIndex = math.floor(relAngle / (.5 * math.pi) + .5) % 4 + 1
+		seqName = seqName .. dirSeqSuffixes[angleIndex]
 --print('angle', self.angle, 'index', angleIndex, 'seqName', seqName)
-		end
-		local seq = sprite[seqName]
+	end
+	local seq = sprite[seqName]
 --print('seqName', seqName, 'seq', seq)
-		if not seq then return end
-		return seq[frameIndex]
+	if not seq then return end
+	return seq[frameIndex]
 end
 
 function Obj:draw()

@@ -1,5 +1,27 @@
 #!/usr/bin/env luajit
 
+--[[
+local matrix_ffi = require 'matrix.ffi'
+for f=0,1,.05 do
+	local colorMatrix = matrix_ffi({4,4},'float'):zeros()
+		:setRotate(
+			f*2*math.pi,
+			1,
+			1,
+			1)
+	print(colorMatrix)
+	print(colorMatrix * matrix_ffi{1,1,1,1})
+	print(colorMatrix * matrix_ffi{0,0,0,1})
+	print(colorMatrix * matrix_ffi{1,0,0,1})
+	print(colorMatrix * matrix_ffi{0,1,0,1})
+	print(colorMatrix * matrix_ffi{0,0,1,1})
+	print()
+end
+os.exit()
+--]]
+
+
+
 --[[ what's the default jit optimization level?
 require 'jit.opt'.start(2)
 --]]

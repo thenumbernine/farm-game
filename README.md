@@ -30,6 +30,27 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 ## TODO:
 
 - fishing.
+- animals
+	- pokeballs
+	- buy from market / livestock.
+		- fences and gates to keep livestock from getting away.
+	- coyotes eat your chickens if you don't keep them safe
+	- dingos eat your babies
+	- scarecrows to protect your crops
+	- fish tanks
+	- fish ponds
+- hunting
+	- guns
+		- bullets
+	- bow
+		- arrows
+	- crossbow
+		- bolts
+	- traps
+		- mortal 
+		- live traps
+	- domesticate
+		- train for fighting
 - chest
 	- don't allow it to be broken into an item if it has anything ... or you'll lose its contents.
 - digging:
@@ -67,6 +88,8 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 			- cheap method, greyscale sprite <-> bumpmap height.
 			- also add/mul a distance-from-closest-transparent-pixel to make sure sprites look round.
 		- sprites cast shadows on the ground?
+	- use GPU to build geometry ... atomics + write ... need a compute/geometry shader?
+	- use GPU to do physics updates ...
 - physics
 	- heat modeling
 	- CFD/SPH fluids, water, magma, oil, acid, quicksand, poisonous gas
@@ -105,11 +128,6 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 		- farmers market, once a saturady or something.  or any day.  you get lots of customers and sell at higher price.
 			- later you can hire someone to man the booth for you and sell even more round-the-clock.
 			- plants in-biome should cost less than plants out of biome
-- livestock.
-	- fences and gates to keep livestock from getting away.
-	- domesticate 
-	- pokeballs
-	- train for fighting
 - gems.  metals.  pickaxe quality levels.
 - crafting
 	- your own forge for making stuff.

@@ -202,7 +202,7 @@ precision highp float;
 		minFilter = gl.GL_NEAREST,
 	}
 	-- key/value from filename to rect
-	local spriteAtlasMap = require 'zelda.atlas'
+	local spriteAtlasMap = require 'zelda.atlas'.atlasMap
 --]=]
 
 -- [=[ load tex2ds for anim

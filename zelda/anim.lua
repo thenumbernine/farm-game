@@ -74,8 +74,9 @@ local anim = {
 }
 
 -- auto-add.  i think this was below but below also had udlr stuff meh.
-local spriteAtlasMap = require 'zelda.atlas'
-local spriteAtlasKeys = table.keys(spriteAtlasMap)
+local Atlas = require 'zelda.atlas'
+local spriteAtlasMap = Atlas.atlasMap
+local spriteAtlasKeys = Atlas.atlasKeys
 for _,dir in ipairs{
 	'tree',
 	'plant',
@@ -85,14 +86,12 @@ for _,dir in ipairs{
 	'vegetable',
 } do
 	local sprite = {}
-	for _,f in ipairs(spriteAtlasKeys) do
-		local prefix = 'sprites/'..dir..'/'
-		if f:match('^'..string.patescape(prefix)) then
-			local fbase = path(f:sub(#prefix+1)):getext()
-			sprite[fbase] = {
-				{filename = f},
-			}
-		end
+	local prefix = 'sprites/'..dir..'/'
+	for _,f in ipairs(Atlas.getAllKeys(prefix)) do
+		local fbase = path(f:sub(#prefix+1)):getext()
+		sprite[fbase] = {
+			{filename = f},
+		}
 	end
 	anim[dir] = sprite
 end

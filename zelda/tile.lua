@@ -85,14 +85,11 @@ Tile.typeForName = {}		-- name => obj
 Tile.typeValues = {}		-- name => index
 
 
-local spriteAtlasMap = require 'zelda.atlas'
-local spriteAtlasKeys = table.keys(spriteAtlasMap)
+local Atlas = require 'zelda.atlas'
+local spriteAtlasMap = Atlas.atlasMap
 -- returns a 0-based table, indexed with voxel.tex
 local function getTexRects(sprite)
-	local prefix = 'sprites/maptiles/'..sprite
-	return spriteAtlasKeys:filter(function(k)
-		return k:sub(1,#prefix) == prefix
-	end):mapi(function(fn)
+	return Atlas.getAllKeys('sprites/maptiles/'..sprite):mapi(function(fn)
 		return spriteAtlasMap[fn]
 	end):setmetatable(nil)
 end

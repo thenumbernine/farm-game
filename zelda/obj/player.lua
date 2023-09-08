@@ -343,6 +343,13 @@ print'TUGGED -> FISH ON'
 print'YOU CAUGHT A FISH'
 			-- TODO add to inventory
 			self.fishing = nil
+			-- hmm, should fish be an obj? 
+			-- i'm less and less thinking Objs and Items should be separate ...
+			self.map:newObj{
+				class = require 'zelda.obj.item',
+				itemClass = require 'zelda.obj.fish',
+				pos = self.pos:clone(),
+			}
 		end
 	end
 
