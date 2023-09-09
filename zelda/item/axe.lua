@@ -28,21 +28,6 @@ function ItemAxe:useInInventory(player)
 
 	local objIterUID = map:getNextObjIterUID()
 	for dz=1,-1,-1 do
-		local tile = map:getTile(x,y,z+dz)
-		if tile 
-		and tile.type == Tile.typeValues.Wood
-		then
-			tile.type = Tile.typeValues.Empty
-			map:buildDrawArrays(
-				x,y,z+dz,
-				x,y,z+dz)
-			require 'zelda.item.log':toItemObj{
-				map = map,
-				pos = vec3f(x,y,z+dz),
-			}
-			return
-		end
-
 		local objs = map:getTileObjs(x,y,z)
 		if objs then
 			for _,obj in ipairs(objs) do
@@ -57,6 +42,23 @@ function ItemAxe:useInInventory(player)
 					return
 				end
 			end
+		end
+	end
+
+	for dz=1,-1,-1 do
+		local tile = map:getTile(x,y,z+dz)
+		if tile 
+		and tile.type == Tile.typeValues.Wood
+		then
+			tile.type = Tile.typeValues.Empty
+			map:buildDrawArrays(
+				x,y,z+dz,
+				x,y,z+dz)
+			require 'zelda.item.log':toItemObj{
+				map = map,
+				pos = vec3f(x,y,z+dz),
+			}
+			return
 		end
 	end
 end

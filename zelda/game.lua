@@ -2,6 +2,7 @@ local ffi = require 'ffi'
 local sdl = require 'ffi.req' 'sdl'
 local class = require 'ext.class'
 local table = require 'ext.table'
+local math = require 'ext.math'
 local path = require 'ext.path'
 local vec2f = require 'vec-ffi.vec2f'
 local vec3i = require 'vec-ffi.vec3i'
@@ -195,7 +196,20 @@ TODO how to handle multiple maps with objects-in-map ...
 	-- hmm I should redo my maps as 2d noise ...
 	-- TODO around here, make a river or something.
 
+	--[[ hack for flat ground for testing
+	for k=0,map.size.z-1 do
+		for j=0,map.size.y-1 do
+			for i=0,map.size.x-1 do
+				local voxel = assert(map:getTile(i,j,k))
+				voxel.type = k <= 1
+					and Tile.typeValues.Stone
+					or Tile.typeValues.Empty
+			end
+		end
+	end
+	--]]
 
+	-- [[
 	-- don't require until app.game is created
 	local plantTypes = require 'zelda.plants'
 	local animalTypes = require 'zelda.animals'
@@ -222,7 +236,7 @@ TODO how to handle multiple maps with objects-in-map ...
 		class = require 'zelda.obj.chest',
 		pos = houseCenter + vec3f(houseSize.x-1, houseSize.y-1, -(houseSize.z-1)) + .5,
 	}
-
+	--]]
 
 	-- [[ plants
 	for j=0,map.size.y-1 do
@@ -540,6 +554,22 @@ function Game:draw()
 		app.skySceneObj.uniforms.timeOfDay = (self.time / self.secondsPerDay) % 1
 		-- testing: 1 min = 1 day
 		--app.skySceneObj.uniforms.timeOfDay = (self.time / 60) % 1
+		
+
+		local i = math.floor(self.viewFollow.pos.x)
+		local j = math.floor(self.viewFollow.pos.y)
+		local surface = self.viewFollow.map:getSurface(i,j)
+	
+	-- [=[
+		app.skySceneObj.uniforms.inside = 
+			surface
+			and math.clamp(
+				(tonumber(surface.lumAlt - 4) - self.viewFollow.pos.z) / 4,
+				0,
+				1
+			)
+			or 0
+	--]=]
 		app.skySceneObj:draw()
 
 		gl.glEnable(gl.GL_DEPTH_TEST)

@@ -50,7 +50,7 @@ typedef struct {
 	// ... or store these in an array, indexed by sprite frame, and just put the sprite frame here ...
 	vec2f_t atlasTcPos;
 	vec2f_t atlasTcSize;
-	
+
 	vec3f_t drawCenter;
 	vec2f_t drawSize;
 	float drawAngle;
@@ -229,7 +229,7 @@ error("you're using .obj")
 		end
 	end
 --]=]
-	
+
 	-- TODO would be nice per-hour-of-the-day ...
 	-- why am I not putting this in a texture?
 	-- because I also want a gradient for at-ground vs undergournd
@@ -269,13 +269,16 @@ void main() {
 in vec2 vtxv;
 out vec4 fragColor;
 uniform float timeOfDay;
+uniform float inside;		// set to 1 when we're inside, or some interpolation thereof
 uniform sampler2D skyTex;
 void main() {
-	fragColor = texture(skyTex, vec2(timeOfDay, vtxv.y));
+	fragColor.xyz = (1. - inside) * texture(skyTex, vec2(timeOfDay, vtxv.y)).xyz;
+	fragColor.w = 1.; 
 }
 ]],
 		uniforms = {
 			skyTex = 0,
+			inside = 0,
 		},
 	}:useNone()
 
@@ -320,10 +323,10 @@ in float angle;
 in vec3 pos;
 in vec3 spritePosOffset;
 //I think the 4th row is always {0,0,0,alpha}
-in vec4 colorMatrixR;	
-in vec4 colorMatrixG;	
-in vec4 colorMatrixB;	
-in vec4 colorMatrixA;	
+in vec4 colorMatrixR;
+in vec4 colorMatrixG;
+in vec4 colorMatrixB;
+in vec4 colorMatrixA;
 
 out vec2 texcoordv;
 out vec3 viewPosv;
@@ -335,7 +338,7 @@ uniform mat4 projMat;
 uniform vec2 atlasInvSize;
 
 void main() {
-	// can't just assign a mat4 varying to a mat4-of-col-vectors 
+	// can't just assign a mat4 varying to a mat4-of-col-vectors
 	// ... can't assign the varying's individual col vectors either
 	// gotta assign a temp mat4 here first
 	mat4 colorMatrix = transpose(mat4(
@@ -373,8 +376,15 @@ void main() {
 		ez = vec3(0., 0., 1.);
 	} else {
 		ex = vec3(viewMat[0].x, viewMat[1].x, viewMat[2].x);
-		ey = vec3(viewMat[0].y, viewMat[1].y, viewMat[2].y);
 		ez = vec3(viewMat[0].z, viewMat[1].z, viewMat[2].z);
+#if 1	//use view matrix	
+		ey = vec3(viewMat[0].y, viewMat[1].y, viewMat[2].y);
+#else	//make sure up is world z+ aligned
+		// this still only looks good at near-horizontal views, when we might as well use the first case.
+		ey = vec3(0., 0., 1.);
+		ex = normalize(cross(ey, ez));
+		ez = normalize(cross(ex, ey));
+#endif
 	}
 	worldpos.xyz += ex * c.x;
 	worldpos.xyz += ey * c.y;
@@ -433,7 +443,7 @@ void main() {
 	-- NOTICE these have a big perf hit when resizing ...
 	local vector = require 'ffi.cpp.vector'
 	self.spritesBufCPU = vector'sprite_t'
-	self.spritesBufCPU:reserve(60000)	-- TODO error on growing, like the map vectors, and TODO better vector<->GLArrayBuffer coupling + growing of GL buffers 
+	self.spritesBufCPU:reserve(60000)	-- TODO error on growing, like the map vectors, and TODO better vector<->GLArrayBuffer coupling + growing of GL buffers
 	self.spritesBufGPU = GLArrayBuffer{
 		size = ffi.sizeof'sprite_t' * self.spritesBufCPU.capacity,
 		data = self.spritesBufCPU.v,
@@ -494,7 +504,7 @@ void main() {
 				stride = ffi.sizeof'sprite_t',
 				offset = ffi.offsetof('sprite_t', 'drawCenter'),
 				buffer = self.spritesBufGPU,
-			},	
+			},
 			drawSize = {
 				divisor = 1,
 				size = 2,
@@ -530,7 +540,7 @@ void main() {
 				stride = ffi.sizeof'sprite_t',
 				offset = ffi.offsetof('sprite_t', 'pos'),
 				buffer = self.spritesBufGPU,
-			},	
+			},
 			spritePosOffset = {
 				divisor = 1,
 				size = 3,
@@ -558,7 +568,7 @@ void main() {
 				stride = ffi.sizeof'sprite_t',
 				offset = ffi.offsetof('sprite_t', 'colorMatrix') + ffi.sizeof'float' * 4,
 				buffer = self.spritesBufGPU,
-			},	
+			},
 			colorMatrixB = {
 				divisor = 1,
 				size = 4,
@@ -567,7 +577,7 @@ void main() {
 				stride = ffi.sizeof'sprite_t',
 				offset = ffi.offsetof('sprite_t', 'colorMatrix') + ffi.sizeof'float' * 8,
 				buffer = self.spritesBufGPU,
-			},	
+			},
 			colorMatrixA = {
 				divisor = 1,
 				size = 4,
@@ -576,7 +586,7 @@ void main() {
 				stride = ffi.sizeof'sprite_t',
 				offset = ffi.offsetof('sprite_t', 'colorMatrix') + ffi.sizeof'float' * 12,
 				buffer = self.spritesBufGPU,
-			},	
+			},
 		},
 		texs = {},
 	}
@@ -637,11 +647,11 @@ uniform mat4 projMat;
 void main() {
 	texcoordv = texcoord;
 	colorv = color;
-	
+
 	worldPosv = vertex;
 	vec4 viewPos = mvMat * vec4(vertex, 1.);
 	viewPosv = viewPos.xyz;
-	
+
 	gl_Position = projMat * viewPos;
 }
 ]],
@@ -667,7 +677,7 @@ uniform vec3 playerViewPos;
 
 //lol, C standard is 'const' associates left
 //but GLSL requires it to associate right
-const float cosClipAngle = .9;	// = cone with 25 degree from axis 
+const float cosClipAngle = .9;	// = cone with 25 degree from axis
 
 void main() {
 	fragColor = texture(tex, texcoordv);
@@ -697,7 +707,7 @@ void main() {
 			// + vec3(0., 1., -2.);
 		if (normalize(viewPosv - testViewPos).z > cosClipAngle) {
 			vec3 n = normalize(cross(dx, dy));
-			//if (dot(n, testViewPos - viewPosv) < -.01) 
+			if (dot(n, testViewPos - viewPosv) < -.01)
 			{
 				fragColor.w = .1;
 				discard;
@@ -735,6 +745,7 @@ function App:resetGame(dontMakeGame)
 	-- in degrees
 	self.targetViewYaw = 0
 	self.viewYaw = 0
+	self.viewPitch = math.rad(70)
 
 	-- NOTICE THIS IS A SHALLOW COPY
 	-- that means subtables (player keys, custom colors) won't be copied
@@ -775,23 +786,9 @@ function App:updateGame()
 
 	local sysThisTime = getTime()
 	local sysDeltaTime = sysThisTime - self.lastTime
-	self.lastTime = sysThisTime
-
-	-- in degrees:
-	self.lastViewYaw = self.viewYaw
-	local dyaw = .1 * (self.targetViewYaw - self.viewYaw)
-	if math.abs(dyaw) > .001 then
-		self.viewYaw = self.viewYaw + dyaw
-	else
-		-- TODO this might fix some flickering, but there still is some more
-		-- probably due to player vel being nonzero
-		-- so TODO the same trick with player vel ?  only update camera follow target if it moves past some epsilon?
-		self.targetViewYaw = self.targetViewYaw % (2 * math.pi)
-		self.viewYaw = self.targetViewYaw
-	end
 
 	self.view.angle = quatd():fromAngleAxis(0, 0, 1, math.deg(self.viewYaw))
-					* quatd():fromAngleAxis(1,0,0,30)
+					* quatd():fromAngleAxis(1, 0, 0, math.deg(self.viewPitch))
 	self.view.pos = self.view.angle:zAxis() * (self.view.pos - self.view.orbit):length() + self.view.orbit
 
 	gl.glClear(bit.bor(gl.GL_COLOR_BUFFER_BIT, gl.GL_DEPTH_BUFFER_BIT))
@@ -823,14 +820,34 @@ print('dir', v)
 
 	gl.glDisable(gl.GL_BLEND)
 
+	-- fixed-framerate update
 	self.updateTime = self.updateTime + sysDeltaTime
-	if self.updateTime >= self.updateDelta then
+	local needsUpdate
+	while self.updateTime >= self.updateDelta do
 		self.updateTime = self.updateTime - self.updateDelta
-		-- fixed-framerate update
-		if game and not self.paused then
-			game:update(self.updateDelta)
+		-- don't allow frameskip <-> if theres a lag in updating then still only update once
+		needsUpdate = true
+	end
+	if game
+	and not self.paused
+	and needsUpdate then
+		game:update(self.updateDelta)
+
+		-- only update if the game is running <-> fixed framerate
+		self.lastViewYaw = self.viewYaw
+		local dyaw = .3 * (self.targetViewYaw - self.viewYaw)
+		if math.abs(dyaw) > .001 then
+			self.viewYaw = self.viewYaw + dyaw
+		else
+			-- TODO this might fix some flickering, but there still is some more
+			-- probably due to player vel being nonzero
+			-- so TODO the same trick with player vel ?  only update camera follow target if it moves past some epsilon?
+			self.targetViewYaw = self.targetViewYaw % (2 * math.pi)
+			self.viewYaw = self.targetViewYaw
 		end
 	end
+
+	self.lastTime = sysThisTime
 end
 
 function App:event(event, ...)
@@ -872,7 +889,7 @@ end
 function App:loadGame(folder)
 	assert(folder:isdir())
 	self.game = Game{
-		app = self, 
+		app = self,
 		srcdir = folder,
 	}
 end

@@ -1,5 +1,6 @@
 local ffi = require 'ffi'
 local table = require 'ext.table'
+local math = require 'ext.math'
 local class = require 'ext.class'
 local vec2f = require 'vec-ffi.vec2f'
 local vec3f = require 'vec-ffi.vec3f'
@@ -12,7 +13,6 @@ local anim = require 'zelda.anim'
 local Tile = require 'zelda.tile'
 local sides = require 'zelda.sides'
 
-local math = require 'ext.math'
 local function smoothstep(edge0,edge1,x)
 	local t = math.clamp((x - edge0) / (edge1 - edge0), 0, 1)
 	return t * t * (3 - 2 * t)
@@ -243,49 +243,55 @@ local function push(pos, min, max, bmin, bmax, vel, dontPush)
 		end
 
 		if side == 0 then
-			if not dontPush then
-				vel.x = 0
-			end
-			if pm == 1 then
+			do -- if math.sign(vel.x) == pm then
 				if not dontPush then
-					pos.x = bmin.x - max.x - epsilon
+					vel.x = 0
 				end
-				return sides.flags.xp
-			else
-				if not dontPush then
-					pos.x = bmax.x - min.x + epsilon
+				if pm == 1 then
+					if not dontPush then
+						pos.x = bmin.x - max.x - epsilon
+					end
+					return sides.flags.xp
+				else
+					if not dontPush then
+						pos.x = bmax.x - min.x + epsilon
+					end
+					return sides.flags.xm
 				end
-				return sides.flags.xm
 			end
 		elseif side == 1 then
-			if not dontPush then
-				vel.y = 0
-			end
-			if pm == 1 then
+			do -- if math.sign(vel.y) == pm then
 				if not dontPush then
-					pos.y = bmin.y - max.y - epsilon
+					vel.y = 0
 				end
-				return sides.flags.yp
-			else
-				if not dontPush then
-					pos.y = bmax.y - min.y + epsilon
+				if pm == 1 then
+					if not dontPush then
+						pos.y = bmin.y - max.y - epsilon
+					end
+					return sides.flags.yp
+				else
+					if not dontPush then
+						pos.y = bmax.y - min.y + epsilon
+					end
+					return sides.flags.ym
 				end
-				return sides.flags.ym
 			end
 		elseif side == 2 then
-			if not dontPush then
-				vel.z = 0
-			end
-			if pm == 1 then
+			do -- if math.sign(vel.z) == pm then
 				if not dontPush then
-					pos.z = bmin.z - max.z - epsilon
+					vel.z = 0
 				end
-				return sides.flags.zp
-			else
-				if not dontPush then
-					pos.z = bmax.z - min.z + epsilon
+				if pm == 1 then
+					if not dontPush then
+						pos.z = bmin.z - max.z - epsilon
+					end
+					return sides.flags.zp
+				else
+					if not dontPush then
+						pos.z = bmax.z - min.z + epsilon
+					end
+					return sides.flags.zm
 				end
-				return sides.flags.zm
 			end
 		end
 	end
@@ -299,8 +305,9 @@ Obj.collidesWithObjects = true
 Obj.itemTouch = false	-- for items only, to add a touch test upon creation
 Obj.collideFlags = 0
 
-Obj.stepHeight = .51
+Obj.stepHeight = .6
 function Obj:update(dt)
+--print('0', self.pos)
 	local game = self.game
 
 	if self.removeDuration
@@ -338,14 +345,36 @@ function Obj:update(dt)
 			sides.flags.yp
 		))
 		then
+			self.oldvel.z = 0
+			local oldold = self.oldpos:clone()
 			self.pos:set(self.oldpos:unpack())
+--print('bbox', box3f(self.bbox.min + self.pos, self.bbox.max + self.pos))
+--print('1', self.pos)
 			self:move(vec3f(0, 0, self.stepHeight), 1)
+			
+			-- for each :move() make sure pos==oldpos
+--print('2', self.pos)			
+			self.oldpos:set(self.pos:unpack())
 			self.collideFlags = 0
 			self.vel:set(self.oldvel:unpack())
+--print('vel', self.vel)
 			self:move(self.vel, dt)
+			
+			-- [[ when pushing down, it also pushes outward
+			-- so disable push ...
+			-- but this still makes the final position sunk tiny bit into the floor ...
+			-- but disabling it and you hop when you hit walls
 			local pushFlags = self.collideFlags
-			self:move(vec3f(0, 0, -self.stepHeight), 1)
+--print('3', self.pos)			
+			self.oldpos:set(self.pos:unpack())
+			self:move(vec3f(0, 0, -self.stepHeight), 1, true)
 			self.collideFlags = pushFlags
+--print('4', self.pos)
+			--]]
+		
+			-- for the rest, use 'oldpos' as the start of this update
+			self.oldpos:set(oldold:unpack())
+--print('vel', self.vel)
 		end
 
 		self:link()
@@ -383,17 +412,18 @@ function Obj:update(dt)
 		end
 		self.vel.z = self.vel.z + self.gravity * dt
 	end
+--print('5', self.pos)
 end
 
 local omin = vec3f()
 local omax = vec3f()
-function Obj:move(vel, dt)
+function Obj:move(vel, dt, dontPush)
 	local map = self.map
 
 	self.pos.x = self.pos.x + vel.x * dt
 	self.pos.y = self.pos.y + vel.y * dt
 	self.pos.z = self.pos.z + vel.z * dt
-
+--print('a', self.pos)
 	if not (
 		self.collidesWithTiles
 		or self.collidesWithObjects
@@ -436,7 +466,9 @@ function Obj:move(vel, dt)
 							-- TODO trace gravity fall downward separately
 							-- then move horizontall
 							-- if push fails then raise up, move, and go back down, to try and do steps
-							local collided = push(self.pos, self.bbox.min, self.bbox.max, omin, omax, vel)
+--print('b', self.pos)
+							local collided = push(self.pos, self.bbox.min, self.bbox.max, omin, omax, vel, dontPush)
+--print('c', self.pos, collided)
 							self.collideFlags = bit.bor(self.collideFlags, collided)
 						end
 					end
@@ -452,7 +484,9 @@ function Obj:move(vel, dt)
 								or obj.itemTouch
 								or self.itemTouch
 								then
-									local collided = push(self.pos, self.bbox.min, self.bbox.max, obj.pos + obj.bbox.min, obj.pos + obj.bbox.max, vel, self.itemTouch or obj.itemTouch)
+--print('d', self.pos)
+									local collided = push(self.pos, self.bbox.min, self.bbox.max, obj.pos + obj.bbox.min, obj.pos + obj.bbox.max, vel, dontPush or self.itemTouch or obj.itemTouch)
+--print('e', self.pos, collided)
 									self.collideFlags = bit.bor(self.collideFlags, collided)
 									if collided ~= 0 then
 										-- TODO set obj.collideFlags also?
@@ -474,6 +508,7 @@ function Obj:move(vel, dt)
 			end
 		end
 	end
+--print('f', self.pos)
 end
 
 -- ccw start at 0' (with 45' spread)

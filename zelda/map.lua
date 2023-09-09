@@ -362,7 +362,7 @@ function Chunk:buildAlts()
 				if tileInfo.type > 0 then
 					local tileClass = Tile.types[tileInfo.type]
 					if tileClass.solid then
-						surface.solidAlt = k
+						surface.solidAlt = k + baseAlt
 						break
 					end
 				end
@@ -589,6 +589,23 @@ function Map:getTile(i,j,k)
 	local chunk = self.chunks[chunkIndex]
 	local index = bit.bor(dx, bit.lshift(bit.bor(dy, bit.lshift(dz, Chunk.bitsize.y)), Chunk.bitsize.x))
 	return chunk.v + index
+end
+
+function Map:getSurface(i,j)
+	if i < 0 or i >= self.size.x
+	or j < 0 or j >= self.size.y
+	then
+		return
+	end
+	local cx = bit.rshift(i, Chunk.bitsize.x)
+	local cy = bit.rshift(j, Chunk.bitsize.y)
+	local dx = bit.band(i, Chunk.bitmask.x)
+	local dy = bit.band(j, Chunk.bitmask.y)
+	local chunkIndex = cx + self.sizeInChunks.x * cy
+	local chunk = self.chunks[chunkIndex]
+	local index = bit.bor(dx, bit.lshift(dy, Chunk.bitsize.x))
+	return chunk.surface + index
+
 end
 
 -- i,j,k integers
