@@ -72,6 +72,9 @@ function PlayingMenu:updateGUI()
 				--ig.ImGuiWindowFlags_Tooltip
 			)
 		)
+		if not ig.igIsAnyItemActive() then
+			ig.igSetKeyboardFocusHere(0)
+		end
 		-- [[ this only changes in-window scale
 		-- cheap hack in the mean time: no titlebar
 		ig.igSetWindowFontScale(.5)

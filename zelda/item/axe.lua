@@ -26,6 +26,7 @@ function ItemAxe:useInInventory(player)
 		0
 	)):map(math.floor):unpack()
 
+	local objIterUID = map:getNextObjIterUID()
 	for dz=1,-1,-1 do
 		local tile = map:getTile(x,y,z+dz)
 		if tile 
@@ -46,10 +47,12 @@ function ItemAxe:useInInventory(player)
 		if objs then
 			for _,obj in ipairs(objs) do
 				if not obj.removeFlag
+				and obj.iterUID ~= objIterUID
 				and obj ~= player
 				and obj.takesDamage
 				and not obj.dead
 				then
+					obj.iterUID = objIterUID
 					obj:damage(1, player, self)
 					return
 				end

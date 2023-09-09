@@ -23,7 +23,7 @@ function ItemSword:useInInventory(player)
 	-- TODO TODO just do traceline
 	for _,obj in ipairs(map.objs) do
 		if not obj.removeFlag
-		and obj ~= player 
+		and obj ~= player
 		and obj.takesDamage
 		and not obj.dead
 		then
@@ -35,4 +35,4 @@ function ItemSword:useInInventory(player)
 	end
 end
 
-return ItemSword 
+return ItemSword

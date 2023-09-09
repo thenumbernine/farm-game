@@ -1,13 +1,17 @@
-local class = require 'ext.class'
-local table = require 'ext.table'
 local ffi = require 'ffi'
 local template = require 'template'
+local class = require 'ext.class'
+local table = require 'ext.table'
+local tolua = require 'ext.tolua'
+local range = require 'ext.range'
 local vector = require 'ffi.cpp.vector'
 local vec2i = require 'vec-ffi.vec2i'
 local vec3i = require 'vec-ffi.vec3i'
 local vec3f = require 'vec-ffi.vec3f'
 local vec2f = require 'vec-ffi.vec2f'
 local vec4ub = require 'vec-ffi.vec4ub'
+local matrix_ffi = require 'matrix.ffi'
+local Image = require 'image'
 local gl = require 'gl'
 local GLArrayBuffer = require 'gl.arraybuffer'
 local GLSceneObject = require 'gl.sceneobject'
@@ -38,7 +42,6 @@ typedef struct {
 } surface_t;
 ]]
 assert(ffi.sizeof'voxel_t' == ffi.sizeof'voxel_basebits_t')
-
 
 local voxel_t = ffi.metatype('voxel_t', {
 	__index = {
@@ -422,7 +425,6 @@ function Chunk:calcSunAngles()
 
 	-- now turn it into a texture because i'm really lazy and sloppy
 	print("building sun angle tex. don't do this too often.")
-	local Image = require 'image'
 	self.sunAngleTex = GLTex2D{
 		image = Image(self.size.x, self.size.y, 4, 'float', function(i,j)
 			local minAngle = self.surface[i + self.size.x * j].minAngle
@@ -463,7 +465,9 @@ function Map:init(args)
 	local app = game.app
 
 	self.objs = table()
-	
+	-- use this when iterating to not double up on objs linked to multiple tiles
+	self.objIterUID = ffi.cast('uint64_t', 0)
+
 	-- key = index in map.objsPerTileIndex = offset of the tile in the map
 	-- value = list of all objects on that tile
 	self.objsPerTileIndex = {}
@@ -502,7 +506,11 @@ function Map:init(args)
 	end
 end
 
-local timer = require 'ext.timer'
+function Map:getNextObjIterUID()
+	self.objIterUID = self.objIterUID + 1
+	return self.objIterUID
+end
+
 function Map:buildDrawArrays(
 	minx, miny, minz,
 	maxx, maxy, maxz
@@ -524,6 +532,7 @@ function Map:buildDrawArrays(
 				--[[
 				local chunk = self.chunks[chunkIndex]
 				-- 0.04 to 0.08 seconds ... 1/25 to 1/12.5
+				local timer = require 'ext.timer'
 				timer('chunk', chunk.buildDrawArrays, chunk)
 				--]]
 			end
@@ -649,8 +658,6 @@ function Map:update(dt)
 end
 
 -- TODO this is slow.  coroutine and progress bar?
-local tolua = require 'ext.tolua'
-local range = require 'ext.range'
 function Map:getSaveData()
 	local game = self.game
 	local app = game.app
@@ -695,7 +702,7 @@ function Map:getSaveData()
 
 				local mt = getmetatable(x)
 				-- matrix.ffi
-				if mt == require 'matrix.ffi' then
+				if mt == matrix_ffi then
 					return 'matrix_ffi('
 						..tostring(x)
 							:gsub('%[', '{')

@@ -328,19 +328,23 @@ function Obj:update(dt)
 		-- then ... instead ... move up, move along vel, move back down
 		-- and if that movement
 		if self.walking
+		-- ... and we're on ground
+		and 0 ~= bit.band(self.collideFlags, sides.flags.zm)
+		-- ... and touching a wall
 		and 0 ~= bit.band(self.collideFlags, bit.bor(
 			sides.flags.xm,
 			sides.flags.ym,
 			sides.flags.xp,
 			sides.flags.yp
-		)) then
+		))
+		then
 			self.pos:set(self.oldpos:unpack())
 			self:move(vec3f(0, 0, self.stepHeight), 1)
 			self.collideFlags = 0
 			self.vel:set(self.oldvel:unpack())
 			self:move(self.vel, dt)
 			local pushFlags = self.collideFlags
-			--self:move(vec3f(0, 0, -self.stepHeight), 1)
+			self:move(vec3f(0, 0, -self.stepHeight), 1)
 			self.collideFlags = pushFlags
 		end
 
@@ -351,12 +355,13 @@ function Obj:update(dt)
 		-- TODO always check?
 		-- or if only upon move, also check upon init?
 		self.inWater = false
-		local voxel = self.map:getTile(
+		-- store pointer to voxel at obj origin ...
+		self.voxel = self.map:getTile(
 			math.floor(self.pos.x),
 			math.floor(self.pos.y),
 			math.floor(self.pos.z))
-		if voxel then
-			local voxelType = voxel:tileClass()
+		if self.voxel then
+			local voxelType = self.voxel:tileClass()
 			if voxelType
 			and voxelType.contents == 'water'
 			then
@@ -385,11 +390,9 @@ local omax = vec3f()
 function Obj:move(vel, dt)
 	local map = self.map
 
--- [[
 	self.pos.x = self.pos.x + vel.x * dt
 	self.pos.y = self.pos.y + vel.y * dt
 	self.pos.z = self.pos.z + vel.z * dt
---]]
 
 	if not (
 		self.collidesWithTiles
@@ -399,6 +402,7 @@ function Obj:move(vel, dt)
 		return
 	end
 
+	local objIterUID = map:getNextObjIterUID()
 	for k =
 		math.floor(math.min(self.pos.z, self.oldpos.z) + self.bbox.min.z - 1.5),
 		math.floor(math.max(self.pos.z, self.oldpos.z) + self.bbox.max.z + .5)
@@ -411,7 +415,10 @@ function Obj:move(vel, dt)
 				math.floor(math.min(self.pos.x, self.oldpos.x) + self.bbox.min.x - 1.5),
 				math.floor(math.max(self.pos.x, self.oldpos.x) + self.bbox.max.x + .5)
 			do
-				if i >= 0 and i < map.size.x and j >= 0 and j < map.size.y and k >= 0 and k < map.size.z then
+				if i >= 0 and i < map.size.x
+				and j >= 0 and j < map.size.y
+				and k >= 0 and k < map.size.z
+				then
 					local voxelIndex = i + map.size.x * (j + map.size.y * k)
 					local voxel = map:getTile(i,j,k)
 					if self.collidesWithTiles
@@ -419,7 +426,9 @@ function Obj:move(vel, dt)
 					and voxel.type > 0
 					then
 						local voxelType = Tile.types[voxel.type]
-						if not voxelType then error("failed to find voxelType for type "..tostring(tiletype)) end
+						if not voxelType then
+							error("failed to find voxelType for type "..tostring(tiletype))
+						end
 						if voxelType.solid then
 							omin:set(i,j,k)
 							omax:set(i+1,j+1,k+.5*(2-voxel.half))
@@ -434,7 +443,10 @@ function Obj:move(vel, dt)
 					local objs = map.objsPerTileIndex[voxelIndex]
 					if objs then
 						for _, obj in ipairs(objs) do
-							if not obj.removeFlag then
+							if not obj.removeFlag
+							and obj.iterUID ~= objIterUID
+							then
+								obj.iterUID = objIterUID
 								-- TODO if obj.solid
 								if obj.collidesWithObjects
 								or obj.itemTouch

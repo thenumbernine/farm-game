@@ -108,7 +108,7 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 - animation
 	- player animations for sword, pickaxe, axe, shovel, hoe, watering ...
 		- sword swing etc should search only objs on the neighboring tiles, not all objs
-			- region iterator, index for last region iterator
+			- region iterator? instead of manually flagging
 - super duper customizable character sprite
 - probably better align billboard sprites with where in 3D they are.
 - rendering
