@@ -69,17 +69,17 @@ function Obj:init(args)
 	self.map = assert(args.map)
 
 	-- what was the game clock when the object was created?
-	-- this will need to be explicitly set for objects being loaded from save games etc 
+	-- this will need to be explicitly set for objects being loaded from save games etc
 	self.createTime = args.createTime or self.game.time
 
 	self.rotation = args.rotation
 
 	self.drawSize = vec2f(self.class.drawSize)
 	if args.drawSize then self.drawSize = vec2f(args.drawSize) end
-	
+
 	self.drawCenter = vec3f(self.class.drawCenter)
 	if args.drawCenter then self.drawCenter = vec3f(args.drawCenter) end
-	
+
 	self.spritePosOffset = vec3f(self.class.spritePosOffset)
 	if args.spritePosOffset then self.spritePosOffset = vec3f(args.spritePosOffset) end
 
@@ -89,6 +89,7 @@ function Obj:init(args)
 
 	self.vel = vec3f(0,0,0)
 	if args.vel then self.vel:set(args.vel:unpack()) end
+	self.oldvel = vec3f(self.vel:unpack())
 
 	self.bbox = box3f(self.class.bbox)
 	if args.bbox then self.bbox = box3f(args.bbox) end
@@ -100,7 +101,7 @@ function Obj:init(args)
 
 	self.interactInWorld = args.interactInWorld
 
-	-- what tile indexes -> obj lists this object is a part of 
+	-- what tile indexes -> obj lists this object is a part of
 	self.tiles = {}
 
 	self:setPos(self.pos:unpack())
@@ -129,12 +130,12 @@ function Obj:link()
 			do
 				local voxelIndex = i + map.size.x * (j + map.size.y * k)
 				local tileObjs = map.objsPerTileIndex[voxelIndex]
-				
+
 				if not tileObjs then
 					tileObjs = table()
 					map.objsPerTileIndex[voxelIndex] = tileObjs
 				end
-				
+
 				tileObjs:insertUnique(self)
 
 				self.tiles[voxelIndex] = tileObjs
@@ -155,7 +156,7 @@ function Obj:unlink()
 			self.tiles[voxelIndex] = nil
 		end
 	end
-	
+
 	assert(next(self.tiles) == nil)
 end
 
@@ -168,7 +169,7 @@ end
 
 function Obj:setPos(x,y,z)
 	self:unlink()
-	self.pos:set(x,y,z)	
+	self.pos:set(x,y,z)
 	self:link()
 	return self
 end
@@ -180,7 +181,7 @@ end
 -- Writes to vel
 local epsilon = 1e-5
 local function push(pos, min, max, bmin, bmax, vel, dontPush)
-	-- TODO cache these as 'worldmin'/max? 
+	-- TODO cache these as 'worldmin'/max?
 	local amin = pos + min
 	local amax = pos + max
 	--[[
@@ -190,7 +191,7 @@ local function push(pos, min, max, bmin, bmax, vel, dontPush)
 	if no planes separate (all dists are positive) then we have collision somewhere
 	and in that case, use the *most shallow* (greatest negative #) penetration to push back ... not the deepest?  because deepest plane dist could be out the other side?  hmm ...
 	but what about rects resting on one another? edge/edge collision?
-	
+
 	what's an aabb way to do collision?
 	for each side, for each +-,
 		find the subset rect of each side
@@ -213,19 +214,19 @@ local function push(pos, min, max, bmin, bmax, vel, dontPush)
 		local iminx = math.max(amin.x, bmin.x)
 		local iminy = math.max(amin.y, bmin.y)
 		local iminz = math.max(amin.z, bmin.z)
-		
+
 		local imaxx = math.min(amax.x, bmax.x)
 		local imaxy = math.min(amax.y, bmax.y)
 		local imaxz = math.min(amax.z, bmax.z)
-		
+
 		local midx = (iminx + imaxx) * .5
 		local midy = (iminy + imaxy) * .5
 		local midz = (iminz + imaxz) * .5
-				
+
 		local dx = imaxx - iminx
 		local dy = imaxy - iminy
 		local dz = imaxz - iminz
-		
+
 		local side, pm
 		if dx < dy then
 			if dx < dz then
@@ -240,8 +241,8 @@ local function push(pos, min, max, bmin, bmax, vel, dontPush)
 				side, pm = 2, .5 * (amin.z + amax.z) < midz and 1 or -1
 			end
 		end
-		
-		if side == 0 then 
+
+		if side == 0 then
 			if not dontPush then
 				vel.x = 0
 			end
@@ -256,9 +257,9 @@ local function push(pos, min, max, bmin, bmax, vel, dontPush)
 				end
 				return sides.flags.xm
 			end
-		elseif side == 1 then 
+		elseif side == 1 then
 			if not dontPush then
-				vel.y = 0 
+				vel.y = 0
 			end
 			if pm == 1 then
 				if not dontPush then
@@ -271,7 +272,7 @@ local function push(pos, min, max, bmin, bmax, vel, dontPush)
 				end
 				return sides.flags.ym
 			end
-		elseif side == 2 then 
+		elseif side == 2 then
 			if not dontPush then
 				vel.z = 0
 			end
@@ -298,7 +299,7 @@ Obj.collidesWithObjects = true
 Obj.itemTouch = false	-- for items only, to add a touch test upon creation
 Obj.collideFlags = 0
 
-local epsilon = 1e-5
+Obj.stepHeight = .51
 function Obj:update(dt)
 	local game = self.game
 
@@ -316,7 +317,35 @@ function Obj:update(dt)
 	or self.vel.z ~= 0
 	or self.itemTouch
 	then
+		self:unlink()
+		self.oldpos:set(self.pos:unpack())
+		self.oldvel:set(self.vel:unpack())
+		self.collideFlags = 0
 		self:move(self.vel, dt)
+
+		-- HERE - if we got collideFlags for any sides
+		-- and we're .walking
+		-- then ... instead ... move up, move along vel, move back down
+		-- and if that movement
+		if self.walking
+		and 0 ~= bit.band(self.collideFlags, bit.bor(
+			sides.flags.xm,
+			sides.flags.ym,
+			sides.flags.xp,
+			sides.flags.yp
+		)) then
+			self.pos:set(self.oldpos:unpack())
+			self:move(vec3f(0, 0, self.stepHeight), 1)
+			self.collideFlags = 0
+			self.vel:set(self.oldvel:unpack())
+			self:move(self.vel, dt)
+			local pushFlags = self.collideFlags
+			--self:move(vec3f(0, 0, -self.stepHeight), 1)
+			self.collideFlags = pushFlags
+		end
+
+		self:link()
+
 		if self.removeFlag then return end
 
 		-- TODO always check?
@@ -355,10 +384,6 @@ local omin = vec3f()
 local omax = vec3f()
 function Obj:move(vel, dt)
 	local map = self.map
-	
-	self:unlink()
-
-	self.oldpos:set(self.pos:unpack())
 
 -- [[
 	self.pos.x = self.pos.x + vel.x * dt
@@ -366,72 +391,67 @@ function Obj:move(vel, dt)
 	self.pos.z = self.pos.z + vel.z * dt
 --]]
 
-	self.collideFlags = 0
+	if not (
+		self.collidesWithTiles
+		or self.collidesWithObjects
+		or self.itemTouch
+	) then
+		return
+	end
 
-	if self.collidesWithTiles
-	or self.collidesWithObjects
-	or self.itemTouch
-	then
-		for k = 
-			math.floor(math.min(self.pos.z, self.oldpos.z) + self.bbox.min.z - 1.5),
-			math.floor(math.max(self.pos.z, self.oldpos.z) + self.bbox.max.z + .5)
+	for k =
+		math.floor(math.min(self.pos.z, self.oldpos.z) + self.bbox.min.z - 1.5),
+		math.floor(math.max(self.pos.z, self.oldpos.z) + self.bbox.max.z + .5)
+	do
+		for j =
+			math.floor(math.min(self.pos.y, self.oldpos.y) + self.bbox.min.y - 1.5),
+			math.floor(math.max(self.pos.y, self.oldpos.y) + self.bbox.max.y + .5)
 		do
-			for j =
-				math.floor(math.min(self.pos.y, self.oldpos.y) + self.bbox.min.y - 1.5),
-				math.floor(math.max(self.pos.y, self.oldpos.y) + self.bbox.max.y + .5)
+			for i =
+				math.floor(math.min(self.pos.x, self.oldpos.x) + self.bbox.min.x - 1.5),
+				math.floor(math.max(self.pos.x, self.oldpos.x) + self.bbox.max.x + .5)
 			do
-				for i =
-					math.floor(math.min(self.pos.x, self.oldpos.x) + self.bbox.min.x - 1.5),
-					math.floor(math.max(self.pos.x, self.oldpos.x) + self.bbox.max.x + .5)
-				do
-					if i >= 0 and i < map.size.x and j >= 0 and j < map.size.y and k >= 0 and k < map.size.z then
-						local voxelIndex = i + map.size.x * (j + map.size.y * k)
-						local voxel = map:getTile(i,j,k)
-						if self.collidesWithTiles
-						and voxel
-						and voxel.type > 0
-						then
-							local voxelType = Tile.types[voxel.type]
-							if not voxelType then error("failed to find voxelType for type "..tostring(tiletype)) end
-							if voxelType.solid then
-								omin:set(i,j,k)
-								omax:set(i+1,j+1,k+.5*(2-voxel.half))
-								
-								-- TODO trace gravity fall downward separately
-								-- then move horizontall
-								-- if push fails then raise up, move, and go back down, to try and do steps
-								local collided = push(self.pos, self.bbox.min, self.bbox.max, omin, omax, vel)
-								self.collideFlags = bit.bor(self.collideFlags, collided)
-							end
+				if i >= 0 and i < map.size.x and j >= 0 and j < map.size.y and k >= 0 and k < map.size.z then
+					local voxelIndex = i + map.size.x * (j + map.size.y * k)
+					local voxel = map:getTile(i,j,k)
+					if self.collidesWithTiles
+					and voxel
+					and voxel.type > 0
+					then
+						local voxelType = Tile.types[voxel.type]
+						if not voxelType then error("failed to find voxelType for type "..tostring(tiletype)) end
+						if voxelType.solid then
+							omin:set(i,j,k)
+							omax:set(i+1,j+1,k+.5*(2-voxel.half))
+
+							-- TODO trace gravity fall downward separately
+							-- then move horizontall
+							-- if push fails then raise up, move, and go back down, to try and do steps
+							local collided = push(self.pos, self.bbox.min, self.bbox.max, omin, omax, vel)
+							self.collideFlags = bit.bor(self.collideFlags, collided)
 						end
-						local objs = map.objsPerTileIndex[voxelIndex]
-						if objs then
-							for _, obj in ipairs(objs) do
-								if not obj.removeFlag then
-									-- TODO if obj.solid
-									if obj.collidesWithObjects 
-									or obj.itemTouch
-									or self.itemTouch
-									then
-										local collided = push(self.pos, self.bbox.min, self.bbox.max, obj.pos + obj.bbox.min, obj.pos + obj.bbox.max, vel, self.itemTouch or obj.itemTouch)
-										self.collideFlags = bit.bor(self.collideFlags, collided)
-										if collided ~= 0 then
-											-- TODO set obj.collideFlags also?
-											if self.touch then
-												self:touch(obj)
-												if self.removeFlag then 
-													goto touchDone
-													--return
-												end
-											end
-											if not obj.removeFlag 
-											and obj.touch then
-												obj:touch(self)
-												if self.removeFlag then 
-													goto touchDone
-													--return 
-												end
-											end
+					end
+					local objs = map.objsPerTileIndex[voxelIndex]
+					if objs then
+						for _, obj in ipairs(objs) do
+							if not obj.removeFlag then
+								-- TODO if obj.solid
+								if obj.collidesWithObjects
+								or obj.itemTouch
+								or self.itemTouch
+								then
+									local collided = push(self.pos, self.bbox.min, self.bbox.max, obj.pos + obj.bbox.min, obj.pos + obj.bbox.max, vel, self.itemTouch or obj.itemTouch)
+									self.collideFlags = bit.bor(self.collideFlags, collided)
+									if collided ~= 0 then
+										-- TODO set obj.collideFlags also?
+										if self.touch then
+											self:touch(obj)
+											if self.removeFlag then return end
+										end
+										if not obj.removeFlag
+										and obj.touch then
+											obj:touch(self)
+											if self.removeFlag then return end
 										end
 									end
 								end
@@ -442,8 +462,6 @@ function Obj:move(vel, dt)
 			end
 		end
 	end
-::touchDone::
-	self:link()
 end
 
 -- ccw start at 0' (with 45' spread)
@@ -483,7 +501,7 @@ function Obj:draw()
 		self.angle,
 		self.game.app)
 	if not frame then return end
-					
+
 	if frame.atlasTcPos then
 		-- [[ draw immediately
 		self:drawSprite(frame)
@@ -529,7 +547,7 @@ function Obj:drawMesh(frame)
 	local game = self.game
 	local app = game.app
 	local view = app.view
-	
+
 	modelMat:setTranslate(self.pos:unpack())
 		:applyScale(self.drawSize.x, self.drawSize.x, self.drawSize.y)
 		:applyRotate(self.angle, 0, 0, 1)
@@ -563,7 +581,7 @@ function Obj:drawMesh(frame)
 				Kd = g.Kd and {g.Kd.x, g.Kd.y, g.Kd.z, 1} or {1,1,1,1},
 				Ks = g.Ks and g.Ks.s or {1,1,1,1},
 				Ns = g.Ns or 10,
-				
+
 				objCOM = vec3f().s,
 				groupCOM = vec3f().s,
 				groupExplodeDist = 0,

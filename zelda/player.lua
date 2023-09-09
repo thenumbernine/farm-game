@@ -68,6 +68,65 @@ function Player:dialogPrompt(msg, title)
 	end
 end
 
+--[[
+options: table with ...
+	name
+	cost
+	seedClass or objClass
+
+zelda.plants and zelda.animals works for this
+--]]
+function Player:storePrompt(options)
+	local player = self.obj
+	self.gamePrompt = function()
+		-- option is plantType or animalType
+		local function buy(option, amount)
+			assert(amount > 0)
+			local cost = option.cost * amount
+			if cost <= self.money then
+				local cl = option.seedClass or option.objClass
+				if player:addItem(cl, amount) then
+					self.money = self.money - cost
+				else
+					self:dialogPrompt("new room in inventory", "sorry")
+				end
+			end
+		end
+
+		local size = ig.igGetMainViewport().WorkSize
+		ig.igSetNextWindowPos(ig.ImVec2(size.x/2, 0), ig.ImGuiCond_Appearing, ig.ImVec2(.5, 0));
+		ig.igBegin('Store Guy', nil, bit.bor(
+			ig.ImGuiWindowFlags_NoMove,
+			ig.ImGuiWindowFlags_NoResize,
+			ig.ImGuiWindowFlags_NoCollapse
+		))
+		ig.igSetWindowFontScale(.5)
+
+		ig.igText"want to buy something?"
+
+		if ig.igButton'Ok###Ok2' then
+			self.gamePrompt = nil
+		end
+
+		for i,option in ipairs(options) do
+			for _,x in ipairs{1, 10, 100} do
+				if ig.igButton('x'..x..'###'..i..'x'..x) then
+					buy(option, x)
+				end
+				ig.igSameLine()
+			end
+			ig.igText('$'..option.cost..': '..option.name)
+		end
+
+		if ig.igButton'Ok' then
+			self.gamePrompt = nil
+		end
+
+		ig.igSetWindowFontScale(1)
+		ig.igEnd()
+	end
+end
+
 -- only call on another thread / mainloop?
 function Player:setMap(destMap, destPos)
 	local player = assert(self.obj)

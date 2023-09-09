@@ -12,6 +12,7 @@ local Animal = require 'zelda.behaviors'(
 Animal.classname = 'zelda.obj.animal'
 
 Animal.name = 'Animal'
+Animal.walking = true
 
 function Animal:init(args, ...)
 	Animal.super.init(self, args, ...)

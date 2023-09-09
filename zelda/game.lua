@@ -80,11 +80,11 @@ TODO how to handle multiple maps with objects-in-map ...
 				for i=0,map.size.x-1 do
 					--ijk.x = i
 					xyz.x = (i - bit.rshift(map.size.x,1)) / blockSize
-					-- noise range should be between [-1,1] (with gradients bound to [-1,1] as well) 
+					-- noise range should be between [-1,1] (with gradients bound to [-1,1] as well)
 					local c = noise2d(xyz.x, xyz.y)
 					-- map to [0,1]
 					c = c * .25
-					
+
 
 					-- [[ make it flat around the house and NPC
 					if (
@@ -96,12 +96,12 @@ TODO how to handle multiple maps with objects-in-map ...
 						c = 0
 					end
 					--]]
-				
+
 					-- put zero halfway up the map
 					c = xyz.z + c
-				
+
 					-- lower the lake
-					local inLake = (vec2f(i,j) - vec2f(lakeCenter.x, lakeCenter.y)):length() < 15 
+					local inLake = (vec2f(i,j) - vec2f(lakeCenter.x, lakeCenter.y)):length() < 15
 					if inLake then
 						c = c + .7
 					end
@@ -114,9 +114,9 @@ TODO how to handle multiple maps with objects-in-map ...
 					else
 						voxelType = Tile.typeForName.Empty
 					end
-					
+
 					-- [[ make it a hole where the lake will be
-					-- TODO again, use a gaussian surface 
+					-- TODO again, use a gaussian surface
 					if inLake then
 						if k <= map.size.z*.5 - 2
 						and voxelType == Tile.typeForName.Empty
@@ -206,58 +206,11 @@ TODO how to handle multiple maps with objects-in-map ...
 		pos = npcPos:clone(),
 		interactInWorld = function(interact, player)
 			local appPlayer = player.appPlayer
-			local ig = require 'imgui'
-			appPlayer.gamePrompt = function()
-				-- objDesc is plantType or animalType
-				local function buy(objDesc, amount)
-					assert(amount > 0)
-					local cost = objDesc.cost * amount
-					if cost <= appPlayer.money then
-						local cl = objDesc.seedClass or objDesc.objClass
-						if player:addItem(cl, amount) then
-							appPlayer.money = appPlayer.money - cost
-						else
-							appPlayer:dialogPrompt("new room in inventory", "sorry")
-						end
-					end
-				end
-
-				local size = ig.igGetMainViewport().WorkSize
-				ig.igSetNextWindowPos(ig.ImVec2(size.x/2, 0), ig.ImGuiCond_Appearing, ig.ImVec2(.5, 0));
-				ig.igBegin('Store Guy', nil, bit.bor(
-					ig.ImGuiWindowFlags_NoMove,
-					ig.ImGuiWindowFlags_NoResize,
-					ig.ImGuiWindowFlags_NoCollapse
-				))
-				ig.igSetWindowFontScale(.5)
-
-				ig.igText"want to buy something?"
-
-				if ig.igButton'Ok###Ok2' then
-					appPlayer.gamePrompt = nil
-				end
-
-				for i,objDesc in ipairs(
-					table()
+			appPlayer:storePrompt(
+				table()
 					:append(animalTypes)
 					:append(plantTypes)
-				) do
-					for _,x in ipairs{1, 10, 100} do
-						if ig.igButton('x'..x..'###'..i..'x'..x) then
-							buy(objDesc, x)
-						end
-						ig.igSameLine()
-					end
-					ig.igText('$'..objDesc.cost..': '..objDesc.name)
-				end
-
-				if ig.igButton'Ok' then
-					appPlayer.gamePrompt = nil
-				end
-
-				ig.igSetWindowFontScale(1)
-				ig.igEnd()
-			end
+			)
 		end,
 	}
 
@@ -283,9 +236,9 @@ TODO how to handle multiple maps with objects-in-map ...
 				end
 				k = k - 1
 			end
-			if k >= 0 
+			if k >= 0
 			and voxel
-			and voxel.type == Tile.typeValues.Grass 
+			and voxel.type == Tile.typeValues.Grass
 			then
 				-- found a grass tile
 				local r = math.random()
@@ -342,7 +295,7 @@ function makeTownMap(game)
 			math.floor(map.size.x/2),
 			math.floor(map.size.y*3/4),
 			math.floor(map.size.z/2) + buildingSizes[1].z),
-	} 
+	}
 
 	-- simplex noise resolution
 	local blockBits = 3
@@ -358,7 +311,7 @@ function makeTownMap(game)
 			for i=0,map.size.x-1 do
 				xyz.x = (i - bit.rshift(map.size.x,1)) / blockSize
 				ij.x = i
-				-- noise range should be between [-1,1] (with gradients bound to [-1,1] as well) 
+				-- noise range should be between [-1,1] (with gradients bound to [-1,1] as well)
 				local c = noise2d(xyz.x, xyz.y)
 				-- map to [0,1]
 				c = c * .25
@@ -374,10 +327,10 @@ function makeTownMap(game)
 					end
 				end
 				--]]
-			
+
 				-- put zero halfway up the map
 				c = xyz.z + c
-			
+
 				local voxelType
 				if c < 0 then
 					voxelType = Tile.typeForName.Stone
@@ -386,7 +339,7 @@ function makeTownMap(game)
 				else
 					voxelType = Tile.typeForName.Empty
 				end
-				
+
 				local voxel = assert(map:getTile(i,j,k))
 				voxel.type = voxelType.index
 				voxel.tex = math.random(#voxelType.texrects)-1
@@ -503,10 +456,10 @@ function Game:init(args)
 		-- start off the map
 		local farmMap = makeFarmMap(self)
 		self.maps:insert(farmMap)
-		
+
 		local townMap = makeTownMap(self)
 		self.maps:insert(townMap)
-		
+
 		-- [[ doors
 		farmMap:newObj{
 			class = require 'zelda.obj.door',
@@ -620,7 +573,7 @@ function Game:draw()
 		self.playerPos = vec3f(self.viewFollow.pos:unpack()) + .1
 		--]]
 	end
-	
+
 	-- prep draw lists
 	-- with zero sprite rendering whatsoever i'm getting 30fps
 	-- so sprite rendering might not be our bottleneck ...
@@ -640,7 +593,7 @@ function Game:draw()
 --]]
 
 	self.numSpritesDrawn = app.spritesBufCPU.size
-	
+
 	app.spritesBufGPU
 		:bind()
 		:updateData(0, app.spritesBufCPU.size * ffi.sizeof'sprite_t')
@@ -652,9 +605,9 @@ function Game:draw()
 	gl.glUniformMatrix4fv(shader.uniforms.viewMat.loc, 1, gl.GL_FALSE, view.mvMat.ptr)
 	gl.glUniformMatrix4fv(shader.uniforms.projMat.loc, 1, gl.GL_FALSE, view.projMat.ptr)
 	gl.glUniform3fv(shader.uniforms.playerViewPos.loc, 1, self.playerViewPos.s)
-	
+
 	app.spriteAtlasTex:bind(0)
-	
+
 	--app.spriteSceneObj.geometry.count = 6 * app.spritesBufCPU.size
 	--app.spriteSceneObj.geometry:draw()
 	gl.glDrawArraysInstanced(gl.GL_TRIANGLE_STRIP, 0, 4, app.spritesBufCPU.size)
@@ -678,10 +631,10 @@ function Game:draw()
 		gl.glUseProgram(0)
 		gl.glDisable(gl.GL_CULL_FACE)
 		gl.glDisable(gl.GL_DEPTH_TEST)
-		
+
 		--[=[ why doesn't glLoadMatrix work?
 		gl.glMatrixMode(gl.GL_PROJECTION)
-		gl.glLoadMatrixf(view.projMat.v)	
+		gl.glLoadMatrixf(view.projMat.v)
 		gl.glMatrixMode(gl.GL_MODELVIEW)
 		gl.glLoadMatrixf(view.mvMat.v)
 		--]=]
@@ -730,7 +683,7 @@ function Game:draw()
 			gl.glEnd()
 			--]=]
 		end
-		
+
 		gl.glEnd()
 		gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_FILL)
 		gl.glEnable(gl.GL_CULL_FACE)
@@ -814,6 +767,7 @@ function Game:event(event, ...)
 	local appPlayer = app.players[1]
 	if not appPlayer then return end
 	if app.playingMenu.consoleOpen then return end
+
 	if event.type == sdl.SDL_KEYDOWN
 	or event.type == sdl.SDL_KEYUP
 	then

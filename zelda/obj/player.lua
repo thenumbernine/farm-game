@@ -30,6 +30,7 @@ Player.bbox = box3f{
 Player.hpMax = 10
 Player.foodMax = 10
 
+Player.walking = true	-- tell obj:move to traceline up, then velocity, then back down - to accomodate for steps
 Player.walkSpeed = 6
 
 Player.attackTime = -1

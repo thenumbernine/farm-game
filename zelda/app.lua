@@ -848,6 +848,10 @@ function App:event(event, ...)
 							* quatd():fromAngleAxis(1,0,0,30)
 			self.view.pos = self.view.angle:zAxis() * (self.view.pos - self.view.orbit):length() + self.view.orbit
 		end
+	elseif event.type == sdl.SDL_KEYDOWN then
+		if event.key.keysym.sym == ('`'):byte() then
+			self.playingMenu.consoleOpen = not self.playingMenu.consoleOpen
+		end
 	end
 --]]
 

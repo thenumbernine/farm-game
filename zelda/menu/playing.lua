@@ -38,7 +38,11 @@ function PlayingMenu:updateGUI()
 	ig.igText('FP: '..player.food..'/'..player.foodMax)
 	ig.igText(game:timeToStr())
 	if true then
-		ig.igText(tostring(player.pos))
+		ig.igText('pos '..tostring(player.pos))
+		local number = require'ext.number'
+		local s = number.tostring(player.collideFlags, 2)
+		s = ('0'):rep(7-#s)..s
+		ig.igText('collideFlags '..s)
 		ig.igText('#sprites '..game.numSpritesDrawn)
 	end
 
@@ -81,7 +85,15 @@ function PlayingMenu:updateGUI()
 		or ig.igButton('run code')
 		then
 			print('executing...\n'..self.consoleBuffer)
-			local env = setmetatable({app=app, game=game, appPlayer=appPlayer}, {__index=_G})
+			local env = setmetatable({
+				app = app,
+				game = game,
+				player = player,
+				map = player.map,
+				appPlayer = appPlayer,
+			}, {
+				__index = _G,
+			})
 			local f, err = load(self.consoleBuffer, nil, nil, env)
 			if not f then
 				print(err)
@@ -205,13 +217,13 @@ function PlayingMenu:itemButton(itemInfo, bw, bh)
 	if itemInfo then
 		local cl = assert(itemInfo.class)
 		local frame = Obj.getFrame(cl.sprite, cl.seq, 1, 0, app)
-		if frame 
+		if frame
 		and frame.atlasTcPos
 		and frame.atlasTcSize
 		then
 			--local tw, th = tex.width, tex.height
 			-- why isn't bw x bh the same for imagebutton and for button?
-			size = ig.ImVec2(bw, bh 
+			size = ig.ImVec2(bw, bh
 				-- * th / tw	-- maybe not worth it ...
 			)
 			local cr,cg,cb = 1,1,1
@@ -235,7 +247,7 @@ function PlayingMenu:itemButton(itemInfo, bw, bh)
 					(frame.atlasTcPos.y + frame.atlasTcSize.y) / app.spriteAtlasTex.height
 				),
 				ig.ImVec4(0,0,0,0),
-				ig.ImVec4(cr,cg,cb,1)) 
+				ig.ImVec4(cr,cg,cb,1))
 			if itemInfo.count > 1 then
 				-- why isn't 0,0 the upper-left corner of text?
 				-- y-offset i'd understand (top vs bottom coordinate origin)

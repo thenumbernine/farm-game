@@ -41,7 +41,7 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 - fishing.
 	- casting line animation
 	- test for water where the line lands, tangle the line in bushes otherwise
-	- prepare / gut fish before cooking 
+	- prepare / gut fish before cooking
 	- cook fish (over fireplace / stove + with pan)
 	- fish tanks
 	- live fish should run out of air on dry land
@@ -50,7 +50,7 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 - animals
 	- packs wander through
 	- pokeballs
-	- when you buy an animal from the market, you should get a tether to walk it back to the farm. 
+	- when you buy an animal from the market, you should get a tether to walk it back to the farm.
 	- need fences and gates to keep livestock from getting away.
 		- some animals trample your garden
 		- some animals trample grass <-> dirt
@@ -88,10 +88,10 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 	- or if you try to dig ground that has a bush/tree on it, it should fail to dig.
 	- half-step voxels for grass and stone, and maybe some slope tiles, and maybe rotate them in any of the 4 directions, so I don't have to jump everywhere (stupid Minecraft, why did you make that a standard?)
 	- support rotating of half-step voxels
-	- rotating/placing of non-cuboid voxels?  do i have any of these yet?  un-animated things, like beds etc? 
+	- rotating/placing of non-cuboid voxels?  do i have any of these yet?  un-animated things, like beds etc?
 - biomes
 	- make plants randomly seed neighboring ground... only if they naturally grow in this biome ofc.
-	- also overcrowding of plants 
+	- also overcrowding of plants
 		- ... don't seed / lower lifespan if it is too dense.
 		- density is based only on local region (proportional to plant size) of plants with like size. i.e. small plants won't contribute to large plant densiy, so they can grow between.
 - stats system.  level system.  weapon-skill-level system.  skill tree ofc because.
@@ -152,7 +152,7 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 		- so does near a body of water (lake, river, etc)
 			- irrigation also waters
 	- if a plant isn't watered, if it's native to the biome then it still grows
-	- maybe something about plant root system vs soil moisture vs Ph balance etc ... 
+	- maybe something about plant root system vs soil moisture vs Ph balance etc ...
 - economy
 	- limit the seed shop to a subset of all seeds.  maybe multiple seed shops?
 		- higher price for more exotic seeds?
