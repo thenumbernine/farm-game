@@ -3,6 +3,7 @@ local table = require 'ext.table'
 local math = require 'ext.math'
 local class = require 'ext.class'
 local vec2f = require 'vec-ffi.vec2f'
+local vec3i = require 'vec-ffi.vec3i'
 local vec3f = require 'vec-ffi.vec3f'
 local box3f = require 'vec-ffi.box3f'
 local matrix_ffi = require 'matrix.ffi'
@@ -68,6 +69,8 @@ function Obj:init(args)
 	self.game = assert(args.game)
 	self.map = assert(args.map)
 
+	self.linkpos = vec3i()
+
 	-- what was the game clock when the object was created?
 	-- this will need to be explicitly set for objects being loaded from save games etc
 	self.createTime = args.createTime or self.game.time
@@ -104,14 +107,101 @@ function Obj:init(args)
 	-- what tile indexes -> obj lists this object is a part of
 	self.tiles = {}
 
+	-- NOTICE this calls :link
+	-- that means Obj ctor sets args before link
+	-- but all Obj subclass args set after link
 	self:setPos(self.pos:unpack())
 
 	-- TODO not until after subclass ctor is done
 	--self:move(vec3f(), 1)
 end
 
+Obj.light = 0
+
+-- call this upon unlink+link (i.e. relink?)
+-- or call this upon unlink() if it's not getting relinked ...
+function Obj:updateLight()
+	local map = self.map
+	local floorposx = math.floor(self.pos.x)
+	local floorposy = math.floor(self.pos.y)
+	local floorposz = math.floor(self.pos.z)
+-- [[
+-- or should each light contain their own overlay, and then just max() them on one another?
+-- that'd mean the (2*light size) ^3 mem requ
+-- so if light values are 4 bits, then falloff is 15, each direction makes 31, and that's the entire chunk size ...
+-- but how about if I do 3 bits <-> 8 values <-> 16^3 each ... only half a chunk
+-- I'm thinking maybe I should use a dif light model than minecraft uses ...
+	if self.light > 0
+	and (floorposx ~= self.linkpos.x
+		or floorposy ~= self.linkpos.y
+		or floorposz ~= self.linkpos.z
+	) then
+		print('relighting at', self.pos)
+		-- TODO only if |pos-linkpos| is < 1 or < the size of a lightbox or < some epsilon ...
+		-- otherwise update each region separately
+		local lightminx = math.floor(math.min(tonumber(self.linkpos.x), floorposx) - ffi.C.MAX_LUM)
+		local lightminy = math.floor(math.min(tonumber(self.linkpos.y), floorposy) - ffi.C.MAX_LUM)
+		local lightminz = math.floor(math.min(tonumber(self.linkpos.z), floorposz) - ffi.C.MAX_LUM)
+		local lightmaxx = math.floor(math.max(tonumber(self.linkpos.x), floorposx) + ffi.C.MAX_LUM)
+		local lightmaxy = math.floor(math.max(tonumber(self.linkpos.y), floorposy) + ffi.C.MAX_LUM)
+		local lightmaxz = math.floor(math.max(tonumber(self.linkpos.z), floorposz) + ffi.C.MAX_LUM)
+	
+		-- update lights in this region
+		-- TODO better update,
+		-- like queue all the boundary tiles and all light sources
+		-- then flood fill through all the remaining tiles within the region
+		if lightmaxx >= 0
+		and lightmaxy >= 0
+		and lightmaxz >= 0
+		and lightminx <= map.size.x-1
+		and lightminy <= map.size.y-1
+		and lightminz <= map.size.z-1
+		then
+			lightminx = math.max(0, lightminx)
+			lightminy = math.max(0, lightminy)
+			lightminz = math.max(0, lightminz)
+			lightmaxx = math.min(map.size.x-1, lightmaxx)
+			lightmaxy = math.min(map.size.y-1, lightmaxy)
+			lightmaxz = math.min(map.size.z-1, lightmaxz)
+			for z=lightminz,lightmaxz do
+				local dz = self.pos.z - z
+				for y=lightminy,lightmaxy do
+					local dy = self.pos.y - y
+					for x=lightminx,lightmaxx do
+						local dx = self.pos.x - x
+						local lum = 1 - math.max(
+							math.abs(dx),
+							math.abs(dy),
+							math.abs(dz)
+						) / 15
+						local voxel = map:getTile(x,y,z)
+						--assert(voxel)
+						voxel.lum = math.clamp(lum, 0, 1)*tonumber(ffi.C.MAX_LUM)
+					end
+				end
+			end
+		end
+		map:buildDrawArrays(
+			lightminx,
+			lightminy,
+			lightminz,
+			lightmaxx,
+			lightmaxy,
+			lightmaxz)
+	end
+--]]
+
+	-- TODO i could be using this for fast relinking
+	-- but right now it's just used for lighting
+	self.linkpos.x = floorposx
+	self.linkpos.y = floorposy
+	self.linkpos.z = floorposz
+end
+
 function Obj:link()
 	local map = self.map
+
+	self:updateLight()
 
 	-- always unlink before you link
 	assert(next(self.tiles) == nil)
@@ -164,13 +254,20 @@ function Obj:remove()
 	if self.removeFlag then return end
 	self.removeFlag = true
 	self:unlink()
+	self:updateLight()
 	return self
 end
 
 function Obj:setPos(x,y,z)
-	self:unlink()
 	self.pos:set(x,y,z)
+	self:unlink()
 	self:link()
+	
+	-- TODO here, lighting ...
+	-- if the obj has a light level
+	-- and its new pos is a dif tile (floor'd) from its old pos
+	-- then relight the old & new pos's
+
 	return self
 end
 
@@ -298,14 +395,18 @@ local function push(pos, min, max, bmin, bmax, vel, dontPush)
 	return 0
 end
 
-Obj.gravity = -9.8
 Obj.useGravity = true	-- or TODO just change the gravity value to zero?
+Obj.gravity = -9.8
+
 Obj.collidesWithTiles = true
 Obj.collidesWithObjects = true
 Obj.itemTouch = false	-- for items only, to add a touch test upon creation
+
 Obj.collideFlags = 0
 
+-- for walking=true:
 Obj.stepHeight = .6
+
 function Obj:update(dt)
 --print('0', self.pos)
 	local game = self.game
@@ -324,7 +425,9 @@ function Obj:update(dt)
 	or self.vel.z ~= 0
 	or self.itemTouch
 	then
-		self:unlink()
+		-- TODO call this 'lastmovepos' instead
+		-- since I'm only using it for the pos/lastpos bounds in :move()
+		-- I might have another cached 'lastlinkpos' for determining when link() / lighting has changed
 		self.oldpos:set(self.pos:unpack())
 		self.oldvel:set(self.vel:unpack())
 		self.collideFlags = 0
@@ -377,6 +480,7 @@ function Obj:update(dt)
 --print('vel', self.vel)
 		end
 
+		self:unlink()
 		self:link()
 
 		if self.removeFlag then return end
@@ -476,6 +580,7 @@ function Obj:move(vel, dt, dontPush)
 					if objs then
 						for _, obj in ipairs(objs) do
 							if not obj.removeFlag
+							and obj ~= self
 							and obj.iterUID ~= objIterUID
 							then
 								obj.iterUID = objIterUID

@@ -537,15 +537,24 @@ function Game:init(args)
 		}
 		--]]
 
-		local PlayerObj = require 'zelda.obj.player'
-		app.players[1].obj = farmMap:newObj{
-			class = PlayerObj,
-			pos = vec3f(
-				farmMap.size.x*.5,
-				farmMap.size.y*.5,
-				farmMap.size.z-.5),
-			appPlayer = assert(app.players[1]),
-		}
+		do
+			local PlayerObj = require 'zelda.obj.player'
+			local vec2i = require 'vec-ffi.vec2i'
+			local map = farmMap
+			local playerPos2D = vec2i(
+				bit.rshift(map.size.x, 1),
+				bit.rshift(map.size.y, 1))
+			local surf = map:getSurface(playerPos2D:unpack())
+			app.players[1].obj = map:newObj{
+				class = PlayerObj,
+				pos = vec3f(
+					playerPos2D.x+.5,
+					playerPos2D.y+.5,
+					surf.solidAlt+1),
+				appPlayer = assert(app.players[1]),
+			}
+			print(app.players[1].obj.pos)
+		end
 	end
 
 	self.viewFollow = app.players[1].obj

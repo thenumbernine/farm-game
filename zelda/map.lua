@@ -476,7 +476,10 @@ function Chunk:initLight()
 				then
 					voxel.lum = ffi.C.MAX_LUM
 				else
-					voxel.lum = math.max(0, voxel[sliceSize].lum - 1)
+					-- slowly decrement?
+					--voxel.lum = math.max(0, voxel[sliceSize].lum - 1)
+					-- or just zero?
+					voxel.lum = 0
 				end
 				voxel = voxel + 1
 				surf = surf + 1

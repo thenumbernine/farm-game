@@ -134,8 +134,7 @@ function Player:setMap(destMap, destPos)
 	player.map.objs:removeObject(player)
 	player.map = assert(destMap)
 	player.map.objs:insert(player)
-	player.pos:set(destPos)
-	player:link()
+	player:setPos(destPos)	-- calls :link
 end
 
 return Player
