@@ -136,6 +136,7 @@ function Obj:updateLight()
 		or floorposy ~= self.linkpos.y
 		or floorposz ~= self.linkpos.z
 	) then
+		local unlum = next(self.tiles) == nil
 		print('relighting at', self.pos)
 		-- TODO only if |pos-linkpos| is < 1 or < the size of a lightbox or < some epsilon ...
 		-- otherwise update each region separately
@@ -169,11 +170,13 @@ function Obj:updateLight()
 					local dy = self.pos.y - y
 					for x=lightminx,lightmaxx do
 						local dx = self.pos.x - x
-						local lum = 1 - math.max(
-							math.abs(dx),
-							math.abs(dy),
-							math.abs(dz)
-						) / 15
+						local lum = unlum
+							and 0
+							or 1 - math.max(
+								math.abs(dx),
+								math.abs(dy),
+								math.abs(dz)
+							) / 15
 						local voxel = map:getTile(x,y,z)
 						--assert(voxel)
 						voxel.lum = math.clamp(lum, 0, 1)*tonumber(ffi.C.MAX_LUM)
@@ -200,8 +203,6 @@ end
 
 function Obj:link()
 	local map = self.map
-
-	self:updateLight()
 
 	-- always unlink before you link
 	assert(next(self.tiles) == nil)
@@ -232,6 +233,8 @@ function Obj:link()
 			end
 		end
 	end
+
+	self:updateLight()
 end
 
 function Obj:unlink()
