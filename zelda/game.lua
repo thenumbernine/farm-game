@@ -27,6 +27,55 @@ local function hexcolor(i)
 		1
 end
 
+--[[
+occludes = table of {pos=vec3f, radius=number}
+--]]
+local function addPlants(map, occludes)
+	local game = map.game
+	-- [[ plants
+	local plantTypes = require 'zelda.plants'
+	local ij = vec2f()
+	for j=0,map.size.y-1 do
+		ij.y = j
+		for i=0,map.size.x-1 do
+			ij.x = i
+			local k = map.size.z-1
+			local voxel
+			while k >= 0 do
+				voxel = map:getTile(i,j,k)
+				if voxel.type ~= Tile.typeValues.Empty then
+					break
+				end
+				k = k - 1
+			end
+			if k >= 0
+			and voxel
+			and voxel.type == Tile.typeValues.Grass
+			then
+				-- found a grass tile
+				local r = math.random()
+				for _,occlude in ipairs(occludes) do
+					if (ij - vec2f(occlude.pos.x, occlude.pos.y)):lenSq() < occlude.radius * occlude.radius then
+						r = 1
+						break
+					end
+				end
+				if r < .7 then
+					-- TODO pick plants based on biome
+					-- and move the rest of these stats into the plantType
+					local plantType = plantTypes:pickRandom()
+					map:newObj{
+						class = plantType.objClass,
+						pos = vec3f(i + .5, j + .5, k + 1 - voxel.half * .5),
+						-- TODO scale by plant life
+						createTime = game.time - math.random() * plantType.growDuration * 2,
+					}
+				end
+			end
+		end
+	end
+	--]]
+end
 
 local function makeFarmMap(game)
 --[[
@@ -52,7 +101,7 @@ TODO how to handle multiple maps with objects-in-map ...
 		math.floor(map.size.z/2))
 
 	-- TODO this should be the pathway to the town 
-	local npcPos = vec3f(
+	local toTownPos = vec3f(
 		map.size.x*.95,
 		map.size.y*.5,
 		map.size.z-.5)
@@ -90,7 +139,7 @@ TODO how to handle multiple maps with objects-in-map ...
 					-- [[ make it flat around the house and NPC
 					if (
 						(vec2f(i,j) - vec2f(houseCenter.x, houseCenter.y)):length() < 15
-						or (vec2f(i,j) - vec2f(npcPos.x, npcPos.y)):length() < 5
+						or (vec2f(i,j) - vec2f(toTownPos.x, toTownPos.y)):length() < 5
 					) then
 						-- make it flat ground
 						-- TODO falloff around borders
@@ -149,7 +198,7 @@ TODO how to handle multiple maps with objects-in-map ...
 						if k >= half
 						and (
 							(vec2f(i,j) - vec2f(houseCenter.x, houseCenter.y)):length() < 15
-							or (vec2f(i,j) - vec2f(npcPos.x, npcPos.y)):length() < 5
+							or (vec2f(i,j) - vec2f(toTownPos.x, toTownPos.y)):length() < 5
 						) then
 						else
 							voxel.half = math.random() < .5 and 1 or 0
@@ -221,45 +270,10 @@ TODO how to handle multiple maps with objects-in-map ...
 	}
 	--]]
 
-	-- [[ plants
-	local plantTypes = require 'zelda.plants'
-	for j=0,map.size.y-1 do
-		for i=0,map.size.x-1 do
-			local k = map.size.z-1
-			local voxel
-			while k >= 0 do
-				voxel = map:getTile(i,j,k)
-				if voxel.type ~= Tile.typeValues.Empty then
-					break
-				end
-				k = k - 1
-			end
-			if k >= 0
-			and voxel
-			and voxel.type == Tile.typeValues.Grass
-			then
-				-- found a grass tile
-				local r = math.random()
-				if (vec2f(i,j) - vec2f(houseCenter.x, houseCenter.y)):length() < 7.5
-				or (vec2f(i,j) - vec2f(npcPos.x, npcPos.y)):length() < 5
-				then
-					r = 1
-				end
-				if r < .7 then
-					-- TODO pick plants based on biome
-					-- and move the rest of these stats into the plantType
-					local plantType = plantTypes:pickRandom()
-					map:newObj{
-						class = plantType.objClass,
-						pos = vec3f(i + .5, j + .5, k + 1 - voxel.half * .5),
-						-- TODO scale by plant life
-						createTime = game.time - math.random() * plantType.growDuration * 2,
-					}
-				end
-			end
-		end
-	end
-	--]]
+	addPlants(map, {
+		{pos = houseCenter, radius = 7.5},
+		{pos = toTownPos, radius = 5},
+	})
 
 	-- [[
 	local Goomba = require 'zelda.obj.goomba'
@@ -404,6 +418,9 @@ function makeTownMap(game)
 		end,
 	}
 
+	addPlants(map, buildingPoss:mapi(function(pos)
+		return {pos=pos, radius=7.5}
+	end))
 
 	map:buildAlts()
 	map:initLight()
