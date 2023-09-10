@@ -420,7 +420,9 @@ void main() {
 
 	if (useSeeThruv != 0) {
 		// flatten the cone = no clipping near the player
-		if (viewPosv.z > playerViewPos.z + .4) {
+		if (viewPosv.z > playerViewPos.z 
+			// + .4 // hmm at what distance should I occlude sprites?
+		) {
 			vec3 testViewPos = playerViewPos + vec3(0., 1., -2.);
 			if (normalize(viewPosv - testViewPos).z > cosClipAngle) {
 				//fragColor.w = .2;

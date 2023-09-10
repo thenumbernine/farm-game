@@ -17,7 +17,7 @@ local noise2d = require 'simplexnoise.2d'
 local noise3d = require 'simplexnoise.3d'
 local Map = require 'zelda.map'
 local Tile = require 'zelda.tile'
-local Obj = require 'zelda.obj.obj'
+local NPC = require 'zelda.obj.npc'
 
 local function hexcolor(i)
 	return
@@ -51,7 +51,7 @@ TODO how to handle multiple maps with objects-in-map ...
 		math.floor(map.size.y*.1),
 		math.floor(map.size.z/2))
 
-	-- copied in game's init
+	-- TODO this should be the pathway to the town 
 	local npcPos = vec3f(
 		map.size.x*.95,
 		map.size.y*.5,
@@ -211,24 +211,6 @@ TODO how to handle multiple maps with objects-in-map ...
 	--]]
 
 	-- [[
-	-- don't require until app.game is created
-	local plantTypes = require 'zelda.plants'
-	local animalTypes = require 'zelda.animals'
-
-	local NPC = require 'zelda.obj.npc'
-	map:newObj{
-		class = NPC,
-		pos = npcPos:clone(),
-		interactInWorld = function(interact, player)
-			local appPlayer = player.appPlayer
-			appPlayer:storePrompt(
-				table()
-					:append(animalTypes)
-					:append(plantTypes)
-			)
-		end,
-	}
-
 	map:newObj{
 		class = require 'zelda.obj.bed',
 		pos = houseCenter + vec3f(houseSize.x-1, -(houseSize.y-1), -(houseSize.z-1)) + .5,
@@ -240,6 +222,7 @@ TODO how to handle multiple maps with objects-in-map ...
 	--]]
 
 	-- [[ plants
+	local plantTypes = require 'zelda.plants'
 	for j=0,map.size.y-1 do
 		for i=0,map.size.x-1 do
 			local k = map.size.z-1
@@ -304,12 +287,17 @@ function makeTownMap(game)
 
 	local buildingSizes = table{
 		vec3f(3, 3, 2),
+		vec3f(3, 3, 2),
 	}
 	local buildingPoss = table{
 		vec3f(
 			math.floor(map.size.x/2),
 			math.floor(map.size.y*3/4),
 			math.floor(map.size.z/2) + buildingSizes[1].z),
+		vec3f(
+			math.floor(map.size.x*3/4),
+			math.floor(map.size.y*3/4),
+			math.floor(map.size.z/2) + buildingSizes[2].z),
 	}
 
 	-- simplex noise resolution
@@ -388,6 +376,34 @@ function makeTownMap(game)
 			t.tex = 0
 		end
 	end
+
+	-- don't require until app.game is created
+	local plantTypes = require 'zelda.plants'
+	map:newObj{
+		class = NPC,
+		pos = buildingPoss[1],
+		interactInWorld = function(interact, player)
+			local appPlayer = player.appPlayer
+			appPlayer:storePrompt(
+				table()
+					:append(plantTypes)
+			)
+		end,
+	}
+
+	local animalTypes = require 'zelda.animals'
+	map:newObj{
+		class = NPC,
+		pos = buildingPoss[2],
+		interactInWorld = function(interact, player)
+			local appPlayer = player.appPlayer
+			appPlayer:storePrompt(
+				table()
+					:append(animalTypes)
+			)
+		end,
+	}
+
 
 	map:buildAlts()
 	map:initLight()
