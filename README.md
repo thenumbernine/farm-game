@@ -116,7 +116,12 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 		- maybe overhaul rendering, esp the more modifiers to tiles that I add?
 		- maybe make hoed/watered as bitflags, and have the map chunk system handle them?
 	- lighting
-		- better map lighting.  underground lighting.  any kind of falloff lighting.  any kind of better daylight shadow lighting.
+		- surface lighting
+			- plopping down tiles needs to update the surface sun min/max angles
+			- and requires updating all surface sun angles along the sun movement axis ....
+		- underground lighting
+			- any kind of falloff lighting
+			- any kind of better daylight shadow lighting.
 		- bump-mapping on sprites?  parallax mapping?
 			- cheap method, greyscale sprite <-> bumpmap height.
 			- also add/mul a distance-from-closest-transparent-pixel to make sure sprites look round.

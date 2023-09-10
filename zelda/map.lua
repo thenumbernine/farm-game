@@ -24,14 +24,21 @@ local sides = require 'zelda.sides'
 -- TODO how about bitflags for orientation ... https://thenumbernine.github.io/symmath/tests/output/Platonic%20Solids/Cube.html
 -- the automorphism rotation group size is 24 ... so 5 bits for rotations.  including reflection is 48, so 6 bits.
 ffi.cdef[[
-typedef uint16_t voxel_basebits_t;
+enum { CHUNK_BITSIZE = 5 };
+enum { CHUNK_SIZE = 1 << CHUNK_BITSIZE };
+enum { CHUNK_BITMASK = CHUNK_SIZE - 1 };
+enum { CHUNK_VOLUME = 1 << (3 * CHUNK_BITSIZE) };
+enum { MAX_LUM = 15 };
+
+typedef uint32_t voxel_basebits_t;
 typedef struct {
-	voxel_basebits_t type : 5;	// map-type, this maps to zelda.tiles, which now holds {[0]=empty, stone, grass, wood}
-	voxel_basebits_t tex : 4;	// tex = atlas per-tile to use
+	voxel_basebits_t type : 11;	// map-type, this maps to zelda.tiles, which now holds {[0]=empty, stone, grass, wood}
+	voxel_basebits_t tex : 10;	// tex = atlas per-tile to use
 	voxel_basebits_t half : 1;	// set this to use a half-high tile.  TODO eventually slopes, and make this the 'shape' field. also add 45' and 90' slopes.
 	voxel_basebits_t rotx : 2;	// Euler angles, in 90' increments
 	voxel_basebits_t roty : 2;
 	voxel_basebits_t rotz : 2;
+	voxel_basebits_t lum : 4;	//how much light this tile is getting
 } voxel_t;
 
 typedef struct {
@@ -216,7 +223,8 @@ function Chunk:buildDrawArrays()
 												local v = voxelType.cubeVtxs[vtxindex+1]
 
 												local c = self.colors:emplace_back()
-												local l = 255 * v[3]
+												--local l = 255 * v[3]
+												local l = voxel.lum * (255/15)
 												c:set(l, l, l, 255)
 
 												local tc = self.texcoords:emplace_back()
@@ -271,7 +279,8 @@ function Chunk:buildDrawArrays()
 												local v = voxelType.cubeVtxs[vtxindex+1]
 
 												local c = self.colors:emplace_back()
-												local l = 255 * v[3]
+												--local l = 255 * v[3]
+												local l = voxel.lum * (255/15)
 												c:set(l, l, l, 255)
 
 												local tc = self.texcoords:emplace_back()
@@ -447,6 +456,36 @@ function Chunk:calcSunAngles()
 	}:unbind()
 end
 
+--[[
+Make sure you run buildAlts first
+This sets the light level of every block above the lumalt to be full.
+And diminishes beneath.
+And then something about dynamic lights and flood fill.
+--]]
+function Chunk:initLight()
+	local baseAlt = self.pos.z * self.size.z
+	local sliceSize = self.size.x * self.size.y
+	local voxelSlice = self.v + self.volume - sliceSize
+	for k=self.size.z-1,0,-1 do
+		local surf = self.surface
+		local voxel = voxelSlice
+		for j=0,self.size.y-1 do
+			for i=0,self.size.x-1 do
+				if k == self.size.z-1
+				or k >= surf[0].lumAlt - baseAlt 
+				then
+					voxel.lum = ffi.C.MAX_LUM
+				else
+					voxel.lum = math.max(0, voxel[sliceSize].lum - 1)
+				end
+				voxel = voxel + 1
+				surf = surf + 1
+			end
+		end
+		voxelSlice = voxelSlice - sliceSize
+	end
+	assert(voxelSlice == self.v - sliceSize)
+end
 
 local Map = class()
 
@@ -568,6 +607,16 @@ function Map:buildAlts()
 		self.chunks[chunkIndex]:calcSunAngles()
 	end
 end
+
+function Map:initLight()
+	for chunkIndex=0,self.chunkVolume-1 do
+		self.chunks[chunkIndex]:initLight()
+	end
+	for chunkIndex=0,self.chunkVolume-1 do
+		self.chunks[chunkIndex]:initLight()
+	end
+end
+
 
 -- i,j,k integers
 -- return the ptr to the map tile

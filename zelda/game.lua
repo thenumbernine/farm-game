@@ -186,10 +186,11 @@ TODO how to handle multiple maps with objects-in-map ...
 		end
 
 	--print"building draw arrays"
+		map:buildAlts()
+		map:initLight()
 		map:buildDrawArrays(
 			0,0,0,
 			map.size.x-1, map.size.y-1, map.size.z-1)
-		map:buildAlts()
 	--print'init done'
 	end
 
@@ -388,10 +389,11 @@ function makeTownMap(game)
 		end
 	end
 
+	map:buildAlts()
+	map:initLight()
 	map:buildDrawArrays(
 		0,0,0,
 		map.size.x-1, map.size.y-1, map.size.z-1)
-	map:buildAlts()
 
 	return map
 end

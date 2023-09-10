@@ -9,10 +9,6 @@ Chest.sprite = 'chest'
 
 Chest.useGravity = false
 Chest.collidesWithTiles = false
-Chest.bbox = box3f{
-	min = {-.5, -.5, 0},
-	max = {.5, .5, .5},
-}
 
 -- same as Player
 Chest.numInvItems = 48
