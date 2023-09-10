@@ -99,12 +99,14 @@ local EmptyTile = Tile:subclass()
 EmptyTile.name = 'Empty'	-- excluding 'Tile' suffix of all Tile classes ...
 -- TODO give each Tile an obj, and give Empty none
 EmptyTile.render = nil
+EmptyTile.lightDiminish = 1
 
 
 local SolidTile = Tile:subclass()
 SolidTile.name = 'Solid'
 SolidTile.solid = true
 SolidTile.isUnitCube = true	-- render shorthand for side occlusion
+SolidTile.lightDiminish = 15	-- TODO unless .half=true, then just diminish ... .... half?
 assert(SolidTile.cubeFaces)
 
 local StoneTile = SolidTile:subclass{name='Stone'}
@@ -119,6 +121,7 @@ WoodTile.texrects = getTexRects'wood'
 local WaterTile = Tile:subclass{name='Water'}
 WaterTile.texrects = getTexRects'water'
 WaterTile.isUnitCube = true	-- put in Tile?
+WaterTile.lightDiminish = 2
 -- TODO auto flag this if any texrect have a transparent pixel
 WaterTile.transparent = true
 -- TODO contents = ... vacuum, air, poison gas, water, acid, lava, oil, ... plasma ... einstein-bose condensate ... quantum spin-liquid ... quark matter ... hole in the fabric of spacetime ... 

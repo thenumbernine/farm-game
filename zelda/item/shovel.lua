@@ -1,3 +1,4 @@
+local ffi = require 'ffi'
 local vec3f = require 'vec-ffi.vec3f'
 local Tile = require 'zelda.tile'
 local HoedGround = require 'zelda.obj.hoedground'
@@ -34,10 +35,13 @@ function ItemShovel:useInInventory(player)
 			tile.type = Tile.typeValues.Empty
 			-- TODO here remove all the hoe and water and seeds and stuff somehow ...
 			-- in fact, seeds => pick-up-able seeds?
-
-			map:buildDrawArrays(
-				x,y,z+dz,
-				x,y,z+dz)
+			map:updateLight(
+				x - ffi.C.MAX_LUM,
+				y - ffi.C.MAX_LUM,
+				z+dz - ffi.C.MAX_LUM,
+				x + ffi.C.MAX_LUM,
+				y + ffi.C.MAX_LUM,
+				z+dz + ffi.C.MAX_LUM)		
 			-- TODO instead of addItem, have it plop out an item object first ...
 			-- in case the player's inventory is full
 			player:addItem(require 'zelda.item.dirt')

@@ -129,7 +129,8 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 	- use GPU to build geometry ... atomics + write ... need a compute/geometry shader?
 	- use GPU to do physics updates ...
 - physics
-	- heat modeling
+	- heat / temperature modeling.
+		- you can use the same trick as light modelling, just a dif variable.
 	- CFD/SPH fluids, water, magma, oil, acid, quicksand, poisonous gas
 		- drainage / aquifers / accumulate standing water / erosion modeling w/ landscape generation
 	- model collapsing of structures.  no more building a giant horizontal platform attached at a single point to the wall.
@@ -170,6 +171,23 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 			- plants in-biome should cost less than plants out of biome
 - gems.  metals.  pickaxe quality levels.
 - crafting
+	- just putting stuff together
+		- lamps:
+			- wick:
+				cotton wick
+			- fuel: 
+				veg oil (olive, sunflower, walnut, almond, sesame, flax)
+				or butter / animal fat
+				or kerosene
+			- lamp:
+				glass / clay / stone / metal
+		- candle
+			- wick ... same
+			- wax
+				- or butter / animal fat ... adds to the fuel
+		- so to make that you need ...
+			- clay ... need to chisel
+			- oil ... press from plants ... 
 	- your own forge for making stuff.
 		- I guess you'll have to talk to Robin to build a forge.  j/k.  but it won't just be an anvil like Minecraft. You'll have to build more.
 		- or go to the guy in the town who is named Clint.
@@ -206,6 +224,35 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 	- scuba diving
 		- seafloor farming
 		- buried treasure and sunken ships
+- food
+	- fruit / veg should spoil if you don't pick it in time
+		fruit should fall off trees
+		trees / bushes should eventually die too
+	- have all food / veg / fruit / meat go bad after a fixed time
+		- meat spoils unless you salt it
+			- dry salt lasts much longer than normie salt
+		- pickling / canning will increase storage
+		- drying fruits
+		- sugaring
+		- fermenting / wine / beer
+		- jugging / stewing meat
+	- refridgeration
+		- electric freon fridge
+		- old icebox freezer?
+		- cellar / basement for storing cool/dry food
+
+## TODO: make a video:
+
+what to demonstrate?
+- go to the town
+- buy some seeds and animals
+- bring the seeds back, hoe, water, and plant them (watch them grow over the next few days)
+- bring the animals back, build a farm, with fence and gate, and put them there.
+- dig a cellar and store foods there.  place some torches.
+- eat food throughout the day
+- sleep a few nights and watch crops grow / fruit
+- collect eggs from chickens, milk from cows
+- sell some crops and animal produce.
 
 ## Music
 

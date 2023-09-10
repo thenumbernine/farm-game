@@ -2,6 +2,7 @@ local ffi = require 'ffi'
 local template = require 'template'
 local class = require 'ext.class'
 local table = require 'ext.table'
+local math = require 'ext.math'
 local tolua = require 'ext.tolua'
 local range = require 'ext.range'
 local vector = require 'ffi.cpp.vector'
@@ -21,24 +22,28 @@ local Tile = require 'zelda.tile'
 local sides = require 'zelda.sides'
 
 
+local lumBitSize = 4
 -- TODO how about bitflags for orientation ... https://thenumbernine.github.io/symmath/tests/output/Platonic%20Solids/Cube.html
 -- the automorphism rotation group size is 24 ... so 5 bits for rotations.  including reflection is 48, so 6 bits.
-ffi.cdef[[
+ffi.cdef(template([[
 enum { CHUNK_BITSIZE = 5 };
 enum { CHUNK_SIZE = 1 << CHUNK_BITSIZE };
 enum { CHUNK_BITMASK = CHUNK_SIZE - 1 };
 enum { CHUNK_VOLUME = 1 << (3 * CHUNK_BITSIZE) };
-enum { MAX_LUM = 15 };
+
+enum { LUM_BITSIZE = <?=lumBitSize?> };
+enum { MAX_LUM = (1 << LUM_BITSIZE)-1 };
 
 typedef uint32_t voxel_basebits_t;
 typedef struct {
-	voxel_basebits_t type : 11;	// map-type, this maps to zelda.tiles, which now holds {[0]=empty, stone, grass, wood}
+	voxel_basebits_t type : 10;	// map-type, this maps to zelda.tiles, which now holds {[0]=empty, stone, grass, wood}
 	voxel_basebits_t tex : 10;	// tex = atlas per-tile to use
 	voxel_basebits_t half : 1;	// set this to use a half-high tile.  TODO eventually slopes, and make this the 'shape' field. also add 45' and 90' slopes.
 	voxel_basebits_t rotx : 2;	// Euler angles, in 90' increments
 	voxel_basebits_t roty : 2;
 	voxel_basebits_t rotz : 2;
-	voxel_basebits_t lum : 4;	//how much light this tile is getting
+	voxel_basebits_t lumclean : 1;
+	voxel_basebits_t lum : <?=lumBitSize?>;	//how much light this tile is getting
 } voxel_t;
 
 typedef struct {
@@ -47,7 +52,9 @@ typedef struct {
 	float minAngle;
 	float maxAngle;
 } surface_t;
-]]
+]], {
+	lumBitSize = lumBitSize,
+}))
 assert(ffi.sizeof'voxel_t' == ffi.sizeof'voxel_basebits_t')
 
 local voxel_t = ffi.metatype('voxel_t', {
@@ -193,24 +200,26 @@ function Chunk:buildDrawArrays()
 										-- TODO test if it's along the sides, if not just use offset + step
 										-- if so then use map:getType
 										local nbhdVoxel = map:getTile(nx, ny, nz)
-										if nbhdVoxel 
-										and nbhdVoxel.half == 0
-										then
-											local nbhdVoxelTypeIndex = nbhdVoxel.type
-											-- only if the neighbor is solid ...
-											if nbhdVoxelTypeIndex > 0
-											then
-												local nbhdVoxelType = Tile.types[nbhdVoxelTypeIndex]
-												if nbhdVoxelType then
-													-- if we're a cube but our neighbor isn't then build our surface
-													if nbhdVoxelType.isUnitCube
-													-- or if we're a cube and our neighbor is also ... but one of us is transparent, and our types are different
-													and not (
-														(voxelType.transparent or nbhdVoxelType.transparent)
-														and voxelType ~= nbhdVoxelType
-													)
-													then
-														drawFace = false
+										local lum = 0
+										if nbhdVoxel then
+											lum = nbhdVoxel.lum
+											if nbhdVoxel.half == 0 then
+												local nbhdVoxelTypeIndex = nbhdVoxel.type
+												-- only if the neighbor is solid ...
+												if nbhdVoxelTypeIndex > 0
+												then
+													local nbhdVoxelType = Tile.types[nbhdVoxelTypeIndex]
+													if nbhdVoxelType then
+														-- if we're a cube but our neighbor isn't then build our surface
+														if nbhdVoxelType.isUnitCube
+														-- or if we're a cube and our neighbor is also ... but one of us is transparent, and our types are different
+														and not (
+															(voxelType.transparent or nbhdVoxelType.transparent)
+															and voxelType ~= nbhdVoxelType
+														)
+														then
+															drawFace = false
+														end
 													end
 												end
 											end
@@ -224,7 +233,7 @@ function Chunk:buildDrawArrays()
 
 												local c = self.colors:emplace_back()
 												--local l = 255 * v[3]
-												local l = voxel.lum * (255/15)
+												local l = lum * (255/ffi.C.MAX_LUM)
 												c:set(l, l, l, 255)
 
 												local tc = self.texcoords:emplace_back()
@@ -255,9 +264,11 @@ function Chunk:buildDrawArrays()
 										local nbhdVoxelIsUnitCube
 										-- for half-tile we can only block the bottom
 										-- so TODO only do this test when faceIndex is the bottom
+										local lum = voxel.lum
 										if faceIndex == sides.indexes.zm then
 											local nbhdVoxel = map:getTile(nx, ny, nz)
 											if nbhdVoxel then
+												lum = nbhdVoxel.lum
 												local nbhdVoxelTypeIndex = nbhdVoxel.type
 												-- only if the neighbor is solid ...
 												if nbhdVoxelTypeIndex > 0
@@ -280,7 +291,7 @@ function Chunk:buildDrawArrays()
 
 												local c = self.colors:emplace_back()
 												--local l = 255 * v[3]
-												local l = voxel.lum * (255/15)
+												local l = lum * (255/ffi.C.MAX_LUM)
 												c:set(l, l, l, 255)
 
 												local tc = self.texcoords:emplace_back()
@@ -475,11 +486,13 @@ function Chunk:initLight()
 				or k >= surf[0].lumAlt - baseAlt 
 				then
 					voxel.lum = ffi.C.MAX_LUM
+					voxel.lumclean = 1
 				else
 					-- slowly decrement?
 					--voxel.lum = math.max(0, voxel[sliceSize].lum - 1)
 					-- or just zero?
 					voxel.lum = 0
+					voxel.lumclean = 0
 				end
 				voxel = voxel + 1
 				surf = surf + 1
@@ -720,10 +733,153 @@ function Map:newObj(args)
 	return obj
 end
 
+function Map:updateLight(
+	lightminx,
+	lightminy,
+	lightminz,
+	lightmaxx,
+	lightmaxy,
+	lightmaxz
+)
+	-- update lights in this region
+	-- TODO better update,
+	-- like queue all the boundary tiles and all light sources
+	-- then flood fill through all the remaining tiles within the region
+	if lightmaxx >= 0
+	and lightmaxy >= 0
+	and lightmaxz >= 0
+	and lightminx <= self.size.x-1
+	and lightminy <= self.size.y-1
+	and lightminz <= self.size.z-1
+	then
+		lightminx = math.max(0, lightminx)
+		lightminy = math.max(0, lightminy)
+		lightminz = math.max(0, lightminz)
+		lightmaxx = math.min(self.size.x-1, lightmaxx)
+		lightmaxy = math.min(self.size.y-1, lightmaxy)
+		lightmaxz = math.min(self.size.z-1, lightmaxz)
+		-- flood fill from borders
+		for z=lightminz,lightmaxz do
+			for y=lightminy,lightmaxy do
+				for x=lightminx,lightmaxx do
+					local surf = self:getSurface(x,y)
+					local voxel = self:getTile(x,y,z)
+					if z >= surf[0].lumAlt then
+						voxel.lum = ffi.C.MAX_LUM
+						-- TOOD store this flag separtely / only use it for smaller regions when light settling 
+						voxel.lumclean = 1
+					else
+						local voxelIndex = x + self.size.x * (y + self.size.y * z)
+						local lum = 0
+						voxel.lumclean = 0
+						local objs = self.objsPerTileIndex[voxelIndex]
+						if objs then
+							for _,obj in ipairs(objs) do
+								lum = lum + obj.light
+							end
+						end
+						voxel.lum = math.clamp(lum, 0, ffi.C.MAX_LUM)
+					end
+				end
+			end
+		end
+		-- update
+		local modified
+		repeat
+			modified = false
+			for z=lightminz,lightmaxz do
+				for y=lightminy,lightmaxy do
+					for x=lightminx,lightmaxx do
+						local voxel = self:getTile(x,y,z)
+						if voxel.lumclean == 0 then
+							for sideIndex,dir in ipairs(sides.dirs) do
+								local nx = x + dir.x
+								local ny = y + dir.y
+								local nz = z + dir.z
+								local nbhdVoxel = self:getTile(nx, ny, nz)
+								if nbhdVoxel then
+									local nbhdVoxelTypeIndex = nbhdVoxel.type
+									local nbhdVoxelType = Tile.types[nbhdVoxelTypeIndex]
+									local newLum = math.max(voxel.lum, nbhdVoxel.lum - nbhdVoxelType.lightDiminish)
+									if newLum > voxel.lum then
+										voxel.lum = newLum
+										modified = true
+									end
+								end
+							end
+						end
+					end
+				end
+			end
+		until not modified
+	end
+	self:buildDrawArrays(
+		lightminx,
+		lightminy,
+		lightminz,
+		lightmaxx,
+		lightmaxy,
+		lightmaxz)
+end
+
 function Map:update(dt)
 	for _,obj in ipairs(self.objs) do
 		if obj.update then obj:update(dt) end
 	end
+
+	--[[ experimental light update
+	local chunkIndex = 0
+	for cz=0,self.sizeInChunks.z-1 do
+		for cy=0,self.sizeInChunks.y-1 do
+			for cx=0,self.sizeInChunks.x-1 do
+				local chunk = assert(self.chunks[chunkIndex])
+				local voxelIndex = 0
+				local meshDirty
+				for dz=0,Chunk.size.z-1 do
+					local k = bit.bor(dz, bit.lshift(chunk.pos.z, chunk.bitsize.z))
+					for dy=0,Chunk.size.y-1 do
+						local j = bit.bor(dy, bit.lshift(chunk.pos.y, chunk.bitsize.y))
+						for dx=0,Chunk.size.x-1 do
+							local i = bit.bor(dx, bit.lshift(chunk.pos.x, chunk.bitsize.x))
+							local voxel = chunk.v[voxelIndex]
+							if voxel.lumclean == 0 then
+								local found
+								local lum = 0
+								for sideIndex,dir in ipairs(sides.dirs) do
+									local nx = i + dir.x
+									local ny = j + dir.y
+									local nz = k + dir.z
+									local nbhdVoxel = self:getTile(nx, ny, nz)
+									if nbhdVoxel
+									--and nbhdVoxel.lumclean == 1
+									then
+										local nbhdVoxelTypeIndex = nbhdVoxel.type
+										local nbhdVoxelType = Tile.types[nbhdVoxelTypeIndex]
+										found = true
+										lum = math.max(lum, nbhdVoxel.lum - nbhdVoxelType.lightDiminish)
+									end
+								end
+								if found then
+									if lum > voxel.lum then
+										voxel.lum = lum
+										meshDirty = true
+									else
+										voxel.lumclean = 1
+									end
+								end
+							end
+							voxelIndex = voxelIndex + 1
+						end
+					end
+				end
+				chunkIndex = chunkIndex + 1
+				if meshDirty then
+					chunk:buildDrawArrays()
+				end
+			end
+		end
+	end
+	--]]
 end
 
 -- TODO this is slow.  coroutine and progress bar?

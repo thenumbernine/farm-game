@@ -73,13 +73,13 @@ function Player:init(args, ...)
 		require 'zelda.item.hoe',
 		require 'zelda.item.wateringcan',
 		require 'zelda.item.fishingpole',
-		require 'zelda.obj.torch',
 	}:mapi(function(cl)
 		return {
 			class = cl,
 			count = 1,
 		}
 	end):setmetatable(nil)
+	self:addItem(require 'zelda.obj.torch', 999)
 end
 
 function Player:update(dt)

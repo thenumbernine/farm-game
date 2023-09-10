@@ -1,3 +1,4 @@
+local ffi = require 'ffi'
 local vec3f = require 'vec-ffi.vec3f'
 local Tile = require 'zelda.tile'
 local Item = require 'zelda.item.item'
@@ -51,9 +52,13 @@ function ItemAxe:useInInventory(player)
 		and tile.type == Tile.typeValues.Wood
 		then
 			tile.type = Tile.typeValues.Empty
-			map:buildDrawArrays(
-				x,y,z+dz,
-				x,y,z+dz)
+			map:updateLight(
+				x - ffi.C.MAX_LUM,
+				y - ffi.C.MAX_LUM,
+				z+dz - ffi.C.MAX_LUM,
+				x + ffi.C.MAX_LUM,
+				y + ffi.C.MAX_LUM,
+				z+dz + ffi.C.MAX_LUM)
 			require 'zelda.item.log':toItemObj{
 				map = map,
 				pos = vec3f(x,y,z+dz),

@@ -1,3 +1,4 @@
+local ffi = require 'ffi'
 local vec3f = require 'vec-ffi.vec3f'
 local Tile = require 'zelda.tile'
 
@@ -30,9 +31,15 @@ local function placeableTile(parent)
 				tile.type = assert(self.tileType)
 				local tileClass = Tile.types[self.tileType]
 				tile.tex = math.random(#tileClass.texrects)-1
-				map:buildDrawArrays(
-					dst.x, dst.y, dst.z,
-					dst.x, dst.y, dst.z)
+				-- if this is blocking a light sources ...
+				-- ... that means I need to update all blocks within MAX_LUM from this point.
+				map:updateLight(
+					dst.x - ffi.C.MAX_LUM,
+					dst.y - ffi.C.MAX_LUM,
+					dst.z - ffi.C.MAX_LUM,
+					dst.x + ffi.C.MAX_LUM,
+					dst.y + ffi.C.MAX_LUM,
+					dst.z + ffi.C.MAX_LUM)
 				break
 			end
 		end

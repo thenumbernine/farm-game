@@ -118,6 +118,8 @@ end
 
 Obj.light = 0
 
+-- TODO call this "updateLightOnUpdate"
+-- and have both this - and all the voxel-and-light-modification routines - call another function "updateLight" which stretches by MAX_LUM and then does the light calcs
 -- call this upon unlink+link (i.e. relink?)
 -- or call this upon unlink() if it's not getting relinked ...
 function Obj:updateLight()
@@ -146,45 +148,8 @@ function Obj:updateLight()
 		local lightmaxx = math.floor(math.max(tonumber(self.linkpos.x), floorposx) + ffi.C.MAX_LUM)
 		local lightmaxy = math.floor(math.max(tonumber(self.linkpos.y), floorposy) + ffi.C.MAX_LUM)
 		local lightmaxz = math.floor(math.max(tonumber(self.linkpos.z), floorposz) + ffi.C.MAX_LUM)
-	
-		-- update lights in this region
-		-- TODO better update,
-		-- like queue all the boundary tiles and all light sources
-		-- then flood fill through all the remaining tiles within the region
-		if lightmaxx >= 0
-		and lightmaxy >= 0
-		and lightmaxz >= 0
-		and lightminx <= map.size.x-1
-		and lightminy <= map.size.y-1
-		and lightminz <= map.size.z-1
-		then
-			lightminx = math.max(0, lightminx)
-			lightminy = math.max(0, lightminy)
-			lightminz = math.max(0, lightminz)
-			lightmaxx = math.min(map.size.x-1, lightmaxx)
-			lightmaxy = math.min(map.size.y-1, lightmaxy)
-			lightmaxz = math.min(map.size.z-1, lightmaxz)
-			for z=lightminz,lightmaxz do
-				local dz = self.pos.z - z
-				for y=lightminy,lightmaxy do
-					local dy = self.pos.y - y
-					for x=lightminx,lightmaxx do
-						local dx = self.pos.x - x
-						local lum = unlum
-							and 0
-							or 1 - math.max(
-								math.abs(dx),
-								math.abs(dy),
-								math.abs(dz)
-							) / 15
-						local voxel = map:getTile(x,y,z)
-						--assert(voxel)
-						voxel.lum = math.clamp(lum, 0, 1)*tonumber(ffi.C.MAX_LUM)
-					end
-				end
-			end
-		end
-		map:buildDrawArrays(
+
+		map:updateLight(
 			lightminx,
 			lightminy,
 			lightminz,
@@ -257,7 +222,17 @@ function Obj:remove()
 	if self.removeFlag then return end
 	self.removeFlag = true
 	self:unlink()
-	self:updateLight()
+	local x = math.floor(self.pos.x)
+	local y = math.floor(self.pos.y)
+	local z = math.floor(self.pos.z)
+	self.map:updateLight(
+		x - ffi.C.MAX_LUM,
+		y - ffi.C.MAX_LUM,
+		z - ffi.C.MAX_LUM,
+		x + ffi.C.MAX_LUM,
+		y + ffi.C.MAX_LUM,
+		z + ffi.C.MAX_LUM)		
+
 	return self
 end
 
