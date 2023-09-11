@@ -132,6 +132,7 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 	}:pickWeighted().sprite
 
 	-- pick a random sequence <-> plant sub-type
+	-- TODO CAN'T DO THIS ANYMORE WITH SAVE AND LOAD
 	local sprite = assert(anim[plantType.sprite])
 	local seqnames = table.keys(sprite)
 	local seqname = seqnames:pickRandom()

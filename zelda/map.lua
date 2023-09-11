@@ -726,8 +726,15 @@ end
 function Map:newObj(args)
 --print('new', args.class.name, 'at', args.pos)
 	local cl = assert(args.class)
+	
 	args.game = self.game
 	args.map = self
+	
+	if not args.uid then
+		args.uid = self.game.nextObjUID
+		self.game.nextObjUID = self.game.nextObjUID + 1
+	end
+
 	local obj = cl(args)
 	self.objs:insert(obj)
 	return obj
@@ -884,6 +891,8 @@ end
 
 -- TODO this is slow.  coroutine and progress bar?
 function Map:getSaveData()
+	local plantTypes = require 'zelda.plants'
+	local animalTypes = require 'zelda.animals'
 	local game = self.game
 	local app = game.app
 	return tolua({
@@ -903,6 +912,19 @@ function Map:getSaveData()
 			dstobjinfo.game = nil		
 			dstobjinfo.map = nil
 			dstobjinfo.tiles = nil
+			dstobjinfo.voxel = nil
+			dstobjinfo.shakeThread = nil
+			-- do I need any of these?
+			--dstobjinfo.linkpos = nil
+			--dstobjinfo.oldpos = nil
+			--dstobjinfo.oldvel = nil
+			-- TODO plants need their plantType saved somehow
+			-- same with animals
+			-- right now they just point back to zelda.obj.plant/animal ... bleh
+			-- opposite here: these are in classes but need to be copied onto the obj ...
+			dstobjinfo.plantType = obj.plantType
+			dstobjinfo.animalType = obj.animalType
+			
 			dstobjinfo:setmetatable(nil)
 			return dstobjinfo
 		end),
@@ -925,6 +947,26 @@ function Map:getSaveData()
 					end			
 				end
 
+				for _,plantType in ipairs(plantTypes) do
+					if rawequal(x, plantType) then
+						return 'plantTypeForName('..tolua(x.name)..')'
+					end
+				end
+				for _,animalType in ipairs(animalTypes) do
+					if rawequal(x, animalType) then
+						return 'animalTypeForName('..tolua(x.name)..')'
+					end
+				end
+
+				for i,map in ipairs(game.maps) do
+					if rawequal(map, x) then
+						return 'getMap('..i..')'
+					end
+					if map.objs:find(x) then
+						return 'getObjByUID('..tostring(x.uid)..')'
+					end
+				end
+
 				local mt = getmetatable(x)
 				-- matrix.ffi
 				if mt == matrix_ffi then
@@ -940,6 +982,14 @@ function Map:getSaveData()
 			end,
 			cdata = function(state, x, ...)
 				local ft = ffi.typeof(x)
+				if ft == ffi.typeof'uint64_t' then
+					-- using tostring() will give it a ULL suffix
+					-- which makes the .lua file incompatible with non-luajit versions
+					return tostring(x)
+					-- how else?
+					-- I could split it into a "bit.bor(lo, bit.lshift(hi,32))"
+					-- or I could just serialize it as string ...
+				end
 				-- vec*
 				for _,s in ipairs{
 					'2b', '2d', '2f', '2i', '2s',        '2ub',

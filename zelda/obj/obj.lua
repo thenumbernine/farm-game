@@ -68,7 +68,8 @@ function Obj:init(args)
 	assert(args)
 	self.game = assert(args.game)
 	self.map = assert(args.map)
-
+	self.uid = assert(args.uid)
+	
 	self.linkpos = vec3i()
 
 	-- what was the game clock when the object was created?

@@ -3,6 +3,7 @@ local bit = require 'bit'
 local range = require 'ext.range'
 local table = require 'ext.table'
 local path = require 'ext.path'
+local tolua = require'ext.tolua'
 local sdl = require 'ffi.req' 'sdl'
 local ig = require 'imgui'
 local vec2f = require 'vec-ffi.vec2f'
@@ -214,7 +215,7 @@ precision highp float;
 					local fn = frame.filename
 					if fn:sub(-4) == '.png' then
 						-- .pos, .size
-						local texrect = assert(spriteAtlasMap[frame.filename], "failed to find map for sprite "..require'ext.tolua'(frame.filename))
+						local texrect = assert(spriteAtlasMap[frame.filename], "failed to find map for sprite "..tolua(frame.filename))
 						-- atlas pos and size
 						frame.atlasTcPos = vec2f(table.unpack(texrect.pos))
 						frame.atlasTcSize = vec2f(table.unpack(texrect.size))
@@ -770,7 +771,7 @@ function App:resetGame(dontMakeGame)
 			local dirname = tostring(i)
 			local thissave = self.saveBaseDir/dirname
 			if not thissave:exists() then
-				thissave:mkdir()
+				--thissave:mkdir()
 				self.game.saveDir = dirname
 				-- TODO initial save?
 				break
@@ -883,6 +884,17 @@ function App:saveGame(folder)
 	local game = assert(self.game)
 	folder:mkdir(true)
 	assert(folder:isdir(), "mkdir failed")
+	local gamesavedata = tolua({
+		nextObjUID = game.nextObjUID,
+	}, {
+		serializeForType = {
+			cdata = function(state, x, ...)
+				return tostring(x)
+			end,
+		},
+	})
+	local gamepath = folder/'game.lua'
+	gamepath:write(gamesavedata)
 	for i,map in ipairs(game.maps) do
 		(folder/(i..'.map')):write(map:getSaveData())
 	end

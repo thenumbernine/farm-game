@@ -233,14 +233,6 @@ TODO how to handle multiple maps with objects-in-map ...
 				t.tex = 0
 			end
 		end
-
-	--print"building draw arrays"
-		map:buildAlts()
-		map:initLight()
-		map:buildDrawArrays(
-			0,0,0,
-			map.size.x-1, map.size.y-1, map.size.z-1)
-	--print'init done'
 	end
 
 	-- hmm I should redo my maps as 2d noise ...
@@ -422,12 +414,6 @@ function makeTownMap(game)
 		return {pos=pos, radius=7.5}
 	end))
 
-	map:buildAlts()
-	map:initLight()
-	map:buildDrawArrays(
-		0,0,0,
-		map.size.x-1, map.size.y-1, map.size.z-1)
-
 	return map
 end
 
@@ -463,6 +449,9 @@ function Game:init(args)
 	self.app = assert(args.app)
 	local app = self.app
 
+	-- give every object a UID, for save/load and serialization
+	self.nextObjUID = ffi.cast('uint64_t', 0)
+
 	-- start at 6am on the first day
 	self.time = self.wakeHour * self.secondsPerHour
 
@@ -475,29 +464,91 @@ function Game:init(args)
 	-- maybe move this to Map too?
 	if args.srcdir then
 		local fromlua = require 'ext.fromlua'
+		-- hmm too bad I can't save the key/value of this, and just enumerate over all of them
+		-- oh wait, maybe I can ... but in map:save
+		local getObjByUID = class()
+		function getObjByUID:init(uid)
+			self.uid = uid
+		end
+		local getMap = class()
+		function getMap:init(index)
+			self.index = index
+		end
+		local plantTypes = require 'zelda.plants'
+		local animalTypes = require 'zelda.animals'
 		local env = {
+			require = require,
+			load = load,
 			math = {huge = math.huge},
 			app = app,
+			vec2f = require 'vec-ffi.vec2f',
+			vec2i = require 'vec-ffi.vec2i',
+			vec3f = require 'vec-ffi.vec3f',
+			vec3i = require 'vec-ffi.vec3i',
+			box3f = require 'vec-ffi.box3f',
+			getObjByUID = getObjByUID,
+			getMap = getMap,
+			plantTypeForName = function(name)
+				for _,plantType in ipairs(plantTypes) do
+					if plantType.name == name then
+						return plantType
+					end
+				end
+				error("couldn't find plantType with name="..tolua(name))
+			end,
+			animalTypeForName = function(name)
+				for _,animalType in ipairs(animalTypes) do
+					if animalType.name == name then
+						return animalType
+					end
+				end
+				error("couldn't find animalType with name="..tolua(name))
+			end,	
 		}
-		for i=0,math.huge do
+		local gamefile = args.srcdir/'game.lua'
+		local gamesrc = fromlua(assert(gamefile:read()), nil, 't', env)
+		self.nextObjUID = assert(gamesrc.nextObjUID)
+		for i=1,math.huge do
+print('loading map', i)			
 			local mapfile = args.srcdir/(i..'.map')
 			if not mapfile:exists() then break end
-			local mapdata = fromlua(assert(mapfile:read()), nil, 't', env)
+			local mapsrcinfo = fromlua(assert(mapfile:read()), nil, 't', env)
+print('mapsrcinfo read', #mapsrcinfo.objs, 'objs')			
 			local map = Map{
 				game = self,
-				sizeInChunks = vec3i(mapdata.sizeInChunks),
-				chunkData = mapdata.chunkData,
+				sizeInChunks = vec3i(mapsrcinfo.sizeInChunks),
+				chunkData = mapsrcinfo.chunkData,
 			}
 			self.maps:insert(map)
-			for _,objsrcinfo in ipairs(mapdata.objs) do
+			for _,objsrcinfo in ipairs(mapsrcinfo.objs) do
+				if not objsrcinfo.class then
+					error("obj uid="..tolua(objsrcinfo.uid).." has no class")
+				end
 				local newobj = map:newObj(table(objsrcinfo, {
 					game = game,
 					map = map,
-					class = require(objsrcinfo.classname),
+					class = objsrcinfo.class,
 				}))
 				-- TODO what if it's a dif player?
 				if objsrcinfo.appPlayer == app.players[1] then
+print'got player'
 					app.players[1].obj = newobj
+				end
+			end
+		end
+		-- now that all maps/objs are loaded ...
+		for _,map in ipairs(self.maps) do
+			for _,obj in ipairs(map.objs) do
+				-- TODO you have to manually add all possible obj fields here ...
+				if obj.fruitobjs then
+					for k,v in ipairs(obj.fruitobjs) do
+						if getObjByUID:isa(v) then
+							v = game:getObjByUID(v.uid)
+						end
+					end
+				end
+				if getMap:isa(obj.destMap) then
+					obj.destMap = assert(self.maps[obj.destMap.index])
 				end
 			end
 		end
@@ -555,6 +606,14 @@ function Game:init(args)
 			}
 			print(app.players[1].obj.pos)
 		end
+	end
+
+	for _,map in ipairs(self.maps) do
+		map:buildAlts()
+		map:initLight()
+		map:buildDrawArrays(
+			0,0,0,
+			map.size.x-1, map.size.y-1, map.size.z-1)
 	end
 
 	self.viewFollow = app.players[1].obj
@@ -866,6 +925,15 @@ function Game:event(event, ...)
 			end
 		end
 	end
+end
+
+function Game:getObjByUID(uid)
+	for _,map in ipairs(self.maps) do
+		for _,obj in ipairs(map.objs) do
+			if obj.uid == uid then return obj end
+		end
+	end
+	error("couldn't find uid "..uid)
 end
 
 return Game
