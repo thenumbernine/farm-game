@@ -22,6 +22,8 @@ Player.drawCenter = vec3f(.5, 1, 0)
 
 Player.angle = 1.5 * math.pi
 
+Player.light = 15
+
 Player.bbox = box3f{
 	min = {-.3, -.3, 0},
 	max = {.3, .3, 1.5},

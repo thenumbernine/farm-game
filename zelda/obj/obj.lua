@@ -62,15 +62,14 @@ Obj.colorMatrix = matrix_ffi({4,4}, 'float'):lambda(function(i,j)
 	return i==j and 1 or 0
 end)
 
-
+-- once we set a light, set this field, and use it to determine where to recalculate light
+Obj.lastlightpos = nil
 
 function Obj:init(args)
 	assert(args)
 	self.game = assert(args.game)
 	self.map = assert(args.map)
 	self.uid = assert(args.uid)
-	
-	self.lastlightpos = vec3i(-0x80000000, -0x80000000, -0x80000000)
 
 	-- what was the game clock when the object was created?
 	-- this will need to be explicitly set for objects being loaded from save games etc
@@ -123,6 +122,8 @@ Obj.light = 0
 -- call this upon unlink+link (i.e. relink?)
 -- or call this upon unlink() if it's not getting relinked ...
 function Obj:updateLightOnMove()
+	if self.light <= 0 then return end
+	
 	local map = self.map
 	local lightposx = math.floor(self.pos.x)
 	local lightposy = math.floor(self.pos.y)
@@ -133,44 +134,47 @@ function Obj:updateLightOnMove()
 -- so if light values are 4 bits, then falloff is 15, each direction makes 31, and that's the entire chunk size ...
 -- but how about if I do 3 bits <-> 8 values <-> 16^3 each ... only half a chunk
 -- I'm thinking maybe I should use a dif light model than minecraft uses ...
-	if self.light > 0
-	and (lightposx ~= self.lastlightpos.x
+
+	if not self.lastlightpos then
+		map:updateLightAtPos(lightposx, lightposy, lightposz)
+		self.lastlightpos = vec3i(lightposx, lightposy, lightposz)
+	else
+		if lightposx ~= self.lastlightpos.x
 		or lightposy ~= self.lastlightpos.y
 		or lightposz ~= self.lastlightpos.z
-	) then
-		local unlum = next(self.tiles) == nil
-		print('relighting at', self.pos)
-		-- TODO only if |pos-lastlightpos| is < 1 or < the size of a lightbox or < some epsilon ...
-		-- otherwise update each region separately
-		local lastlightposx = tonumber(self.lastlightpos.x)
-		local lastlightposy = tonumber(self.lastlightpos.y)
-		local lastlightposz = tonumber(self.lastlightpos.z)
-		-- TODO calculate this and find where the tradeoff is best
-		if math.max(
-			math.abs(lightposx - lastlightposx),
-			math.abs(lightposy - lastlightposy),
-			math.abs(lightposz - lastlightposz)) < .5 * ffi.C.MAX_LUM
 		then
-			map:updateLight(
-				math.floor(math.min(lastlightposx, lightposx) - ffi.C.MAX_LUM),
-				math.floor(math.min(lastlightposy, lightposy) - ffi.C.MAX_LUM),
-				math.floor(math.min(lastlightposz, lightposz) - ffi.C.MAX_LUM),
-				math.floor(math.max(lastlightposx, lightposx) + ffi.C.MAX_LUM),
-				math.floor(math.max(lastlightposy, lightposy) + ffi.C.MAX_LUM),
-				math.floor(math.max(lastlightposz, lightposz) + ffi.C.MAX_LUM))
-		else
+			local unlum = next(self.tiles) == nil
+print('relighting at', self.pos)
+			-- TODO only if |pos-lastlightpos| is < 1 or < the size of a lightbox or < some epsilon ...
+			-- otherwise update each region separately
+			local lastlightposx = tonumber(self.lastlightpos.x)
+			local lastlightposy = tonumber(self.lastlightpos.y)
+			local lastlightposz = tonumber(self.lastlightpos.z)
+			-- TODO calculate this and find where the tradeoff is best
+			if math.max(
+				math.abs(lightposx - lastlightposx),
+				math.abs(lightposy - lastlightposy),
+				math.abs(lightposz - lastlightposz)) < .5 * ffi.C.MAX_LUM
+			then
+				map:updateLight(
+					math.floor(math.min(lastlightposx, lightposx) - ffi.C.MAX_LUM),
+					math.floor(math.min(lastlightposy, lightposy) - ffi.C.MAX_LUM),
+					math.floor(math.min(lastlightposz, lightposz) - ffi.C.MAX_LUM),
+					math.floor(math.max(lastlightposx, lightposx) + ffi.C.MAX_LUM),
+					math.floor(math.max(lastlightposy, lightposy) + ffi.C.MAX_LUM),
+					math.floor(math.max(lastlightposz, lightposz) + ffi.C.MAX_LUM))
+			else
 print("relighting pos and oldpos: ", self.pos, self.lastlightpos)
-			map:updateLightAtPos(lastlightposx, lastlightposy, lastlightposz)
-			map:updateLightAtPos(lightposx, lightposy, lightposz)
+				map:updateLightAtPos(lastlightposx, lastlightposy, lastlightposz)
+				map:updateLightAtPos(lightposx, lightposy, lightposz)
+			end
 		end
+		
+		-- TODO i could be using this for fast relinking
+		-- but right now it's just used for lighting
+		self.lastlightpos:set(lightposx, lightposy, lightposz)
 	end
 --]]
-
-	-- TODO i could be using this for fast relinking
-	-- but right now it's just used for lighting
-	self.lastlightpos.x = lightposx
-	self.lastlightpos.y = lightposy
-	self.lastlightpos.z = lightposz
 end
 
 function Obj:link()

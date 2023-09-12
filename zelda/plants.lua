@@ -153,9 +153,10 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 			hpGiven = math.random(3,5),
 			foodGiven = math.random(3,5),
 			seq = fruitSeqNames:pickRandom(),
+			classname = 'zelda.obj.fruit.'..plantType.name,	-- TODO proper name for fruit?
 		}
 	)
-	
+	assert(#fruitClasses == 1) -- for now
 
 	if plantType.sprite == 'tree' then
 		plantType.numLogs = 10
@@ -196,12 +197,27 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 
 	-- subclass and copy all fields of 'plantTyp' into our class
 	plantType.objClass = Plant:subclass(plantType)
+	plantType.objClass.classname = 'zelda.obj.plant.'..plantType.name
 	plantType.objClass.plantType = plantType
 
-	plantType.seedClass = ItemSeeds:subclass{
-		name = plantType.name..' '..plantType.growType,
-		plantType = plantType,
-	}
+	plantType.seedClass = ItemSeeds:subclass()
+	plantType.seedClass.plantType = plantType
+	plantType.seedClass.name = plantType.name..' '..plantType.growType
+	plantType.seedClass.classname = 'zelda.obj.seed.'..plantType.name
+
+	--[[ at this point we've filled out 
+		.objClass
+		.seedClass
+		.fruitClass
+	so store them respectiveily, especially just for save/load and newObj functionality
+	--]]
+	package.loaded[plantType.objClass.classname] = plantType.objClass
+	if plantType.fruitClass then
+		package.loaded[plantType.fruitClass.classname] = plantType.fruitClass
+	end
+	if plantType.seedClass then
+		package.loaded[plantType.seedClass.classname] = plantType.seedClass
+	end
 
 	return plantType
 end)
