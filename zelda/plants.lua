@@ -14,6 +14,8 @@ local Fruit = require 'zelda.obj.fruit'
 local Plant = require 'zelda.obj.plant'
 local ItemSeeds = require 'zelda.item.seeds'
 
+print("stop making random plants")
+
 --[[
 name = name
 growType

@@ -52,13 +52,7 @@ function ItemAxe:useInInventory(player)
 		and tile.type == Tile.typeValues.Wood
 		then
 			tile.type = Tile.typeValues.Empty
-			map:updateLight(
-				x - ffi.C.MAX_LUM,
-				y - ffi.C.MAX_LUM,
-				z+dz - ffi.C.MAX_LUM,
-				x + ffi.C.MAX_LUM,
-				y + ffi.C.MAX_LUM,
-				z+dz + ffi.C.MAX_LUM)
+			map:updateLightAtPos(x, y, z+dz)
 			require 'zelda.item.log':toItemObj{
 				map = map,
 				pos = vec3f(x,y,z+dz),

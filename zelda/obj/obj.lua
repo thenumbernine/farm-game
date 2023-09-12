@@ -70,7 +70,7 @@ function Obj:init(args)
 	self.map = assert(args.map)
 	self.uid = assert(args.uid)
 	
-	self.linkpos = vec3i()
+	self.lastlightpos = vec3i(-0x80000000, -0x80000000, -0x80000000)
 
 	-- what was the game clock when the object was created?
 	-- this will need to be explicitly set for objects being loaded from save games etc
@@ -119,15 +119,14 @@ end
 
 Obj.light = 0
 
--- TODO call this "updateLightOnUpdate"
--- and have both this - and all the voxel-and-light-modification routines - call another function "updateLight" which stretches by MAX_LUM and then does the light calcs
+-- have both this - and all the voxel-and-light-modification routines - call another function "updateLight" which stretches by MAX_LUM and then does the light calcs
 -- call this upon unlink+link (i.e. relink?)
 -- or call this upon unlink() if it's not getting relinked ...
-function Obj:updateLight()
+function Obj:updateLightOnMove()
 	local map = self.map
-	local floorposx = math.floor(self.pos.x)
-	local floorposy = math.floor(self.pos.y)
-	local floorposz = math.floor(self.pos.z)
+	local lightposx = math.floor(self.pos.x)
+	local lightposy = math.floor(self.pos.y)
+	local lightposz = math.floor(self.pos.z)
 -- [[
 -- or should each light contain their own overlay, and then just max() them on one another?
 -- that'd mean the (2*light size) ^3 mem requ
@@ -135,36 +134,43 @@ function Obj:updateLight()
 -- but how about if I do 3 bits <-> 8 values <-> 16^3 each ... only half a chunk
 -- I'm thinking maybe I should use a dif light model than minecraft uses ...
 	if self.light > 0
-	and (floorposx ~= self.linkpos.x
-		or floorposy ~= self.linkpos.y
-		or floorposz ~= self.linkpos.z
+	and (lightposx ~= self.lastlightpos.x
+		or lightposy ~= self.lastlightpos.y
+		or lightposz ~= self.lastlightpos.z
 	) then
 		local unlum = next(self.tiles) == nil
 		print('relighting at', self.pos)
-		-- TODO only if |pos-linkpos| is < 1 or < the size of a lightbox or < some epsilon ...
+		-- TODO only if |pos-lastlightpos| is < 1 or < the size of a lightbox or < some epsilon ...
 		-- otherwise update each region separately
-		local lightminx = math.floor(math.min(tonumber(self.linkpos.x), floorposx) - ffi.C.MAX_LUM)
-		local lightminy = math.floor(math.min(tonumber(self.linkpos.y), floorposy) - ffi.C.MAX_LUM)
-		local lightminz = math.floor(math.min(tonumber(self.linkpos.z), floorposz) - ffi.C.MAX_LUM)
-		local lightmaxx = math.floor(math.max(tonumber(self.linkpos.x), floorposx) + ffi.C.MAX_LUM)
-		local lightmaxy = math.floor(math.max(tonumber(self.linkpos.y), floorposy) + ffi.C.MAX_LUM)
-		local lightmaxz = math.floor(math.max(tonumber(self.linkpos.z), floorposz) + ffi.C.MAX_LUM)
-
-		map:updateLight(
-			lightminx,
-			lightminy,
-			lightminz,
-			lightmaxx,
-			lightmaxy,
-			lightmaxz)
+		local lastlightposx = tonumber(self.lastlightpos.x)
+		local lastlightposy = tonumber(self.lastlightpos.y)
+		local lastlightposz = tonumber(self.lastlightpos.z)
+		-- TODO calculate this and find where the tradeoff is best
+		if math.max(
+			math.abs(lightposx - lastlightposx),
+			math.abs(lightposy - lastlightposy),
+			math.abs(lightposz - lastlightposz)) < .5 * ffi.C.MAX_LUM
+		then
+			map:updateLight(
+				math.floor(math.min(lastlightposx, lightposx) - ffi.C.MAX_LUM),
+				math.floor(math.min(lastlightposy, lightposy) - ffi.C.MAX_LUM),
+				math.floor(math.min(lastlightposz, lightposz) - ffi.C.MAX_LUM),
+				math.floor(math.max(lastlightposx, lightposx) + ffi.C.MAX_LUM),
+				math.floor(math.max(lastlightposy, lightposy) + ffi.C.MAX_LUM),
+				math.floor(math.max(lastlightposz, lightposz) + ffi.C.MAX_LUM))
+		else
+print("relighting pos and oldpos: ", self.pos, self.lastlightpos)
+			map:updateLightAtPos(lastlightposx, lastlightposy, lastlightposz)
+			map:updateLightAtPos(lightposx, lightposy, lightposz)
+		end
 	end
 --]]
 
 	-- TODO i could be using this for fast relinking
 	-- but right now it's just used for lighting
-	self.linkpos.x = floorposx
-	self.linkpos.y = floorposy
-	self.linkpos.z = floorposz
+	self.lastlightpos.x = lightposx
+	self.lastlightpos.y = lightposy
+	self.lastlightpos.z = lightposz
 end
 
 function Obj:link()
@@ -200,7 +206,7 @@ function Obj:link()
 		end
 	end
 
-	self:updateLight()
+	self:updateLightOnMove()
 end
 
 function Obj:unlink()

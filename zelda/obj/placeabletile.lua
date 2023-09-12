@@ -33,13 +33,7 @@ local function placeableTile(parent)
 				tile.tex = math.random(#tileClass.texrects)-1
 				-- if this is blocking a light sources ...
 				-- ... that means I need to update all blocks within MAX_LUM from this point.
-				map:updateLight(
-					dst.x - ffi.C.MAX_LUM,
-					dst.y - ffi.C.MAX_LUM,
-					dst.z - ffi.C.MAX_LUM,
-					dst.x + ffi.C.MAX_LUM,
-					dst.y + ffi.C.MAX_LUM,
-					dst.z + ffi.C.MAX_LUM)
+				map:updateLightAtPos(dst:unpack())
 				break
 			end
 		end

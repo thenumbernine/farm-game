@@ -38,7 +38,11 @@ typedef uint32_t voxel_basebits_t;
 typedef struct {
 	voxel_basebits_t type : 10;	// map-type, this maps to zelda.tiles, which now holds {[0]=empty, stone, grass, wood}
 	voxel_basebits_t tex : 10;	// tex = atlas per-tile to use
-	voxel_basebits_t half : 1;	// set this to use a half-high tile.  TODO eventually slopes, and make this the 'shape' field. also add 45' and 90' slopes.
+	
+	// TODO change to 'shape'
+	// enum: cube, half, slope, halfslope, stairs, fortification, fence, ... ?
+	voxel_basebits_t half : 1;	// set this to use a half-high tile.  
+	
 	voxel_basebits_t rotx : 2;	// Euler angles, in 90' increments
 	voxel_basebits_t roty : 2;
 	voxel_basebits_t rotz : 2;
@@ -740,6 +744,17 @@ function Map:newObj(args)
 	return obj
 end
 
+function Map:updateLightAtPos(x,y,z)
+	return self:updateLight(
+		x - ffi.C.MAX_LUM,
+		y - ffi.C.MAX_LUM,
+		z - ffi.C.MAX_LUM,
+		x + ffi.C.MAX_LUM,
+		y + ffi.C.MAX_LUM,
+		z + ffi.C.MAX_LUM)
+end
+
+-- update a region of light
 function Map:updateLight(
 	lightminx,
 	lightminy,
@@ -752,74 +767,75 @@ function Map:updateLight(
 	-- TODO better update,
 	-- like queue all the boundary tiles and all light sources
 	-- then flood fill through all the remaining tiles within the region
-	if lightmaxx >= 0
-	and lightmaxy >= 0
-	and lightmaxz >= 0
-	and lightminx <= self.size.x-1
-	and lightminy <= self.size.y-1
-	and lightminz <= self.size.z-1
+	if lightmaxx < 0
+	or lightmaxy < 0
+	or lightmaxz < 0
+	or lightminx >= self.size.x
+	or lightminy >= self.size.y
+	or lightminz >= self.size.z
 	then
-		lightminx = math.max(0, lightminx)
-		lightminy = math.max(0, lightminy)
-		lightminz = math.max(0, lightminz)
-		lightmaxx = math.min(self.size.x-1, lightmaxx)
-		lightmaxy = math.min(self.size.y-1, lightmaxy)
-		lightmaxz = math.min(self.size.z-1, lightmaxz)
-		-- flood fill from borders
-		for z=lightminz,lightmaxz do
-			for y=lightminy,lightmaxy do
-				for x=lightminx,lightmaxx do
-					local surf = self:getSurface(x,y)
-					local voxel = self:getTile(x,y,z)
-					if z >= surf[0].lumAlt then
-						voxel.lum = ffi.C.MAX_LUM
-						-- TOOD store this flag separtely / only use it for smaller regions when light settling 
-						voxel.lumclean = 1
-					else
-						local voxelIndex = x + self.size.x * (y + self.size.y * z)
-						local lum = 0
-						voxel.lumclean = 0
-						local objs = self.objsPerTileIndex[voxelIndex]
-						if objs then
-							for _,obj in ipairs(objs) do
-								lum = lum + obj.light
-							end
+		return
+	end
+	lightminx = math.max(0, lightminx)
+	lightminy = math.max(0, lightminy)
+	lightminz = math.max(0, lightminz)
+	lightmaxx = math.min(self.size.x-1, lightmaxx)
+	lightmaxy = math.min(self.size.y-1, lightmaxy)
+	lightmaxz = math.min(self.size.z-1, lightmaxz)
+	-- flood fill from borders
+	for z=lightminz,lightmaxz do
+		for y=lightminy,lightmaxy do
+			for x=lightminx,lightmaxx do
+				local surf = self:getSurface(x,y)
+				local voxel = self:getTile(x,y,z)
+				if z >= surf[0].lumAlt then
+					voxel.lum = ffi.C.MAX_LUM
+					-- TOOD store this flag separtely / only use it for smaller regions when light settling 
+					voxel.lumclean = 1
+				else
+					local voxelIndex = x + self.size.x * (y + self.size.y * z)
+					local lum = 0
+					voxel.lumclean = 0
+					local objs = self.objsPerTileIndex[voxelIndex]
+					if objs then
+						for _,obj in ipairs(objs) do
+							lum = lum + obj.light
 						end
-						voxel.lum = math.clamp(lum, 0, ffi.C.MAX_LUM)
 					end
+					voxel.lum = math.clamp(lum, 0, ffi.C.MAX_LUM)
 				end
 			end
 		end
-		-- update
-		local modified
-		repeat
-			modified = false
-			for z=lightminz,lightmaxz do
-				for y=lightminy,lightmaxy do
-					for x=lightminx,lightmaxx do
-						local voxel = self:getTile(x,y,z)
-						if voxel.lumclean == 0 then
-							for sideIndex,dir in ipairs(sides.dirs) do
-								local nx = x + dir.x
-								local ny = y + dir.y
-								local nz = z + dir.z
-								local nbhdVoxel = self:getTile(nx, ny, nz)
-								if nbhdVoxel then
-									local nbhdVoxelTypeIndex = nbhdVoxel.type
-									local nbhdVoxelType = Tile.types[nbhdVoxelTypeIndex]
-									local newLum = math.max(voxel.lum, nbhdVoxel.lum - nbhdVoxelType.lightDiminish)
-									if newLum > voxel.lum then
-										voxel.lum = newLum
-										modified = true
-									end
+	end
+	-- update
+	local modified
+	repeat
+		modified = false
+		for z=lightminz,lightmaxz do
+			for y=lightminy,lightmaxy do
+				for x=lightminx,lightmaxx do
+					local voxel = self:getTile(x,y,z)
+					if voxel.lumclean == 0 then
+						for sideIndex,dir in ipairs(sides.dirs) do
+							local nx = x + dir.x
+							local ny = y + dir.y
+							local nz = z + dir.z
+							local nbhdVoxel = self:getTile(nx, ny, nz)
+							if nbhdVoxel then
+								local nbhdVoxelTypeIndex = nbhdVoxel.type
+								local nbhdVoxelType = Tile.types[nbhdVoxelTypeIndex]
+								local newLum = math.max(voxel.lum, nbhdVoxel.lum - nbhdVoxelType.lightDiminish)
+								if newLum > voxel.lum then
+									voxel.lum = newLum
+									modified = true
 								end
 							end
 						end
 					end
 				end
 			end
-		until not modified
-	end
+		end
+	until not modified
 	self:buildDrawArrays(
 		lightminx,
 		lightminy,

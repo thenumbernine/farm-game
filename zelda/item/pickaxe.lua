@@ -32,13 +32,7 @@ function ItemPickaxe:useInInventory(player)
 		and tile.type == Tile.typeValues.Stone
 		then
 			tile.type = Tile.typeValues.Empty
-			map:updateLight(
-				x - ffi.C.MAX_LUM,
-				y - ffi.C.MAX_LUM,
-				z+dz - ffi.C.MAX_LUM,
-				x + ffi.C.MAX_LUM,
-				y + ffi.C.MAX_LUM,
-				z+dz + ffi.C.MAX_LUM)		
+			map:updateLightAtPos(x, y, z+dz)	
 			-- TODO an obj for all tile types?
 			player:addItem(require 'zelda.item.stone')
 			return

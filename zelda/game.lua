@@ -552,6 +552,9 @@ print'got player'
 				end
 			end
 		end
+		if not app.players[1].obj then
+print"WARNING - player wasn't found in the save file"
+		end
 	else
 		-- start off the map
 		local farmMap = makeFarmMap(self)
@@ -587,25 +590,6 @@ print'got player'
 				farmMap.size.z/2+1),
 		}
 		--]]
-
-		do
-			local PlayerObj = require 'zelda.obj.player'
-			local vec2i = require 'vec-ffi.vec2i'
-			local map = farmMap
-			local playerPos2D = vec2i(
-				bit.rshift(map.size.x, 1),
-				bit.rshift(map.size.y, 1))
-			local surf = map:getSurface(playerPos2D:unpack())
-			app.players[1].obj = map:newObj{
-				class = PlayerObj,
-				pos = vec3f(
-					playerPos2D.x+.5,
-					playerPos2D.y+.5,
-					surf.solidAlt+1),
-				appPlayer = assert(app.players[1]),
-			}
-			print(app.players[1].obj.pos)
-		end
 	end
 
 	for _,map in ipairs(self.maps) do
@@ -615,6 +599,29 @@ print'got player'
 			0,0,0,
 			map.size.x-1, map.size.y-1, map.size.z-1)
 	end
+
+	-- [[ for new games, spawn the player, but only after we find out what the surface altitude is
+	if not app.players[1].obj then
+		local PlayerObj = require 'zelda.obj.player'
+		local vec2i = require 'vec-ffi.vec2i'
+		local map = assert(self.maps[1])
+		local playerPos2D = vec2i(
+			bit.rshift(map.size.x, 1),
+			bit.rshift(map.size.y, 1))
+		local surf = map:getSurface(playerPos2D:unpack())
+		local playerPos = vec3f(
+				playerPos2D.x+.5,
+				playerPos2D.y+.5,
+				surf.solidAlt+1)
+		print('spawning player at', playerPos)
+		app.players[1].obj = map:newObj{
+			class = PlayerObj,
+			pos = playerPos,
+			appPlayer = assert(app.players[1]),
+		}
+		print(app.players[1].obj.pos)
+	end
+	--]]
 
 	self.viewFollow = app.players[1].obj
 	--self.viewFollow = self.goomba
