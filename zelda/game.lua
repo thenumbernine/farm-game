@@ -66,7 +66,7 @@ local function addPlants(map, occludes)
 					local plantType = plantTypes:pickRandom()
 					map:newObj{
 						class = plantType.objClass,
-						pos = vec3f(i + .5, j + .5, k + 1 - voxel.half * .5),
+						pos = vec3f(i + .5, j + .5, k + 1 - voxel.shape * .5),
 						-- TODO scale by plant life
 						createTime = game.time - math.random() * plantType.growDuration * 2,
 					}
@@ -201,7 +201,7 @@ TODO how to handle multiple maps with objects-in-map ...
 							or (vec2f(i,j) - vec2f(toTownPos.x, toTownPos.y)):length() < 5
 						) then
 						else
-							voxel.half = math.random() < .5 and 1 or 0
+							voxel.shape = math.random() < .5 and 1 or 0
 						end
 					end
 				end
@@ -221,7 +221,7 @@ TODO how to handle multiple maps with objects-in-map ...
 							local voxel = assert(map:getTile(x,y,z))
 							voxel.type = WoodTile.index
 							voxel.tex = math.random(#WoodTile.texrects)-1
-							voxel.half = 0
+							voxel.shape = 0
 						end
 					end
 				end
@@ -370,7 +370,7 @@ function makeTownMap(game)
 						local voxel = assert(map:getTile(x,y,z))
 						voxel.type = WoodTile.index
 						voxel.tex = math.random(#WoodTile.texrects)-1
-						voxel.half = 0
+						voxel.shape = 0
 					end
 				end
 			end

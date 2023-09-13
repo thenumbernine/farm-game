@@ -10,6 +10,10 @@ local function placeableObj(parent)
 	function cl:useInInventory(player)
 		local map = player.map
 
+		-- hmm continuous use vs single?
+		-- where should this constraint be?
+		if player.appPlayer.keyPressLast.useItem then return end
+
 		-- TODO traceline and then step back
 		local dst = (player.pos + vec3f(
 			math.cos(player.angle),
@@ -22,6 +26,7 @@ local function placeableObj(parent)
 		if tileType == Tile.typeValues.Empty
 		-- TODO and no solid object exists on this tile
 		then
+print('placing '..tostring(self.classname))
 			player.map:newObj{
 				class = player:removeSelectedItem(),
 				pos = dst+.5,

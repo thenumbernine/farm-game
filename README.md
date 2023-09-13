@@ -240,6 +240,9 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 		- electric freon fridge
 		- old icebox freezer?
 		- cellar / basement for storing cool/dry food
+- lighting
+	- the dirty flag version was fastest
+	- if a player is holding a torch in hand, light follows him around
 
 ## TODO: make a video:
 

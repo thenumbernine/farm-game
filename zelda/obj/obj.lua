@@ -122,8 +122,6 @@ Obj.light = 0
 -- call this upon unlink+link (i.e. relink?)
 -- or call this upon unlink() if it's not getting relinked ...
 function Obj:updateLightOnMove()
-	if self.light <= 0 then return end
-	
 	local map = self.map
 	local lightposx = math.floor(self.pos.x)
 	local lightposy = math.floor(self.pos.y)
@@ -210,7 +208,9 @@ function Obj:link()
 		end
 	end
 
-	self:updateLightOnMove()
+	if self.light > 0 then
+		self:updateLightOnMove()
+	end
 end
 
 function Obj:unlink()
@@ -236,14 +236,15 @@ function Obj:remove()
 	local x = math.floor(self.pos.x)
 	local y = math.floor(self.pos.y)
 	local z = math.floor(self.pos.z)
-	self.map:updateLight(
-		x - ffi.C.MAX_LUM,
-		y - ffi.C.MAX_LUM,
-		z - ffi.C.MAX_LUM,
-		x + ffi.C.MAX_LUM,
-		y + ffi.C.MAX_LUM,
-		z + ffi.C.MAX_LUM)		
-
+	if self.light > 0 then
+		self.map:updateLight(
+			x - ffi.C.MAX_LUM,
+			y - ffi.C.MAX_LUM,
+			z - ffi.C.MAX_LUM,
+			x + ffi.C.MAX_LUM,
+			y + ffi.C.MAX_LUM,
+			z + ffi.C.MAX_LUM)		
+	end
 	return self
 end
 
@@ -554,7 +555,7 @@ function Obj:move(vel, dt, dontPush)
 						end
 						if voxelType.solid then
 							omin:set(i,j,k)
-							omax:set(i+1,j+1,k+.5*(2-voxel.half))
+							omax:set(i+1,j+1,k+.5*(2-voxel.shape))
 
 							-- TODO trace gravity fall downward separately
 							-- then move horizontall

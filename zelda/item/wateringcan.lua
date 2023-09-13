@@ -24,7 +24,7 @@ function ItemWateringCan:useInInventory(player)
 	and groundVoxel.type == Tile.typeValues.Grass
 	and topVoxelType == Tile.typeValues.Empty
 	then
-		local half = -.5 * groundVoxel.half
+		local half = -.5 * groundVoxel.shape
 		local dx, dy, dz = x+.5, y+.5, z + half
 		if not map:hasObjType(dx,dy,dz, WateredGround) then
 			player.map:newObj{

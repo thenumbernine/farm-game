@@ -106,7 +106,7 @@ local SolidTile = Tile:subclass()
 SolidTile.name = 'Solid'
 SolidTile.solid = true
 SolidTile.isUnitCube = true	-- render shorthand for side occlusion
-SolidTile.lightDiminish = 15	-- TODO unless .half=true, then just diminish ... .... half?
+SolidTile.lightDiminish = 15	-- TODO unless .shape>0, then just diminish ... .... half?
 assert(SolidTile.cubeFaces)
 
 local StoneTile = SolidTile:subclass{name='Stone'}

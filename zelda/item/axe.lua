@@ -55,7 +55,7 @@ function ItemAxe:useInInventory(player)
 			map:updateLightAtPos(x, y, z+dz)
 			require 'zelda.item.log':toItemObj{
 				map = map,
-				pos = vec3f(x,y,z+dz),
+				pos = vec3f(x,y,z+dz) + .5,
 			}
 			return
 		end

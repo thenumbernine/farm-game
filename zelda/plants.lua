@@ -102,7 +102,7 @@ local plantcsv = CSV.file'plants.csv'
 local fields = plantcsv.rows:remove(1)
 plantcsv:setColumnNames(fields)
 
-local plantTypes = plantcsv.rows:mapi(function(row)
+local plantTypes = plantcsv.rows:mapi(function(row,i)
 	local plantType = {}
 	for _,f in ipairs(fields) do
 		plantType[f] = row[f]
@@ -168,7 +168,7 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 		-- 2x as big as other plants
 		plantType.drawSize = framesize / 10
 
-		if math.random() < .3 then
+		if i % 3 == 0 then 	-- math.random() < .3 then	-- don't do random or fruitClass won't register and then bad things happen in the plant class updat code upon load when the fruit has been switched.
 			plantType.fruitDuration = 3 * Game.secondsPerDay
 			plantType.fruitClass = fruitClasses:pickRandom()
 		end
@@ -179,7 +179,7 @@ local plantTypes = plantcsv.rows:mapi(function(row)
 		plantType.tipOnDie = true
 		plantType.growDuration = Game.secondsPerWeek
 		
-		if math.random() < .3 then
+		if i % 3 == 0 then -- math.random() < .3 then
 			plantType.fruitDuration = 4 * Game.secondsPerDay
 			-- TODO mutilpe? grafting?
 			plantType.fruitClass = fruitClasses:pickRandom()

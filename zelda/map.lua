@@ -36,17 +36,15 @@ enum { MAX_LUM = (1 << LUM_BITSIZE)-1 };
 
 typedef uint32_t voxel_basebits_t;
 typedef struct {
-	voxel_basebits_t type : 10;	// map-type, this maps to zelda.tiles, which now holds {[0]=empty, stone, grass, wood}
-	voxel_basebits_t tex : 10;	// tex = atlas per-tile to use
+	voxel_basebits_t type : 11;	// map-type, this maps to zelda.tiles, which now holds {[0]=empty, stone, grass, wood}
+	voxel_basebits_t tex : 5;	// tex = atlas per-tile to use. 
 	
-	// TODO change to 'shape'
 	// enum: cube, half, slope, halfslope, stairs, fortification, fence, ... ?
-	voxel_basebits_t half : 1;	// set this to use a half-high tile.  
+	voxel_basebits_t shape : 6;
 	
 	voxel_basebits_t rotx : 2;	// Euler angles, in 90' increments
 	voxel_basebits_t roty : 2;
 	voxel_basebits_t rotz : 2;
-	voxel_basebits_t lumclean : 1;
 	voxel_basebits_t lum : <?=lumBitSize?>;	//how much light this tile is getting
 } voxel_t;
 
@@ -191,7 +189,7 @@ function Chunk:buildDrawArrays()
 							print("voxelType "..voxelTypeIndex.." has "..#voxelType.texrects.." texrects but index was "..voxel.tex)
 						else
 							if voxelType.isUnitCube then
-								if voxel.half == 0 then
+								if voxel.shape == 0 then
 									-- full cube
 									assert(voxelType.cubeFaces)
 									-- faceIndex is 1-based but lines up with sides bitflags
@@ -207,7 +205,7 @@ function Chunk:buildDrawArrays()
 										local lum = 0
 										if nbhdVoxel then
 											lum = nbhdVoxel.lum
-											if nbhdVoxel.half == 0 then
+											if nbhdVoxel.shape == 0 then
 												local nbhdVoxelTypeIndex = nbhdVoxel.type
 												-- only if the neighbor is solid ...
 												if nbhdVoxelTypeIndex > 0
@@ -276,7 +274,7 @@ function Chunk:buildDrawArrays()
 												local nbhdVoxelTypeIndex = nbhdVoxel.type
 												-- only if the neighbor is solid ...
 												if nbhdVoxelTypeIndex > 0
-												and nbhdVoxel.half == 0
+												and nbhdVoxel.shape == 0
 												then
 													local nbhdVoxelType = Tile.types[nbhdVoxelTypeIndex]
 													if nbhdVoxelType then
@@ -490,13 +488,11 @@ function Chunk:initLight()
 				or k >= surf[0].lumAlt - baseAlt 
 				then
 					voxel.lum = ffi.C.MAX_LUM
-					voxel.lumclean = 1
 				else
 					-- slowly decrement?
 					--voxel.lum = math.max(0, voxel[sliceSize].lum - 1)
 					-- or just zero?
 					voxel.lum = 0
-					voxel.lumclean = 0
 				end
 				voxel = voxel + 1
 				surf = surf + 1
@@ -754,7 +750,26 @@ function Map:updateLightAtPos(x,y,z)
 		z + ffi.C.MAX_LUM)
 end
 
+-- assumes 
+-- 	size is vec3i and all positive
+-- 	index is integer
+--	index is within [0, size.x*size.y*size.z)
+local function unravel(index, size)
+	local x = index % size.x
+	index = (index - x) / size.x
+	local y = index % size.y
+	index = (index - y) / size.y
+	return x, y, index
+end
+
+local lightFlagAllVec = vector'uint8_t'
+local lightFlagPrevVec = vector'uint8_t'
+local lightFlagNextVec = vector'uint8_t'
+local lightPrevPoss = vector'vec3i_t'
+local lightNextPoss = vector'vec3i_t'
+
 -- update a region of light
+-- uses flood fill algorithm
 function Map:updateLight(
 	lightminx,
 	lightminy,
@@ -782,60 +797,128 @@ function Map:updateLight(
 	lightmaxx = math.min(self.size.x-1, lightmaxx)
 	lightmaxy = math.min(self.size.y-1, lightmaxy)
 	lightmaxz = math.min(self.size.z-1, lightmaxz)
-	-- flood fill from borders
+	
+	-- [[
+	local lightsizex = lightmaxx - lightminx + 1
+	local lightsizey = lightmaxy - lightminy + 1
+	local lightsizez = lightmaxz - lightminz + 1
+	local lightvolume = lightsizex * lightsizey * lightsizez
+	lightFlagAllVec:resize(lightvolume)
+	ffi.fill(lightFlagAllVec.v, lightFlagAllVec.size)
+	lightFlagPrevVec:resize(lightvolume)
+	ffi.fill(lightFlagPrevVec.v, lightFlagPrevVec.size)
+	lightFlagNextVec:resize(lightvolume)
+	ffi.fill(lightFlagNextVec.v, lightFlagNextVec.size)
+	--]]
+
+	-- calculate borders and sources (similar to Lagrangian multipliers...)
+	lightPrevPoss:resize(0)
 	for z=lightminz,lightmaxz do
 		for y=lightminy,lightmaxy do
 			for x=lightminx,lightmaxx do
-				local surf = self:getSurface(x,y)
+				-- TODO handle changes in lumAlt before relighting ...
+				-- 	if the block at lumAlt was removed/made transparent then search down for the next opaque one
+				--	if any block above lumAlt was made opaque then set it to lumAlt
 				local voxel = self:getTile(x,y,z)
-				if z >= surf[0].lumAlt then
-					voxel.lum = ffi.C.MAX_LUM
-					-- TOOD store this flag separtely / only use it for smaller regions when light settling 
-					voxel.lumclean = 1
-				else
-					local voxelIndex = x + self.size.x * (y + self.size.y * z)
-					local lum = 0
-					voxel.lumclean = 0
-					local objs = self.objsPerTileIndex[voxelIndex]
-					if objs then
-						for _,obj in ipairs(objs) do
-							lum = lum + obj.light
+				if x >= 0 and x < self.size.x
+				and y >= 0 and y < self.size.y
+				and z >= 0 and z < self.size.z
+				then
+					local lightindex = (x - lightminx) + lightsizex * ((y - lightminy) + lightsizey * (z - lightminz))
+					local surf = self:getSurface(x,y)
+					if z >= surf.lumAlt then
+						-- on surface? treat like a boundary voxel
+						lightPrevPoss:emplace_back()[0]:set(x,y,z)
+						lightFlagPrevVec.v[lightindex] = 1
+						lightFlagAllVec.v[lightindex] = 1
+--print('seed', x,y,z)					
+					else
+						--assert(voxel)
+						-- propagate only source lights within relight region
+						local lum = 0
+						local index = x + self.size.x * (y + self.size.y * z)
+						local objs = self.objsPerTileIndex[index]
+						if objs then
+							for _,obj in ipairs(objs) do
+								-- TODO hmmmmmmm should this ever happen?
+								if not obj.removeFlag then
+									lum = lum + obj.light
+								end
+							end
+						end
+						-- clear all lum's within the relight area
+						local lum = math.clamp(lum, 0, ffi.C.MAX_LUM)
+						-- but only save for propagation those with lum >0 
+						if lum > 0 then
+							voxel.lum = lum
+							lightPrevPoss:emplace_back()[0]:set(x,y,z)
+							lightFlagPrevVec.v[lightindex] = 1
+							lightFlagAllVec.v[lightindex] = 1
+--print('seed', x,y,z)
 						end
 					end
-					voxel.lum = math.clamp(lum, 0, ffi.C.MAX_LUM)
 				end
 			end
 		end
 	end
-	-- update
-	local modified
+	-- flood-fill inwards ... could just use a poisson solver on the GPU, if I want to store the light sources in a separate buffer ...
+	local propagatedany 
 	repeat
-		modified = false
-		for z=lightminz,lightmaxz do
-			for y=lightminy,lightmaxy do
-				for x=lightminx,lightmaxx do
-					local voxel = self:getTile(x,y,z)
-					if voxel.lumclean == 0 then
-						for sideIndex,dir in ipairs(sides.dirs) do
-							local nx = x + dir.x
-							local ny = y + dir.y
-							local nz = z + dir.z
-							local nbhdVoxel = self:getTile(nx, ny, nz)
-							if nbhdVoxel then
+		propagatedany = false
+		lightNextPoss:resize(0)
+		ffi.fill(lightFlagNextVec.v, lightFlagNextVec.size)
+		for pi=0,lightPrevPoss.size-1 do
+			local pos = lightPrevPoss.v[pi]
+			local x,y,z = pos:unpack()
+			local i = x + self.size.x * (y + self.size.y * z)
+			local lightindex = (x - lightminx) + lightsizex * ((y - lightminy) + lightsizey * (z - lightminz))
+			--local lum = lightFlagPrevVec.v[lightindex]	-- ... but if we're using a dense array ... zero light wont' set the flag ...
+			local lum = self:getTile(x,y,z).lum	
+			if lum > 0 then
+				local x,y,z = unravel(i, self.size)
+				for sideIndex,dir in ipairs(sides.dirs) do
+					local nx = x + dir.x
+					local ny = y + dir.y
+					local nz = z + dir.z
+					if nx >= lightminx and nx <= lightmaxx
+					and ny >= lightminy and ny <= lightmaxy
+					and nz >= lightminz and nz <= lightmaxz
+					then
+						local nbhdlightindex = (nx - lightminx) + lightsizex * ((ny - lightminy) + lightsizey * (nz - lightminz))
+						if lightFlagAllVec.v[nbhdlightindex] == 0 then
+							local nbhdsurf = self:getSurface(nx,ny)
+							if nz >= nbhdsurf.lumAlt then
+								local nbhdVoxel = self:getTile(nx, ny, nz)
+							else
+								local nbhdVoxel = self:getTile(nx, ny, nz)
 								local nbhdVoxelTypeIndex = nbhdVoxel.type
 								local nbhdVoxelType = Tile.types[nbhdVoxelTypeIndex]
-								local newLum = math.max(voxel.lum, nbhdVoxel.lum - nbhdVoxelType.lightDiminish)
-								if newLum > voxel.lum then
-									voxel.lum = newLum
-									modified = true
+								propagatedany = true
+								if lightFlagNextVec.v[nbhdlightindex] == 0 then
+									nbhdVoxel.lum = math.max(0, lum - nbhdVoxelType.lightDiminish)
+								else
+									-- TODO for now lightDiminish must be 1 (or full at 15).
+									-- If it diminishes by more than one then we need to propagate in space inverse-proportionally or else we could flood-fill into a cell, then put it on the 'already done' pile, and then not update it later correctly.
+									nbhdVoxel.lum = math.max(nbhdVoxel.lum, lum - nbhdVoxelType.lightDiminish)
 								end
+--print('propagate', nx,ny,nz)								
+								lightNextPoss:emplace_back()[0]:set(nx,ny,nz)
+								lightFlagNextVec.v[nbhdlightindex] = 1
 							end
 						end
 					end
 				end
 			end
 		end
-	until not modified
+		ffi.fill(lightFlagPrevVec.v, lightFlagPrevVec.size)
+		for pi=0,lightNextPoss.size-1 do
+			local x,y,z = lightNextPoss.v[pi]:unpack()
+			local lightindex = (x - lightminx) + lightsizex * ((y - lightminy) + lightsizey * (z - lightminz))
+			lightFlagAllVec.v[lightindex] = 1
+			lightFlagPrevVec.v[lightindex] = 1
+		end
+		lightPrevPoss, lightNextPoss = lightNextPoss, lightPrevPoss
+	until not propagatedany
 	self:buildDrawArrays(
 		lightminx,
 		lightminy,
@@ -850,59 +933,6 @@ function Map:update(dt)
 		if obj.update then obj:update(dt) end
 	end
 
-	--[[ experimental light update
-	local chunkIndex = 0
-	for cz=0,self.sizeInChunks.z-1 do
-		for cy=0,self.sizeInChunks.y-1 do
-			for cx=0,self.sizeInChunks.x-1 do
-				local chunk = assert(self.chunks[chunkIndex])
-				local voxelIndex = 0
-				local meshDirty
-				for dz=0,Chunk.size.z-1 do
-					local k = bit.bor(dz, bit.lshift(chunk.pos.z, chunk.bitsize.z))
-					for dy=0,Chunk.size.y-1 do
-						local j = bit.bor(dy, bit.lshift(chunk.pos.y, chunk.bitsize.y))
-						for dx=0,Chunk.size.x-1 do
-							local i = bit.bor(dx, bit.lshift(chunk.pos.x, chunk.bitsize.x))
-							local voxel = chunk.v[voxelIndex]
-							if voxel.lumclean == 0 then
-								local found
-								local lum = 0
-								for sideIndex,dir in ipairs(sides.dirs) do
-									local nx = i + dir.x
-									local ny = j + dir.y
-									local nz = k + dir.z
-									local nbhdVoxel = self:getTile(nx, ny, nz)
-									if nbhdVoxel
-									--and nbhdVoxel.lumclean == 1
-									then
-										local nbhdVoxelTypeIndex = nbhdVoxel.type
-										local nbhdVoxelType = Tile.types[nbhdVoxelTypeIndex]
-										found = true
-										lum = math.max(lum, nbhdVoxel.lum - nbhdVoxelType.lightDiminish)
-									end
-								end
-								if found then
-									if lum > voxel.lum then
-										voxel.lum = lum
-										meshDirty = true
-									else
-										voxel.lumclean = 1
-									end
-								end
-							end
-							voxelIndex = voxelIndex + 1
-						end
-					end
-				end
-				chunkIndex = chunkIndex + 1
-				if meshDirty then
-					chunk:buildDrawArrays()
-				end
-			end
-		end
-	end
-	--]]
 end
 
 -- TODO this is slow.  coroutine and progress bar?

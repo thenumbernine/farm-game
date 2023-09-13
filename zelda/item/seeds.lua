@@ -30,7 +30,7 @@ function ItemSeeds:useInInventory(player)
 	and topVoxelType == Tile.typeValues.Empty
 	and map:hasObjType(x,y,z, HoedGround)
 	then
-		local half = -.5 * groundVoxel.half
+		local half = -.5 * groundVoxel.shape
 		local dx, dy, dz = x+.5, y+.5, z + half
 		-- TODO how about a flag for objs whether they block seeds or not?
 		if not map:hasObjType(dx,dy,dz, Plant) then
