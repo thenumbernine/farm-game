@@ -16,7 +16,7 @@ local ThreadManager = require 'threadmanager'
 local noise2d = require 'simplexnoise.2d'
 local noise3d = require 'simplexnoise.3d'
 local Map = require 'zelda.map'
-local Tile = require 'zelda.tile'
+local Voxel = require 'zelda.voxel'
 local NPC = require 'zelda.obj.npc'
 
 local function hexcolor(i)
@@ -43,14 +43,14 @@ local function addPlants(map, occludes)
 			local voxel
 			while k >= 0 do
 				voxel = map:getTile(i,j,k)
-				if voxel.type ~= Tile.typeValues.Empty then
+				if voxel.type ~= Voxel.typeValues.Empty then
 					break
 				end
 				k = k - 1
 			end
 			if k >= 0
 			and voxel
-			and voxel.type == Tile.typeValues.Grass
+			and voxel.type == Voxel.typeValues.Grass
 			then
 				-- found a grass tile
 				local r = math.random()
@@ -158,20 +158,20 @@ TODO how to handle multiple maps with objects-in-map ...
 
 					local voxelType
 					if c < 0 then
-						voxelType = Tile.typeForName.Stone
+						voxelType = Voxel.typeForName.Stone
 					elseif c < .1 then
-						voxelType = Tile.typeForName.Grass
+						voxelType = Voxel.typeForName.Grass
 					else
-						voxelType = Tile.typeForName.Empty
+						voxelType = Voxel.typeForName.Empty
 					end
 
 					-- [[ make it a hole where the lake will be
 					-- TODO again, use a gaussian surface
 					if inLake then
 						if k <= map.size.z*.5 - 2
-						and voxelType == Tile.typeForName.Empty
+						and voxelType == Voxel.typeForName.Empty
 						then
-							voxelType = Tile.typeForName.Water
+							voxelType = Voxel.typeForName.Water
 						end
 					end
 					--]]
@@ -191,8 +191,8 @@ TODO how to handle multiple maps with objects-in-map ...
 				for i=0,map.size.x-1 do
 					local voxel = map:getTile(i,j,k)
 					local nextVoxel = map:getTile(i,j,k+1)
-					if nextVoxel.type == Tile.typeValues.Empty
-					and voxel.type == Tile.typeValues.Grass
+					if nextVoxel.type == Voxel.typeValues.Empty
+					and voxel.type == Voxel.typeValues.Grass
 					then
 						-- but not around the house or npc
 						if k >= half
@@ -209,7 +209,7 @@ TODO how to handle multiple maps with objects-in-map ...
 		end
 
 		do
-			local WoodTile = Tile.typeForName.Wood
+			local WoodTile = Voxel.typeForName.Wood
 			for x=houseCenter.x-houseSize.x,houseCenter.x+houseSize.x do
 				for y=houseCenter.y-houseSize.y, houseCenter.y+houseSize.y do
 					for z=houseCenter.z-houseSize.z, houseCenter.z+houseSize.z do
@@ -244,8 +244,8 @@ TODO how to handle multiple maps with objects-in-map ...
 			for i=0,map.size.x-1 do
 				local voxel = assert(map:getTile(i,j,k))
 				voxel.type = k <= 1
-					and Tile.typeValues.Stone
-					or Tile.typeValues.Empty
+					and Voxel.typeValues.Stone
+					or Voxel.typeValues.Empty
 			end
 		end
 	end
@@ -342,11 +342,11 @@ function makeTownMap(game)
 
 				local voxelType
 				if c < 0 then
-					voxelType = Tile.typeForName.Stone
+					voxelType = Voxel.typeForName.Stone
 				elseif c < .1 then
-					voxelType = Tile.typeForName.Grass
+					voxelType = Voxel.typeForName.Grass
 				else
-					voxelType = Tile.typeForName.Empty
+					voxelType = Voxel.typeForName.Empty
 				end
 
 				local voxel = assert(map:getTile(i,j,k))
@@ -356,7 +356,7 @@ function makeTownMap(game)
 		end
 	end
 
-	local WoodTile = Tile.typeForName.Wood
+	local WoodTile = Voxel.typeForName.Wood
 	for i,buildingPos in ipairs(buildingPoss) do
 		local buildingSize = buildingSizes[i]
 		for x=buildingPos.x-buildingSize.x,buildingPos.x+buildingSize.x do
@@ -795,10 +795,10 @@ function Game:draw()
 			gl.glVertex3f(obj.pos.x, obj.pos.y, obj.pos.z)
 			--]=]
 			-- [=[
-			for faceIndex,faces in ipairs(Tile.cubeFaces) do
+			for faceIndex,faces in ipairs(Voxel.cubeFaces) do
 				-- [=[
 				for _,vtxCoordFlags in ipairs(faces) do
-					local v = Tile.cubeVtxs[vtxCoordFlags+1]
+					local v = Voxel.cubeVtxs[vtxCoordFlags+1]
 					gl.glVertex3f(
 						obj.pos.x + (1 - v[1]) * obj.bbox.min.x + v[1] * obj.bbox.max.x,
 						obj.pos.y + (1 - v[2]) * obj.bbox.min.y + v[2] * obj.bbox.max.y,
@@ -807,9 +807,9 @@ function Game:draw()
 				--]=]
 				--[=[
 				for ti=1,6 do
-					local vi = Tile.unitQuadTriIndexes[ti]
+					local vi = Voxel.unitQuadTriIndexes[ti]
 					local vtxindex = faces[vi]
-					local v = Tile.cubeVtxs[vtxindex+1]
+					local v = Voxel.cubeVtxs[vtxindex+1]
 					gl.glVertex3f(
 						obj.pos.x + (1 - v[1]) * obj.bbox.min.x + v[1] * obj.bbox.max.x,
 						obj.pos.y + (1 - v[2]) * obj.bbox.min.y + v[2] * obj.bbox.max.y,

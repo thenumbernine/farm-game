@@ -1,6 +1,6 @@
 local ffi = require 'ffi'
 local vec3f = require 'vec-ffi.vec3f'
-local Tile = require 'zelda.tile'
+local Voxel = require 'zelda.voxel'
 local Item = require 'zelda.item.item'
 
 local ItemAxe = Item:subclass()
@@ -49,9 +49,9 @@ function ItemAxe:useInInventory(player)
 	for dz=1,-1,-1 do
 		local tile = map:getTile(x,y,z+dz)
 		if tile 
-		and tile.type == Tile.typeValues.Wood
+		and tile.type == Voxel.typeValues.Wood
 		then
-			tile.type = Tile.typeValues.Empty
+			tile.type = Voxel.typeValues.Empty
 			map:updateLightAtPos(x, y, z+dz)
 			require 'zelda.item.log':toItemObj{
 				map = map,

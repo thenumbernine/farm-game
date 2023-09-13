@@ -1,5 +1,5 @@
 local vec3f = require 'vec-ffi.vec3f'
-local Tile = require 'zelda.tile'
+local Voxel = require 'zelda.voxel'
 
 -- to contrast 'placeableTile', which puts a tile at a position
 local function placeableObj(parent)
@@ -23,7 +23,7 @@ local function placeableObj(parent)
 
 		-- TODO also make sure no objects exist here
 		local tileType = map:getType(dst:unpack())
-		if tileType == Tile.typeValues.Empty
+		if tileType == Voxel.typeValues.Empty
 		-- TODO and no solid object exists on this tile
 		then
 print('placing '..tostring(self.classname))

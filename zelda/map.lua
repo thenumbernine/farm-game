@@ -18,7 +18,7 @@ local GLArrayBuffer = require 'gl.arraybuffer'
 local GLSceneObject = require 'gl.sceneobject'
 local GLGeometry = require 'gl.geometry'
 local GLTex2D = require 'gl.tex2d'
-local Tile = require 'zelda.tile'
+local Voxel = require 'zelda.voxel'
 local sides = require 'zelda.sides'
 
 
@@ -36,7 +36,7 @@ enum { MAX_LUM = (1 << LUM_BITSIZE)-1 };
 
 typedef uint32_t voxel_basebits_t;
 typedef struct {
-	voxel_basebits_t type : 10;	// map-type, this maps to zelda.tiles, which now holds {[0]=empty, stone, grass, wood}
+	voxel_basebits_t type : 10;	// map-type, this maps to zelda.voxel 's .types, which now holds {[0]=empty, stone, grass, wood}
 	voxel_basebits_t tex : 5;	// tex = atlas per-tile to use. 
 	
 	// enum: cube, half, slope, halfslope, stairs, fortification, fence, ... ?
@@ -64,7 +64,7 @@ assert(ffi.sizeof'voxel_t' == ffi.sizeof'voxel_basebits_t')
 local voxel_t = ffi.metatype('voxel_t', {
 	__index = {
 		tileClass = function(self)
-			return Tile.types[self.type]
+			return Voxel.types[self.type]
 		end,
 	},
 })
@@ -184,7 +184,7 @@ function Chunk:buildDrawArrays()
 				local voxel = self.v[index]
 				local voxelTypeIndex = voxel.type
 				if voxelTypeIndex > 0 then	-- skip empty
-					local voxelType = Tile.types[voxelTypeIndex]
+					local voxelType = Voxel.types[voxelTypeIndex]
 					if voxelType then
 						local texrect = voxelType.texrects[voxel.tex+1]
 						if not texrect then
@@ -212,7 +212,7 @@ function Chunk:buildDrawArrays()
 												-- only if the neighbor is solid ...
 												if nbhdVoxelTypeIndex > 0
 												then
-													local nbhdVoxelType = Tile.types[nbhdVoxelTypeIndex]
+													local nbhdVoxelType = Voxel.types[nbhdVoxelTypeIndex]
 													if nbhdVoxelType then
 														-- if we're a cube but our neighbor isn't then build our surface
 														if nbhdVoxelType.isUnitCube
@@ -231,7 +231,7 @@ function Chunk:buildDrawArrays()
 										if drawFace then
 											-- 2 triangles x 3 vtxs per triangle
 											for ti=1,6 do
-												local vi = Tile.unitQuadTriIndexes[ti]
+												local vi = Voxel.unitQuadTriIndexes[ti]
 												local vtxindex = faces[vi]
 												local v = voxelType.cubeVtxs[vtxindex+1]
 
@@ -278,7 +278,7 @@ function Chunk:buildDrawArrays()
 												if nbhdVoxelTypeIndex > 0
 												and nbhdVoxel.shape == 0
 												then
-													local nbhdVoxelType = Tile.types[nbhdVoxelTypeIndex]
+													local nbhdVoxelType = Voxel.types[nbhdVoxelTypeIndex]
 													if nbhdVoxelType then
 														nbhdVoxelIsUnitCube = nbhdVoxelType.isUnitCube
 													end
@@ -289,7 +289,7 @@ function Chunk:buildDrawArrays()
 										if not nbhdVoxelIsUnitCube then
 											-- 2 triangles x 3 vtxs per triangle
 											for ti=1,6 do
-												local vi = Tile.unitQuadTriIndexes[ti]
+												local vi = Voxel.unitQuadTriIndexes[ti]
 												local vtxindex = faces[vi]
 												local v = voxelType.cubeVtxs[vtxindex+1]
 
@@ -384,7 +384,7 @@ function Chunk:buildAlts()
 			while k > 0 do
 				local tileInfo = self.v + (i + self.size.x * (j + self.size.y * k))
 				if tileInfo.type > 0 then
-					local tileClass = Tile.types[tileInfo.type]
+					local tileClass = Voxel.types[tileInfo.type]
 					if tileClass.solid then
 						surface.solidAlt = k + baseAlt
 						break
@@ -397,7 +397,7 @@ function Chunk:buildAlts()
 			while k > 0 do
 				local tileInfo = self.v + (i + self.size.x * (j + self.size.y * k))
 				if tileInfo.type > 0 then
-					local tileClass = Tile.types[tileInfo.type]
+					local tileClass = Voxel.types[tileInfo.type]
 					if not tileClass.transparent then
 						surface.lumAlt = k + baseAlt 
 						break
@@ -680,7 +680,7 @@ end
 -- i,j,k integers
 function Map:getType(i,j,k)
 	local tile = self:getTile(i,j,k)
-	if not tile then return Tile.typeValues.Empty end
+	if not tile then return Voxel.typeValues.Empty end
 	return tile.type
 end
 
@@ -896,7 +896,7 @@ function Map:updateLight_floodFill(
 							else
 								local nbhdVoxel = self:getTile(nx, ny, nz)
 								local nbhdVoxelTypeIndex = nbhdVoxel.type
-								local nbhdVoxelType = Tile.types[nbhdVoxelTypeIndex]
+								local nbhdVoxelType = Voxel.types[nbhdVoxelTypeIndex]
 								propagatedany = true
 								if lightFlagNextVec.v[nbhdlightindex] == 0 then
 									nbhdVoxel.lum = math.max(0, lum - nbhdVoxelType.lightDiminish)
@@ -998,7 +998,7 @@ function Map:updateLight_brute(
 								local nbhdVoxel = self:getTile(nx, ny, nz)
 								if nbhdVoxel then
 									local nbhdVoxelTypeIndex = nbhdVoxel.type
-									local nbhdVoxelType = Tile.types[nbhdVoxelTypeIndex]
+									local nbhdVoxelType = Voxel.types[nbhdVoxelTypeIndex]
 									local newLum = math.max(voxel.lum, nbhdVoxel.lum - nbhdVoxelType.lightDiminish)
 									if newLum > voxel.lum then
 										voxel.lum = newLum

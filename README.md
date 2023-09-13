@@ -29,6 +29,11 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 
 ## TODO:
 
+- overlays -> voxels
+	- make a dirt voxel type
+	- make a 'hoed ground' voxel type
+	- make a 'watered ground' voxel type
+	- then keep 9-patch staps as possible .tex indexes ... normalize this somehow.
 - town
 	- fishing store
 	- livestock store
@@ -51,7 +56,7 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 	- packs wander through
 	- pokeballs
 	- when you buy an animal from the market, you should get a tether to walk it back to the farm.
-	- need fences and gates to keep livestock from getting away.
+	- if animals aren't constrained ...
 		- some animals trample your garden
 		- some animals trample grass <-> dirt
 		- some animals graze <-> have food points <-> can starve and die (same as you)
@@ -61,6 +66,10 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 		- meat -> (cook over fireplace / stove + with pan)
 		- skinning
 			- tanning
+- building
+	- fences
+	- gates
+	- doors
 - birds to peck at your crops
 	- scarecrows to protect your crops
 - hunting weapons

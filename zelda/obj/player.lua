@@ -355,6 +355,15 @@ print'YOU CAUGHT A FISH'
 		end
 	end
 
+	-- TODO only do this upon changing selected item.
+	local itemInfo = self.items[appPlayer.selectedItem]
+	if itemInfo then
+		local cl = itemInfo.class
+		if cl then
+			self:setLight(cl.light)
+		end
+	end
+
 	-- copy current to last keypress
 	-- do this here or in a separate update after object :update()'s?
 	for k,v in pairs(appPlayer.keyPress) do

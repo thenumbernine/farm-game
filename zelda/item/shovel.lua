@@ -1,6 +1,6 @@
 local ffi = require 'ffi'
 local vec3f = require 'vec-ffi.vec3f'
-local Tile = require 'zelda.tile'
+local Voxel = require 'zelda.voxel'
 local HoedGround = require 'zelda.obj.hoedground'
 local Item = require 'zelda.item.item'
 
@@ -30,9 +30,9 @@ function ItemShovel:useInInventory(player)
 	for dz=1,-1,-1 do
 		local tile = map:getTile(x,y,z+dz)
 		if tile
-		and tile.type == Tile.typeValues.Grass
+		and tile.type == Voxel.typeValues.Grass
 		then
-			tile.type = Tile.typeValues.Empty
+			tile.type = Voxel.typeValues.Empty
 			-- TODO here remove all the hoe and water and seeds and stuff somehow ...
 			-- in fact, seeds => pick-up-able seeds?
 			map:updateLightAtPos(x, y, z+dz)	

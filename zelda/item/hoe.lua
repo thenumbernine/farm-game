@@ -1,5 +1,5 @@
 local vec3f = require 'vec-ffi.vec3f'
-local Tile = require 'zelda.tile'
+local Voxel = require 'zelda.voxel'
 local HoedGround = require 'zelda.obj.hoedground'
 local Plant = require 'zelda.obj.plant'
 local Item = require 'zelda.item.item'
@@ -23,8 +23,8 @@ function Hoe:useInInventory(player)
 	local topVoxelType = map:getType(x,y,z)
 	local groundVoxel = map:getTile(x,y,z-1)
 	if groundVoxel
-	and groundVoxel.type == Tile.typeValues.Grass
-	and topVoxelType == Tile.typeValues.Empty
+	and groundVoxel.type == Voxel.typeValues.Grass
+	and topVoxelType == Voxel.typeValues.Empty
 	and not map:hasObjType(x,y,z,HoedGround)
 	then
 		local half = -.5 * groundVoxel.shape

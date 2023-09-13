@@ -5,7 +5,7 @@ zelda.item.stone
 zelda.item.dirt
 merge or something
 --]]
-local Tile = require 'zelda.tile'
+local Voxel = require 'zelda.voxel'
 local Item = require 'zelda.item.item'
 
 local Stone = require 'zelda.obj.placeabletile'(Item):subclass()
@@ -13,6 +13,6 @@ Stone.classname = 'zelda.item.stone'
 
 Stone.name = 'stone'
 Stone.sprite = 'stone'
-Stone.tileType = assert(Tile.typeValues.Stone)
+Stone.tileType = assert(Voxel.typeValues.Stone)
 
 return Stone

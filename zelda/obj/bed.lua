@@ -1,7 +1,7 @@
 local vec2f = require 'vec-ffi.vec2f'
 local vec3f = require 'vec-ffi.vec3f'
 local box3f = require 'vec-ffi.box3f'
-local Tile = require 'zelda.tile'
+local Voxel = require 'zelda.voxel'
 local Obj = require 'zelda.obj.obj'
 
 --[[

@@ -5,7 +5,7 @@ zelda.item.stone
 zelda.item.dirt
 merge or something
 --]]
-local Tile = require 'zelda.tile'
+local Voxel = require 'zelda.voxel'
 local Item = require 'zelda.item.item'
 
 --[[
@@ -19,6 +19,6 @@ Log.classname = 'zelda.item.log'
 Log.name = 'log'
 Log.sprite = 'log'
 Log.seq = 'stand'
-Log.tileType = assert(Tile.typeValues.Wood)
+Log.tileType = assert(Voxel.typeValues.Wood)
 
 return Log

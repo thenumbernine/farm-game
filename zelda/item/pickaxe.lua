@@ -1,7 +1,7 @@
 -- TODO this is a close copy to zelda.item.shovel
 local ffi = require 'ffi'
 local vec3f = require 'vec-ffi.vec3f'
-local Tile = require 'zelda.tile'
+local Voxel = require 'zelda.voxel'
 local Item = require 'zelda.item.item'
 
 local ItemPickaxe = Item:subclass()
@@ -29,9 +29,9 @@ function ItemPickaxe:useInInventory(player)
 	for dz=1,-1,-1 do
 		local tile = map:getTile(x,y,z+dz)
 		if tile
-		and tile.type == Tile.typeValues.Stone
+		and tile.type == Voxel.typeValues.Stone
 		then
-			tile.type = Tile.typeValues.Empty
+			tile.type = Voxel.typeValues.Empty
 			map:updateLightAtPos(x, y, z+dz)	
 			-- TODO an obj for all tile types?
 			player:addItem(require 'zelda.item.stone')

@@ -1,6 +1,6 @@
 local ffi = require 'ffi'
 local vec3f = require 'vec-ffi.vec3f'
-local Tile = require 'zelda.tile'
+local Voxel = require 'zelda.voxel'
 
 -- to contrast 'placeableObj', which puts a tile at a position
 local function placeableTile(parent)
@@ -25,11 +25,11 @@ local function placeableTile(parent)
 		for dz=-1,1 do
 			local tile = map:getTile(dst.x, dst.y, dst.z+dz)
 			if tile
-			and tile.type == Tile.typeValues.Empty
+			and tile.type == Voxel.typeValues.Empty
 			then
 				player:removeSelectedItem()
 				tile.type = assert(self.tileType)
-				local tileClass = Tile.types[self.tileType]
+				local tileClass = Voxel.types[self.tileType]
 				tile.tex = math.random(#tileClass.texrects)-1
 				-- if this is blocking a light sources ...
 				-- ... that means I need to update all blocks within MAX_LUM from this point.

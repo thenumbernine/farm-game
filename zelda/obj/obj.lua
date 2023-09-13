@@ -11,7 +11,7 @@ local gl = require 'gl'
 local glreport = require 'gl.report'
 local GLTex2D = require 'gl.tex2d'
 local anim = require 'zelda.anim'
-local Tile = require 'zelda.tile'
+local Voxel = require 'zelda.voxel'
 local sides = require 'zelda.sides'
 
 local function smoothstep(edge0,edge1,x)
@@ -213,6 +213,21 @@ function Obj:link()
 	end
 end
 
+function Obj:setLight(newLight)
+	-- prevent setLight(nil) from calling this a lot
+	if newLight == nil then
+		newLight = self.class.light
+	end
+	if newLight ~= self.light then
+		self.light = newLight
+		self.map:updateLightAtPos(
+			math.floor(self.pos.x),
+			math.floor(self.pos.y),
+			math.floor(self.pos.z)
+		)
+	end
+end
+
 function Obj:unlink()
 	local map = self.map
 	-- self.tiles = list of tile-links that this obj is attached to ...
@@ -237,13 +252,7 @@ function Obj:remove()
 	local y = math.floor(self.pos.y)
 	local z = math.floor(self.pos.z)
 	if self.light > 0 then
-		self.map:updateLight(
-			x - ffi.C.MAX_LUM,
-			y - ffi.C.MAX_LUM,
-			z - ffi.C.MAX_LUM,
-			x + ffi.C.MAX_LUM,
-			y + ffi.C.MAX_LUM,
-			z + ffi.C.MAX_LUM)		
+		self.map:updateLightAtPos(x,y,z)
 	end
 	return self
 end
@@ -549,7 +558,7 @@ function Obj:move(vel, dt, dontPush)
 					and voxel
 					and voxel.type > 0
 					then
-						local voxelType = Tile.types[voxel.type]
+						local voxelType = Voxel.types[voxel.type]
 						if not voxelType then
 							error("failed to find voxelType for type "..tostring(tiletype))
 						end
