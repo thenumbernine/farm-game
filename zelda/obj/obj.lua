@@ -413,6 +413,9 @@ function Obj:update(dt)
 	if self.removeDuration
 	and game.time >= self.createTime + self.removeDuration
 	then
+		if self.onremove then
+			self:onremove()
+		end
 		self:remove()
 		return
 	end
@@ -654,17 +657,11 @@ function Obj:draw()
 	if not frame then return end
 
 	if frame.atlasTcPos then
-		-- [[ draw immediately
 		self:drawSprite(frame)
-		--]]
 	elseif frame.mesh then
 		error'here'
-		--[[
 		self:drawMesh()
-		--]]
-		-- [[
-		self.game.meshDrawList:insert(self)
-		--]]
+		--self.game.meshDrawList:insert(self)
 	else
 		error("hmm error in frame table")
 	end

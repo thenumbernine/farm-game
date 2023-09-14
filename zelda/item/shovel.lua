@@ -1,7 +1,6 @@
 local ffi = require 'ffi'
 local vec3f = require 'vec-ffi.vec3f'
 local Voxel = require 'zelda.voxel'
-local HoedGround = require 'zelda.obj.hoedground'
 local Item = require 'zelda.item.item'
 
 local ItemShovel = Item:subclass()

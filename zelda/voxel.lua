@@ -115,11 +115,36 @@ StoneTile.texrects = getTexRects'cavestone'
 local GrassTile = SolidTile:subclass{name='Grass'}
 GrassTile.texrects = getTexRects'grass'
 
+local DirtTile = SolidTile:subclass{name='Dirt'}
+DirtTile.texrects = getTexRects'dirt'
+-- include a 9-patch for grass borders?
+
+local TilledTile = SolidTile:subclass{name='Tilled'}
+-- TODO dirt on the sides, tilled on the top only
+TilledTile.texrects = getTexRects'tilled'
+-- include a 9-patch for dirt borders?
+
+-- TODO - call this when setting the tile to a new tile type
+function TilledTile:onChangeFrom()
+	-- TODO remove all HoedGround objs at this tile location
+end
+
+
+local WateredTile = SolidTile:subclass{name='Watered'}
+-- TODO dirt on the sides, tilled on the top only
+WateredTile.texrects = getTexRects'watered'
+-- include a 9-patch for dirt borders?
+
+
+
+-- TODO hmm seeded tile ... but custom renderer per-seed type?
+
+-- TODO custom renderer per wood type?
 local WoodTile = SolidTile:subclass{name='Wood'}
 WoodTile.texrects = getTexRects'wood'
 
 local WaterTile = Tile:subclass{name='Water'}
-WaterTile.texrects = getTexRects'water'
+WaterTile.texrects = getTexRects'water_'
 WaterTile.isUnitCube = true	-- put in Tile?
 WaterTile.lightDiminish = 2
 -- TODO auto flag this if any texrect have a transparent pixel
@@ -140,6 +165,9 @@ what do i want ...
 Tile.types[0] = EmptyTile()
 table.insert(Tile.types, StoneTile())
 table.insert(Tile.types, GrassTile())
+table.insert(Tile.types, DirtTile())
+table.insert(Tile.types, TilledTile())
+table.insert(Tile.types, WateredTile())
 table.insert(Tile.types, WoodTile())
 table.insert(Tile.types, WaterTile())
 

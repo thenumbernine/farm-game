@@ -19,18 +19,21 @@ function ItemWateringCan:useInInventory(player)
 		0
 	)):map(math.floor):unpack()
 	local topVoxelType = map:getType(x,y,z)
-	local groundVoxel = map:getTile(x,y,z-1)
-	if groundVoxel 
-	and groundVoxel.type == Voxel.typeValues.Grass
-	and topVoxelType == Voxel.typeValues.Empty
-	then
-		local half = -.5 * groundVoxel.shape
-		local dx, dy, dz = x+.5, y+.5, z + half
-		if not map:hasObjType(dx,dy,dz, WateredGround) then
-			player.map:newObj{
-				class = WateredGround,
-				pos = vec3f(dx, dy, dz),
-			}
+	if topVoxelType == Voxel.typeValues.Empty then
+		local voxel = map:getTile(x,y,z-1)
+		if voxel 
+		and voxel.type == Voxel.typeValues.Tilled
+		then
+			if not map:hasObjType(x,y,z, WateredGround) then
+				local voxelType = Voxel.typeForName.Watered
+				voxel.type = voxelType.index
+				voxel.tex = math.random(#voxelType.texrects)-1
+				player.map:newObj{
+					class = WateredGround,
+					pos = vec3f(x, y, z),
+				}
+				map:buildDrawArrays(x, y, z, x, y, z)	
+			end
 		end
 	end
 end

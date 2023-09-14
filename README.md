@@ -31,11 +31,12 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 
 - overlays -> voxels
 	- make a dirt voxel type
-	- make a 'hoed ground' voxel type
+	- make a 'tilled ground' voxel type
 	- make a 'watered ground' voxel type
 	- then keep 9-patch staps as possible .tex indexes ... normalize this somehow.
 - town
 	- fishing store
+		- buy rods, lines, bait, tackle, flies, bobbers, etc ... boats? waiters? model if your clothes get wet / temp / hypothermia?
 	- livestock store
 	- seed store
 	- food store
@@ -72,6 +73,7 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 	- doors
 - birds to peck at your crops
 	- scarecrows to protect your crops
+	- nets over bushes & trees to protect from birds
 - hunting weapons
 	- guns
 		- bullets
@@ -139,10 +141,20 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 	- use GPU to do physics updates ...
 - physics
 	- heat / temperature modeling.
-		- you can use the same trick as light modelling, just a dif variable.
+		- you can use the same trick as light modelling, just a dif variable.  
+			- have an outdoor ambient temp, then have it converge to underground temp (50 F? after going down a few tiles ... then go down too many and you get to the molten core of the earth)
+		- rll, everything is a poisson solver.
+		- should i use 3d texs of chunks, or of the map as a whole?
 	- CFD/SPH fluids, water, magma, oil, acid, quicksand, poisonous gas
 		- drainage / aquifers / accumulate standing water / erosion modeling w/ landscape generation
 	- model collapsing of structures.  no more building a giant horizontal platform attached at a single point to the wall.
+		- from bottom to top ... 
+			- base layer of tiles has full support.  so does outermost layer.
+			- next layer up has full support if the layer beneath it also does
+				- if the tile from the layer under it doesn't, then we get its support % minus a penalty
+				- otherwise for all tiles in the horizontal plane, flood-fill and dissipate % outwards from supports (poisson solver)
+				- then if the % goes below a minimum threshold, collapse at that point
+		- hmm this algo won't handle vertical U bends in supports ... should I ?
 	- GPU-driven physics.
 		- GPU-driven detection
 		- less `CPU<->GPU` copies of the sprite data

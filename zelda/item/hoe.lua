@@ -1,6 +1,5 @@
 local vec3f = require 'vec-ffi.vec3f'
 local Voxel = require 'zelda.voxel'
-local HoedGround = require 'zelda.obj.hoedground'
 local Plant = require 'zelda.obj.plant'
 local Item = require 'zelda.item.item'
 
@@ -20,22 +19,31 @@ function Hoe:useInInventory(player)
 		math.sin(player.angle),
 		0
 	)):map(math.floor):unpack()
+	
 	local topVoxelType = map:getType(x,y,z)
-	local groundVoxel = map:getTile(x,y,z-1)
-	if groundVoxel
-	and groundVoxel.type == Voxel.typeValues.Grass
-	and topVoxelType == Voxel.typeValues.Empty
-	and not map:hasObjType(x,y,z,HoedGround)
-	then
-		local half = -.5 * groundVoxel.shape
-		local dx, dy, dz = x+.5, y+.5, z + half
-		-- TODO any kind of solid object
-		--  a better classification would be only allow watered/hoedground/seededground types (which should all have a common parent class / flag)
-		if not map:hasObjType(dx,dy,dz,Plant) then
-			player.map:newObj{
-				class = HoedGround,
-				pos = vec3f(dx, dy, dz),
-			}
+	if topVoxelType == Voxel.typeValues.Empty then
+		local voxel = map:getTile(x,y,z-1)
+		if voxel
+		-- TODO one tool for grass->dirt
+		-- and another tool for dirt->tilled?
+		and voxel.type == Voxel.typeValues.Grass
+		then
+			-- TODO test for any kind of solid object
+			--  a better classification would be only allow watered/hoedground/seededground types (which should all have a common parent class / flag)
+			local half = -.5 * voxel.shape
+			local dx, dy, dz = x+.5, y+.5, z + half
+			if not map:hasObjType(dx,dy,dz,Plant) then
+				local voxelType = Voxel.typeForName.Tilled
+				voxel.type = voxelType.index
+				voxel.tex = math.random(#voxelType.texrects)-1
+				-- hoed ground ... once it dies, switch the tile back to dirt
+				map:newObj{
+					class = require 'zelda.obj.hoedground',
+					pos = vec3f(x,y,z),
+				}
+				--map:updateLightAtPos(x, y, z+dz)	
+				map:buildDrawArrays(x, y, z, x, y, z)	
+			end
 		end
 	end
 end
