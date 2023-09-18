@@ -70,6 +70,36 @@ local voxel_t = ffi.metatype('voxel_t', {
 })
 
 
+local CPUGPUBuf = class()
+
+--[[
+args:
+	type = ctype
+--]]
+function CPUGPUBuf:init(args)
+	local ctype = assert(args.type)
+	self.vec = vector(ctype)
+	-- using reserve and heuristic of #cubes ~ #vec: brings time taken from 12 s to 0.12 s
+	self.vec:reserve(2*args.volume)
+	self.buf = GLArrayBuffer{
+		size = ffi.sizeof(ctype) * self.vec.capacity,
+		data = self.vec.v,
+		usage = gl.GL_DYNAMIC_DRAW,
+	}:unbind()
+	
+	-- TODO Don't reallocate gl buffers each time.
+	-- OpenGL growing buffers via glCopyBufferSubData:
+	-- https://stackoverflow.com/a/27751186/2714073
+
+	local function newreserve(self, newcap)
+		if newcap <= self.capacity then return end
+		print('asked for resize to', newcap, 'when our cap was', self.capacity)
+		error'here'
+	end
+	self.vec.reserve = newreserve
+end
+
+
 local Chunk = class()
 
 -- static member
@@ -90,61 +120,32 @@ function Chunk:init(args)
 	self.surface = ffi.new('surface_t[?]', self.size.x * self.size.y)
 
 	-- geometry
-	self.vtxs = vector'vec3f_t'
-	self.texcoords = vector'vec2f_t'
-	self.colors = vector'vec4ub_t'
-
 	local volume = self.volume
-
-	-- [[ using reserve and heuristic of #cubes ~ #vtxs: brings time taken from 12 s to 0.12 s
-	self.vtxs:reserve(3*volume)
-	self.texcoords:reserve(3*volume)
-	self.colors:reserve(3*volume)
-	--]]
-
-	-- TODO Don't reallocate gl buffers each time.
-	-- OpenGL growing buffers via glCopyBufferSubData:
-	-- https://stackoverflow.com/a/27751186/2714073
-
-	self.vtxBuf = GLArrayBuffer{
-		size = ffi.sizeof(self.vtxs.type) * self.vtxs.capacity,
-		data = self.vtxs.v,
-		usage = gl.GL_DYNAMIC_DRAW,
-	}:unbind()
-
-	self.texcoordBuf = GLArrayBuffer{
-		size = ffi.sizeof(self.texcoords.type) * self.texcoords.capacity,
-		data = self.texcoords.v,
-		usage = gl.GL_DYNAMIC_DRAW,
-	}:unbind()
-
-	self.colorBuf = GLArrayBuffer{
-		size = ffi.sizeof(self.colors.type) * self.colors.capacity,
-		data = self.colors.v,
-		usage = gl.GL_DYNAMIC_DRAW,
-	}:unbind()
+	self.vtxs = CPUGPUBuf{type='vec3f_t', volume=volume}
+	self.texcoords = CPUGPUBuf{type='vec2f_t', volume=volume}
+	self.colors = CPUGPUBuf{type='vec4ub_t', volume=volume}
 
 	-- TODO put this in a GLSceneObject object instead
 	-- and give that its own set of attrs, uniforms, shader, geometry
 	self.sceneObj = GLSceneObject{
 		geometry = GLGeometry{
 			mode = gl.GL_TRIANGLES,
-			count = self.vtxs.size,
+			count = self.vtxs.vec.size,
 		},
 		program = app.mapShader,
 		attrs = {
 			vertex = {
-				buffer = self.vtxBuf,
+				buffer = self.vtxs.buf,
 				type = gl.GL_FLOAT,
 				size = 3,
 			},
 			texcoord = {
-				buffer = self.texcoordBuf,
+				buffer = self.texcoords.buf,
 				type = gl.GL_FLOAT,
 				size = 2,
 			},
 			color = {
-				buffer = self.colorBuf,
+				buffer = self.colors.buf,
 				type = gl.GL_UNSIGNED_BYTE,
 				size = 4,
 				normalize = true,
@@ -152,15 +153,6 @@ function Chunk:init(args)
 		},
 		texs = {},
 	}
-
-	local function newreserve(self, newcap)
-		if newcap <= self.capacity then return end
-		print('asked for resize to', newcap, 'when our cap was', self.capacity)
-		error'here'
-	end
-	self.vtxs.reserve = newreserve
-	self.texcoords.reserve = newreserve
-	self.colors.reserve = newreserve
 end
 
 -- TODO 
@@ -169,9 +161,9 @@ end
 function Chunk:buildDrawArrays()
 	local map = self.map
 	local app = map.game.app
-	self.vtxs:resize(0)
-	self.texcoords:resize(0)
-	self.colors:resize(0)
+	self.vtxs.vec:resize(0)
+	self.texcoords.vec:resize(0)
+	self.colors.vec:resize(0)
 	local atlasDx = 1/tonumber(app.spriteAtlasTex.width)
 	local atlasDy = 1/tonumber(app.spriteAtlasTex.height)
 	local index = 0
@@ -235,18 +227,18 @@ function Chunk:buildDrawArrays()
 												local vtxindex = faces[vi]
 												local v = voxelType.cubeVtxs[vtxindex+1]
 
-												local c = self.colors:emplace_back()
+												local c = self.colors.vec:emplace_back()
 												--local l = 255 * v[3]
 												local l = lum * (255/ffi.C.MAX_LUM)
 												c:set(l, l, l, 255)
 
-												local tc = self.texcoords:emplace_back()
+												local tc = self.texcoords.vec:emplace_back()
 												tc:set(
 													(texrect.pos[1] + voxelType.unitquad[vi][1] * texrect.size[1] + .5) * atlasDx,
 													(texrect.pos[2] + voxelType.unitquad[vi][2] * texrect.size[2] + .5) * atlasDy
 												)
 
-												local vtx = self.vtxs:emplace_back()
+												local vtx = self.vtxs.vec:emplace_back()
 												vtx:set(i + v[1], j + v[2], k + v[3])
 											end
 										end
@@ -293,18 +285,18 @@ function Chunk:buildDrawArrays()
 												local vtxindex = faces[vi]
 												local v = voxelType.cubeVtxs[vtxindex+1]
 
-												local c = self.colors:emplace_back()
+												local c = self.colors.vec:emplace_back()
 												--local l = 255 * v[3]
 												local l = lum * (255/ffi.C.MAX_LUM)
 												c:set(l, l, l, 255)
 
-												local tc = self.texcoords:emplace_back()
+												local tc = self.texcoords.vec:emplace_back()
 												tc:set(
 													(texrect.pos[1] + voxelType.unitquad[vi][1] * texrect.size[1] + .5) * atlasDx,
 													(texrect.pos[2] + voxelType.unitquad[vi][2] * texrect.size[2] + .5) * atlasDy
 												)
 
-												local vtx = self.vtxs:emplace_back()
+												local vtx = self.vtxs.vec:emplace_back()
 												vtx:set(i + v[1], j + v[2], k + v[3] * .5)
 											end
 										end
@@ -328,36 +320,36 @@ function Chunk:buildDrawArrays()
 --[[	
 	local volume = self.volume
 	print('volume', volume)
-	print('vtxs', self.vtxs.size)
+	print('vtxs', self.vtxs.vec.size)
 --]]
 
-	local vtxSize = self.vtxs.size * ffi.sizeof(self.vtxs.type)
-	local texcoordSize = self.texcoords.size * ffi.sizeof(self.texcoords.type)
-	local colorSize = self.colors.size * ffi.sizeof(self.colors.type)	
+	local vtxSize = self.vtxs.vec.size * ffi.sizeof(self.vtxs.vec.type)
+	local texcoordSize = self.texcoords.vec.size * ffi.sizeof(self.texcoords.vec.type)
+	local colorSize = self.colors.vec.size * ffi.sizeof(self.colors.vec.type)	
 
-	if vtxSize > self.vtxBuf.size then
-		print'TODO needs vtxBuf resize'
+	if vtxSize > self.vtxs.buf.size then
+		print'TODO needs vtxs.buf resize'
 		-- create a new buffer
 		-- copy old onto new
 		-- update new buffer in GLAttribute object
 		-- then rebind buffer in GLSceneObject's .vao
 		return
 	end
-	if texcoordSize > self.texcoordBuf.size then
-		print'TODO needs texcoordBuf resize'
+	if texcoordSize > self.texcoords.buf.size then
+		print'TODO needs texcoords.buf resize'
 		return
 	end
-	if colorSize > self.colorBuf.size then
-		print'TODO needs colorBuf resize'
+	if colorSize > self.colors.buf.size then
+		print'TODO needs colors.buf resize'
 		return
 	end
 
-	self.vtxBuf:bind():updateData(0, vtxSize)
-	self.texcoordBuf:bind():updateData(0, texcoordSize)
-	self.colorBuf:bind():updateData(0, colorSize)
+	self.vtxs.buf:bind():updateData(0, vtxSize)
+	self.texcoords.buf:bind():updateData(0, texcoordSize)
+	self.colors.buf:bind():updateData(0, colorSize)
 		:unbind()
 
-	self.sceneObj.geometry.count = self.vtxs.size
+	self.sceneObj.geometry.count = self.vtxs.vec.size
 end
 
 function Chunk:draw(app, game)
