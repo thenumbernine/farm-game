@@ -34,7 +34,7 @@ function ItemPickaxe:useInInventory(player)
 			tile.type = Voxel.typeValues.Empty
 			map:updateLightAtPos(x, y, z+dz)	
 			-- TODO an obj for all tile types?
-			player:addItem(require 'zelda.item.stone')
+			player:addItem(require 'zelda.item.voxel.Stone')
 			return
 		end
 	end

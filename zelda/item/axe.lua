@@ -44,16 +44,15 @@ function ItemAxe:useInInventory(player)
 				end
 			end
 		end
-	end
-
-	for dz=1,-1,-1 do
+	
 		local tile = map:getTile(x,y,z+dz)
 		if tile 
 		and tile.type == Voxel.typeValues.Wood
 		then
 			tile.type = Voxel.typeValues.Empty
+			-- change map type => change opacity => refresh light => refresh mesh
 			map:updateLightAtPos(x, y, z+dz)
-			require 'zelda.item.log':toItemObj{
+			require 'zelda.item.voxel.Wood':toItemObj{
 				map = map,
 				pos = vec3f(x,y,z+dz) + .5,
 			}

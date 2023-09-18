@@ -88,8 +88,12 @@ Tile.typeValues = {}		-- name => index
 local Atlas = require 'zelda.atlas'
 local spriteAtlasMap = Atlas.atlasMap
 -- returns a 0-based table, indexed with voxel.tex
-local function getTexRects(sprite)
-	return Atlas.getAllKeys('sprites/maptiles/'..sprite):mapi(function(fn)
+local function setTexRects(cl, sprite)
+	local atlasKeys = Atlas.getAllKeys('sprites/maptiles/'..sprite)
+	cl.seqNames = atlasKeys:mapi(function(k)
+		return assert(k:match'^sprites/maptiles/(.*)$', "failed to find prefix sprites/maptiles/")
+	end)
+	cl.texrects = atlasKeys:mapi(function(fn)
 		return spriteAtlasMap[fn]
 	end):setmetatable(nil)
 end
@@ -110,18 +114,21 @@ SolidTile.lightDiminish = 15	-- TODO unless .shape>0, then just diminish ... ...
 assert(SolidTile.cubeFaces)
 
 local StoneTile = SolidTile:subclass{name='Stone'}
-StoneTile.texrects = getTexRects'cavestone'
+setTexRects(StoneTile, 'cavestone')
+
+local BedrockTile = SolidTile:subclass{name='Bedrock'}
+setTexRects(BedrockTile, 'bedrock')
 
 local GrassTile = SolidTile:subclass{name='Grass'}
-GrassTile.texrects = getTexRects'grass'
+setTexRects(GrassTile, 'grass')
 
 local DirtTile = SolidTile:subclass{name='Dirt'}
-DirtTile.texrects = getTexRects'dirt'
+setTexRects(DirtTile, 'dirt')
 -- include a 9-patch for grass borders?
 
 local TilledTile = SolidTile:subclass{name='Tilled'}
 -- TODO dirt on the sides, tilled on the top only
-TilledTile.texrects = getTexRects'tilled'
+setTexRects(TilledTile, 'tilled')
 -- include a 9-patch for dirt borders?
 
 -- TODO - call this when setting the tile to a new tile type
@@ -132,7 +139,7 @@ end
 
 local WateredTile = SolidTile:subclass{name='Watered'}
 -- TODO dirt on the sides, tilled on the top only
-WateredTile.texrects = getTexRects'watered'
+setTexRects(WateredTile, 'watered')
 -- include a 9-patch for dirt borders?
 
 
@@ -141,10 +148,10 @@ WateredTile.texrects = getTexRects'watered'
 
 -- TODO custom renderer per wood type?
 local WoodTile = SolidTile:subclass{name='Wood'}
-WoodTile.texrects = getTexRects'wood'
+setTexRects(WoodTile, 'wood')
 
 local WaterTile = Tile:subclass{name='Water'}
-WaterTile.texrects = getTexRects'water_'
+setTexRects(WaterTile, 'water_')
 WaterTile.isUnitCube = true	-- put in Tile?
 WaterTile.lightDiminish = 2
 -- TODO auto flag this if any texrect have a transparent pixel
@@ -170,13 +177,29 @@ table.insert(Tile.types, TilledTile())
 table.insert(Tile.types, WateredTile())
 table.insert(Tile.types, WoodTile())
 table.insert(Tile.types, WaterTile())
+table.insert(Tile.types, BedrockTile())
 
--- 0 exists
+-- Tile.types[0] exists
 for index=0,#Tile.types do
 	local obj = Tile.types[index]
 	obj.index = index
 	Tile.typeValues[obj.name] = index
 	Tile.typeForName[obj.name] = obj
+
+	-- while we're here, also make zelda.item.voxel.* subclasses
+	-- TODO I'm only doing this because right now the item system only handles classes, not objects
+	-- obvious TODO is make it handle objects
+	local vcl = require 'zelda.item.placeabletile':subclass()
+	vcl.tileType = index
+	vcl.tileClass = obj	-- misnomer, these ar stored as objects within Voxel.types[] ... not classes
+	vcl.name = obj.name
+	if obj.seqNames then
+		vcl.sprite = 'maptiles'
+		vcl.seq = obj.seqNames:pickRandom()
+	else
+		print("can't find seqNames for voxel "..obj.name)
+	end
+	package.loaded['zelda.item.voxel.'..obj.name] = vcl
 end
 
 return Tile

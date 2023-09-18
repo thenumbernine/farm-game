@@ -29,7 +29,10 @@ function ItemShovel:useInInventory(player)
 	for dz=1,-1,-1 do
 		local tile = map:getTile(x,y,z+dz)
 		if tile
-		and tile.type == Voxel.typeValues.Grass
+		and (
+			tile.type == Voxel.typeValues.Grass
+			or tile.type == Voxel.typeValues.Dirt
+		)
 		then
 			tile.type = Voxel.typeValues.Empty
 			-- TODO here remove all the hoe and water and seeds and stuff somehow ...
@@ -37,7 +40,7 @@ function ItemShovel:useInInventory(player)
 			map:updateLightAtPos(x, y, z+dz)	
 			-- TODO instead of addItem, have it plop out an item object first ...
 			-- in case the player's inventory is full
-			player:addItem(require 'zelda.item.dirt')
+			player:addItem(require 'zelda.item.voxel.Dirt')
 			return
 		end
 	end

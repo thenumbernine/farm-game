@@ -94,8 +94,7 @@ function Plant:update(...)
 		self.drawSize:set(1,1)
 		self.bbox.min:set(-.3, -.3, -.001)
 		self.bbox.max:set(.3, .3, .001)
-		-- TODO is this getting set?
-		self.disableBillboard = true
+		self.disableBillboard = true		-- TODO is this getting set?
 		self.drawCenter:set(.5, .5, 0)
 	else
 		-- plant-form:

@@ -175,6 +175,9 @@ TODO how to handle multiple maps with objects-in-map ...
 						end
 					end
 					--]]
+					if k == 0 then
+						voxelType = Voxel.typeForName.Bedrock
+					end
 
 					--local index = ijk:dot(step)
 					local voxel = assert(map:getTile(i,j,k))
