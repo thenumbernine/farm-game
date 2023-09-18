@@ -91,7 +91,9 @@ local spriteAtlasMap = Atlas.atlasMap
 local function setTexRects(cl, sprite)
 	local atlasKeys = Atlas.getAllKeys('sprites/maptiles/'..sprite)
 	cl.seqNames = atlasKeys:mapi(function(k)
-		return assert(k:match'^sprites/maptiles/(.*)$', "failed to find prefix sprites/maptiles/")
+		local f = k:match'^sprites/maptiles/(.*)%.[^%.]-$'
+		assert(f, "failed to find prefix sprites/maptiles/")
+		return f
 	end)
 	cl.texrects = atlasKeys:mapi(function(fn)
 		return spriteAtlasMap[fn]
@@ -196,6 +198,7 @@ for index=0,#Tile.types do
 	if obj.seqNames then
 		vcl.sprite = 'maptiles'
 		vcl.seq = obj.seqNames:pickRandom()
+	print(vcl.name, vcl.seq, #obj.seqNames)	
 	else
 		print("can't find seqNames for voxel "..obj.name)
 	end
