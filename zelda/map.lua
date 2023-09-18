@@ -295,10 +295,8 @@ function Chunk:buildDrawArrays()
 											for ti=1,6 do
 												local vi = Voxel.unitQuadTriIndexes[ti]
 												local vtxindex = faces[vi]
-												local v = voxelType.cubeVtxs[vtxindex+1]
 
 												local c = self.colors.vec:emplace_back()
-												--local l = 255 * v[3]
 												local l = lum * (255/ffi.C.MAX_LUM)
 												c:set(l, l, l, 255)
 
@@ -308,67 +306,33 @@ function Chunk:buildDrawArrays()
 													(texrect.pos[2] + voxelType.unitquad[vi][2] * texrect.size[2] + .5) * atlasDy
 												)
 
+												local v = voxelType.cubeVtxs[vtxindex+1]
 												local vtx = self.vtxs.vec:emplace_back()
-												vtx:set(i + v[1], j + v[2], k + v[3])
+												vtx:set(i + v.x, j + v.y, k + v.z)
 											end
 										end
 									end
 								else
-									-- half cube
-									-- TODO generalize all this by having side bigflags for this voxel blocks
-									-- vs side bitflags for what our neighbor blocks
-									-- and then if the neighbors flag's opposite matches this flag then skip this side.
-									assert(voxelType.cubeFaces)
-									-- faceIndex is 1-based but lines up with sides bitflags
-									for faceIndex,faces in ipairs(voxelType.cubeFaces) do
-										
-										local ofsx, ofsy, ofsz = sides.dirs[faceIndex]:unpack()
-										local nx = i + ofsx
-										local ny = j + ofsy
-										local nz = k + ofsz
-										
-										local nbhdVoxelIsUnitCube
-										-- for half-tile we can only block the bottom
-										-- so TODO only do this test when faceIndex is the bottom
+									local voxelShape = Voxel.shapes[voxel.shape]
+									-- use a custom OBJ
+									-- and rotate it accordingly
+									if voxelShape 
+									and voxelShape.model
+									then
+										local model = voxelShape.model
 										local lum = voxel.lum
-										if faceIndex == sides.indexes.zm then
-											local nbhdVoxel = map:getTile(nx, ny, nz)
-											if nbhdVoxel then
-												lum = nbhdVoxel.lum
-												local nbhdVoxelTypeIndex = nbhdVoxel.type
-												-- only if the neighbor is solid ...
-												if nbhdVoxelTypeIndex > 0
-												and nbhdVoxel.shape == 0
-												then
-													local nbhdVoxelType = Voxel.types[nbhdVoxelTypeIndex]
-													if nbhdVoxelType then
-														nbhdVoxelIsUnitCube = nbhdVoxelType.isUnitCube
-													end
-												end
-											end
-										end
-										--]]
-										if not nbhdVoxelIsUnitCube then
-											-- 2 triangles x 3 vtxs per triangle
-											for ti=1,6 do
-												local vi = Voxel.unitQuadTriIndexes[ti]
-												local vtxindex = faces[vi]
-												local v = voxelType.cubeVtxs[vtxindex+1]
+										for i=0,model.triIndexes.size-1 do
+											local vsrc = model.vtxs.v + model.triIndexes.v[i]
+										
+											local c = self.colors.vec:emplace_back()
+											local l = lum * (255/ffi.C.MAX_LUM)
+											c:set(l, l, l, 255)
 
-												local c = self.colors.vec:emplace_back()
-												--local l = 255 * v[3]
-												local l = lum * (255/ffi.C.MAX_LUM)
-												c:set(l, l, l, 255)
+											local tc = self.texcoords.vec:emplace_back()
+											tc:set(vsrc.texcoord.x, vsrc.texcoord.y)
 
-												local tc = self.texcoords.vec:emplace_back()
-												tc:set(
-													(texrect.pos[1] + voxelType.unitquad[vi][1] * texrect.size[1] + .5) * atlasDx,
-													(texrect.pos[2] + voxelType.unitquad[vi][2] * texrect.size[2] + .5) * atlasDy
-												)
-
-												local vtx = self.vtxs.vec:emplace_back()
-												vtx:set(i + v[1], j + v[2], k + v[3] * .5)
-											end
+											local vtx = self.vtxs.vec:emplace_back()
+											vtx:set(i + vsrc.pos.x, j + vsrc.pos.y, k + vsrc.pos.z)
 										end
 									end						
 

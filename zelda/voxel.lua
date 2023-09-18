@@ -27,9 +27,9 @@ end
 local function makeSimplexVtxs(n)
 	local vtxs = table()
 	for i=0,bit.lshift(1,n)-1 do
-		local v = {}
+		local v = vec3f()
 		for j=0,n-1 do
-			v[j+1] = bit.band(bit.rshift(i, j), 1)
+			v.s[j] = bit.band(bit.rshift(i, j), 1)
 		end
 		vtxs:insert(v)
 	end
@@ -59,12 +59,12 @@ function Tile:render(i,j,k, shader)
 	for _,faces in ipairs(cubeFaces) do
 		for f,face in ipairs(faces) do
 			local v = cubeVtxs[face+1]
-			gl.glVertexAttrib1f(shader.attrs.lum.loc, v[3])
+			gl.glVertexAttrib1f(shader.attrs.lum.loc, v.z)
 			gl.glVertexAttrib2f(shader.attrs.texcoord.loc, unitquad[f][1], unitquad[f][2])
 			gl.glVertex3f(
-				i + (1 - v[1]) * self.bbox.min.x + v[1] * self.bbox.max.x, 
-				j + (1 - v[2]) * self.bbox.min.y + v[2] * self.bbox.max.y, 
-				k + (1 - v[3]) * self.bbox.min.z + v[3] * self.bbox.max.z) 
+				i + (1 - v.x) * self.bbox.min.x + v.x * self.bbox.max.x, 
+				j + (1 - v.y) * self.bbox.min.y + v.y * self.bbox.max.y, 
+				k + (1 - v.z) * self.bbox.min.z + v.z * self.bbox.max.z) 
 		end
 	end
 	gl.glEnd()
@@ -79,10 +79,6 @@ Tile.unitQuadTris = unitQuadTris
 Tile.unitQuadTriIndexes = unitQuadTriIndexes
 Tile.unitQuadTriStripIndexes = unitQuadTriStripIndexes 
 Tile.texrects = {}
-
-Tile.types = {}				-- index => obj
-Tile.typeForName = {}		-- name => obj
-Tile.typeValues = {}		-- name => index
 
 
 local Atlas = require 'zelda.atlas'
@@ -171,6 +167,7 @@ what do i want ...
 	- retention soil'd? / quality
 	- what kind of seed is planted here
 --]]
+Tile.types = {}				-- index => obj
 Tile.types[0] = EmptyTile()
 table.insert(Tile.types, StoneTile())
 table.insert(Tile.types, GrassTile())
@@ -182,6 +179,8 @@ table.insert(Tile.types, WaterTile())
 table.insert(Tile.types, BedrockTile())
 
 -- Tile.types[0] exists
+Tile.typeForName = {}		-- name => obj
+Tile.typeValues = {}		-- name => index
 for index=0,#Tile.types do
 	local obj = Tile.types[index]
 	obj.index = index
@@ -202,6 +201,31 @@ for index=0,#Tile.types do
 		print("can't find seqNames for voxel "..obj.name)
 	end
 	package.loaded['zelda.item.voxel.'..obj.name] = vcl
+end
+
+local OBJLoader = require 'mesh.objloader'
+
+local Shape = class()
+
+-- this is inline already and optimized for removing matching adjacent sides
+-- TODO do this with all?
+local CubeShape = Shape:subclass{name='Cube'}
+
+local HalfShape = Shape:subclass{name='Half'}
+HalfShape.model = OBJLoader():load('voxels/half.obj')
+
+Tile.shapes = {}
+Tile.shapes[0] = CubeShape()
+table.insert(Tile.shapes, HalfShape())
+
+-- Tile.shapes[0] exists
+Tile.shapeForName = {}		-- name => obj
+Tile.shapeValues = {}		-- name => index
+for index=0,#Tile.shapes do
+	local obj = Tile.shapes[index]
+	obj.index = index
+	Tile.shapeValues[obj.name] = index
+	Tile.shapeForName[obj.name] = obj
 end
 
 return Tile

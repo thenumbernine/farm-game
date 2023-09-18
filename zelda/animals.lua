@@ -36,7 +36,6 @@ end):mapi(function(spriteName)
 	local framesize = assert(frame.atlasTcSize)
 	animalType.drawSize = framesize / 20
 
-
 	-- TODO ... classname and serialization
 	-- same with zelda.plants
 	-- needs to store the plantType/animalType
