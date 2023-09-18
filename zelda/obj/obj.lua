@@ -597,12 +597,17 @@ function Obj:move(vel, dt, dontPush)
 									self.collideFlags = bit.bor(self.collideFlags, collided)
 									if collided ~= 0 then
 										-- TODO set obj.collideFlags also?
-										if self.touch then
+										if not self.removeFlag
+										and not obj.removeFlag
+										and self.touch
+										then
 											self:touch(obj)
 											if self.removeFlag then return end
 										end
-										if not obj.removeFlag
-										and obj.touch then
+										if not self.removeFlag
+										and not obj.removeFlag
+										and obj.touch
+										then
 											obj:touch(self)
 											if self.removeFlag then return end
 										end

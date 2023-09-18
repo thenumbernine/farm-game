@@ -198,7 +198,6 @@ for index=0,#Tile.types do
 	if obj.seqNames then
 		vcl.sprite = 'maptiles'
 		vcl.seq = obj.seqNames:pickRandom()
-	print(vcl.name, vcl.seq, #obj.seqNames)	
 	else
 		print("can't find seqNames for voxel "..obj.name)
 	end
