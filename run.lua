@@ -35,10 +35,13 @@ require 'gl.setup'(glfn)
 -- how about increase by 20% then round up to nearest 32
 local vector = require 'ffi.cpp.vector'
 function vector:resize(newsize)
-	newsize = assert(tonumber(newsize))
-	local newcap = newsize + bit.rshift(newsize, 1)
-	newcap = bit.lshift(bit.rshift(newcap, 5) + 1, 5)
-	self:reserve(newcap)
+	newsize = tonumber(newsize)
+	if newsize > self.capacity then
+		local newcap = newsize + bit.rshift(newsize, 1)
+		newcap = bit.lshift(bit.rshift(newcap, 5) + 1, 5)
+--print('resizing from', self.capacity, 'to', newcap)
+		self:reserve(newcap)
+	end
 	self.size = newsize
 end
 

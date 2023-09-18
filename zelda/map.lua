@@ -80,7 +80,7 @@ function CPUGPUBuf:init(args)
 	local ctype = assert(args.type)
 	self.vec = vector(ctype)
 	-- using reserve and heuristic of #cubes ~ #vec: brings time taken from 12 s to 0.12 s
-	self.vec:reserve(2*args.volume)
+	self.vec:reserve(args.volume)
 	self.buf = GLArrayBuffer{
 		size = ffi.sizeof(ctype) * self.vec.capacity,
 		data = self.vec.v,
@@ -90,11 +90,81 @@ function CPUGPUBuf:init(args)
 	-- TODO Don't reallocate gl buffers each time.
 	-- OpenGL growing buffers via glCopyBufferSubData:
 	-- https://stackoverflow.com/a/27751186/2714073
+	-- TODO TODO I dn't really need glCopyBufferSubData
+	-- since the cpu side is getting copied around already
+	-- and the gpu update is only at the end
 
+	local cpugpu = self
+	local oldreserve = self.vec.reserve
 	local function newreserve(self, newcap)
 		if newcap <= self.capacity then return end
-		print('asked for resize to', newcap, 'when our cap was', self.capacity)
-		error'here'
+		local oldcap = self.capacity
+		local oldv = self.v
+		oldreserve(self, newcap)	-- copies oldv to v, updates v and capacity
+--print('reserving from', oldcap, 'to', newcap)
+		
+		local sizeof = ffi.sizeof(ctype)
+		local oldcopysize = sizeof * oldcap
+		local newcopysize = sizeof * newcap
+
+local glreport = require 'gl.report'
+glreport'here'	
+		
+		--[[
+		cpugpu.buf:bind(gl.GL_COPY_READ_BUFFER)
+		local newbuf = GLArrayBuffer()
+glreport'here'
+		newbuf:unbind() 
+glreport'here'
+		newbuf:bind(gl.GL_COPY_WRITE_BUFFER)
+glreport'here'
+		gl.glBufferData(gl.GL_COPY_WRITE_BUFFER, newcopysize, nil, gl.GL_DYNAMIC_DRAW)
+		newbuf.size = newcopysize
+		newbuf.data = self.v
+		newbuf.usage = gl.GL_DYNAMIC_DRAW
+glreport'here'	
+		gl.glCopyBufferSubData(
+			gl.GL_COPY_READ_BUFFER,		--GLenum readtarget,
+			gl.GL_COPY_WRITE_BUFFER,	--GLenum writetarget,
+			0,							--GLintptr readoffset,
+			0,							--GLintptr writeoffset,
+			oldcopysize)	--GLsizeiptr size)
+glreport'here'	
+		GLArrayBuffer:unbind(gl.GL_COPY_READ_BUFFER)
+glreport'here'	
+		GLArrayBuffer:unbind(gl.GL_COPY_WRITE_BUFFER)
+glreport'here'	
+		cpugpu.buf = newbuf
+		--]]
+		--[[
+		cpugpu.buf:bind(gl.GL_COPY_READ_BUFFER)
+glreport'here'	
+		local newbuf = GLArrayBuffer{
+			size = newcopysize,
+			data = self.v,
+			usage = gl.GL_DYNAMIC_DRAW,
+		}
+glreport'here'	
+		gl.glCopyBufferSubData(
+			gl.GL_COPY_READ_BUFFER,		--GLenum readtarget,
+			newbuf.target,				--GLenum writetarget,
+			0,							--GLintptr readoffset,
+			0,							--GLintptr writeoffset,
+			oldcopysize)				--GLsizeiptr size)
+glreport'here'	
+		GLArrayBuffer:unbind(gl.GL_COPY_READ_BUFFER)
+glreport'here'	
+		newbuf:unbind()
+glreport'here'	
+		cpugpu.buf = newbuf
+		--]]
+		-- [[
+		cpugpu.buf = GLArrayBuffer{
+			size = newcopysize,
+			data = self.v,
+			usage = gl.GL_DYNAMIC_DRAW,
+		}:unbind()
+		--]]
 	end
 	self.vec.reserve = newreserve
 end
@@ -327,27 +397,50 @@ function Chunk:buildDrawArrays()
 	local texcoordSize = self.texcoords.vec.size * ffi.sizeof(self.texcoords.vec.type)
 	local colorSize = self.colors.vec.size * ffi.sizeof(self.colors.vec.type)	
 
+--[[ right now i'm resizing the gl buffers with the c buffers
+-- I could instead only check here after all is done for a final resize
 	if vtxSize > self.vtxs.buf.size then
 		print'TODO needs vtxs.buf resize'
 		-- create a new buffer
 		-- copy old onto new
 		-- update new buffer in GLAttribute object
 		-- then rebind buffer in GLSceneObject's .vao
-		return
+--		return
 	end
 	if texcoordSize > self.texcoords.buf.size then
 		print'TODO needs texcoords.buf resize'
-		return
+--		return
 	end
 	if colorSize > self.colors.buf.size then
 		print'TODO needs colors.buf resize'
-		return
+--		return
 	end
+--]]
 
-	self.vtxs.buf:bind():updateData(0, vtxSize)
-	self.texcoords.buf:bind():updateData(0, texcoordSize)
-	self.colors.buf:bind():updateData(0, colorSize)
+-- [[
+	self.vtxs.buf
+		:bind()
+		:updateData(0, vtxSize)
+	self.texcoords.buf
+		:bind()
+		:updateData(0, texcoordSize)
+	self.colors.buf
+		:bind()
+		:updateData(0, colorSize)
 		:unbind()
+
+	self.sceneObj.attrs.vertex.buffer = self.vtxs.buf
+	self.sceneObj.attrs.texcoord.buffer = self.texcoords.buf
+	self.sceneObj.attrs.color.buffer = self.colors.buf
+	-- but the vao's attrs is dif, and is indexed by ... integer?
+	-- hmm should I change it to be indexed by name also?
+	-- TODO ... maybe vao attrs name by key? but they don't hav name
+	-- maybe just use .attrs from sceneObj? hmm ....
+	select(2, self.sceneObj.vao.attrs:find(nil, function(a) return a.loc == self.sceneObj.attrs.vertex.loc end)).buffer = self.vtxs.buf
+	select(2, self.sceneObj.vao.attrs:find(nil, function(a) return a.loc == self.sceneObj.attrs.texcoord.loc end)).buffer = self.texcoords.buf
+	select(2, self.sceneObj.vao.attrs:find(nil, function(a) return a.loc == self.sceneObj.attrs.color.loc end)).buffer = self.colors.buf
+	self.sceneObj.vao:setAttrs()
+--]]
 
 	self.sceneObj.geometry.count = self.vtxs.vec.size
 end
