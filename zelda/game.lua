@@ -598,9 +598,11 @@ print"WARNING - player wasn't found in the save file"
 	for _,map in ipairs(self.maps) do
 		map:buildAlts()
 		map:initLight()
+		--[[ called by initLight
 		map:buildDrawArrays(
 			0,0,0,
 			map.size.x-1, map.size.y-1, map.size.z-1)
+		--]]
 	end
 
 	-- [[ for new games, spawn the player, but only after we find out what the surface altitude is

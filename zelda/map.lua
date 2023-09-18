@@ -632,11 +632,18 @@ function Map:initLight()
 	for chunkIndex=0,self.chunkVolume-1 do
 		self.chunks[chunkIndex]:initLight()
 	end
-	for chunkIndex=0,self.chunkVolume-1 do
-		self.chunks[chunkIndex]:initLight()
-	end
-end
 
+	-- now that we've set lum to full or empty ...
+	-- flood-fill inwards into any places 
+	-- ... this will call buildDrawArrays
+	self:updateLight(
+		0,
+		0,
+		0,
+		self.size.x-1,
+		self.size.y-1,
+		self.size.z-1)
+end
 
 -- i,j,k integers
 -- return the ptr to the map tile

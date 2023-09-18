@@ -39,7 +39,7 @@ Item.drawSize = vec2f(.8, .8)
 Item.drawCenter = vec3f(.5, .5, 0)
 Item.rotation = math.pi * .5
 Item.disableBillboard = true
-Item.spritePosOffset = vec3f(0, 0, .5)
+Item.spritePosOffset = vec3f(0, 0, 0)
 
 function Item:init(args)
 	Item.super.init(self, args)
