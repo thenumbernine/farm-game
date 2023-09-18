@@ -678,7 +678,7 @@ function Obj:drawSprite(frame)
 	sprite.atlasTcSize:set(frame.atlasTcSize:unpack())
 	sprite.hflip = frame.hflip and 1 or 0
 	sprite.vflip = self.vflip and 1 or 0
-	sprite.disableBillboard = self.displayBillboard and 1 or 0
+	sprite.disableBillboard = self.disableBillboard and 1 or 0
 	sprite.useSeeThru = self.useSeeThru and 1 or 0
 	sprite.drawCenter:set(self.drawCenter:unpack())
 	sprite.drawSize:set(self.drawSize:unpack())
