@@ -22,6 +22,9 @@ local Voxel = require 'zelda.voxel'
 local sides = require 'zelda.sides'
 
 
+local typeBitSize = 10
+local texBitSize = 5
+local shapeBitSize = 6
 local lumBitSize = 4
 -- TODO how about bitflags for orientation ... https://thenumbernine.github.io/symmath/tests/output/Platonic%20Solids/Cube.html
 -- the automorphism rotation group size is 24 ... so 5 bits for rotations.  including reflection is 48, so 6 bits.
@@ -36,11 +39,11 @@ enum { MAX_LUM = (1 << LUM_BITSIZE)-1 };
 
 typedef uint32_t voxel_basebits_t;
 typedef struct {
-	voxel_basebits_t type : 10;	// map-type, this maps to zelda.voxel 's .types, which now holds {[0]=empty, stone, grass, wood}
-	voxel_basebits_t tex : 5;	// tex = atlas per-tile to use.
+	voxel_basebits_t type : <?=typeBitSize?>;	// map-type, this maps to zelda.voxel 's .types, which now holds {[0]=empty, stone, grass, wood}
+	voxel_basebits_t tex : <?=texBitSize?>;	// tex = atlas per-tile to use.
 
 	// enum: cube, half, slope, halfslope, stairs, fortification, fence, ... ?
-	voxel_basebits_t shape : 6;
+	voxel_basebits_t shape : <?=shapeBitSize?>;
 
 	voxel_basebits_t rotx : 2;	// Euler angles, in 90' increments
 	voxel_basebits_t roty : 2;
@@ -57,9 +60,17 @@ typedef struct {
 	float maxAngle;
 } surface_t;
 ]], {
+	typeBitSize = typeBitSize,
+	texBitSize = texBitSize,
 	lumBitSize = lumBitSize,
+	shapeBitSize = shapeBitSize,
 }))
 assert(ffi.sizeof'voxel_t' == ffi.sizeof'voxel_basebits_t')
+assert(#Voxel.types <= bit.lshift(1,typeBitSize))	-- make sure our # types can fit
+assert(#Voxel.shapes <= bit.lshift(1,shapeBitSize))	-- make sure our # shapes can fit
+for _,tileType in ipairs(Voxel.types) do
+	assert(#tileType.texrects <= bit.lshift(1, texBitSize))	-- make sure all our textures per voxel type can fit
+end
 
 local voxel_t = ffi.metatype('voxel_t', {
 	__index = {
@@ -316,26 +327,32 @@ function Chunk:buildDrawArrays()
 									local voxelShape = Voxel.shapes[voxel.shape]
 									-- use a custom OBJ
 									-- and rotate it accordingly
-									if voxelShape
-									and voxelShape.model
-									then
-										local model = voxelShape.model
-										local lum = voxel.lum
-										for i=0,model.triIndexes.size-1 do
-											local vsrc = model.vtxs.v + model.triIndexes.v[i]
+									if not voxelShape then
+										print("got an unknown voxelShape "..voxel.shape)
+									else
+										if not voxelShape.model then
+											print("voxelShap "..voxel.shape.." has no model")
+										else
+											local model = voxelShape.model
+											local lum = voxel.lum
+											for l=0,model.triIndexes.size-1 do
+												local vsrc = model.vtxs.v + model.triIndexes.v[l]
 
-											local c = self.colors.vec:emplace_back()
-											local l = lum * (255/ffi.C.MAX_LUM)
-											c:set(l, l, l, 255)
+												local c = self.colors.vec:emplace_back()
+												local l = lum * (255/ffi.C.MAX_LUM)
+												c:set(l, l, l, 255)
 
-											local tc = self.texcoords.vec:emplace_back()
-											tc:set(vsrc.texcoord.x, vsrc.texcoord.y)
+												local tc = self.texcoords.vec:emplace_back()
+												tc:set(
+													(texrect.pos[1] + vsrc.texcoord.x * texrect.size[1] + .5) * atlasDx,
+													(texrect.pos[2] + vsrc.texcoord.y * texrect.size[2] + .5) * atlasDy
+												)
 
-											local vtx = self.vtxs.vec:emplace_back()
-											vtx:set(i + vsrc.pos.x, j + vsrc.pos.y, k + vsrc.pos.z)
+												local vtx = self.vtxs.vec:emplace_back()
+												vtx:set(i + vsrc.pos.x, j + vsrc.pos.y, k + vsrc.pos.z)
+											end
 										end
 									end
-
 								end
 							else
 								-- arbitrary geometry

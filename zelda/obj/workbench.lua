@@ -22,6 +22,10 @@ function Workbench:interactInWorld(player)
 					class = require 'zelda.item.voxel.Dirt_Slope45',
 					count = 1,
 				},
+				{
+					class = require 'zelda.item.voxel.Dirt_Half',
+					count = 1,
+				},
 			},
 		},
 		{
@@ -36,6 +40,10 @@ function Workbench:interactInWorld(player)
 					class = require 'zelda.item.voxel.Wood_Slope45',
 					count = 1,
 				},
+				{
+					class = require 'zelda.item.voxel.Wood_Half',
+					count = 1,
+				},
 			},
 		},
 		{
@@ -48,6 +56,10 @@ function Workbench:interactInWorld(player)
 			output = {
 				{
 					class = require 'zelda.item.voxel.Stone_Slope45',
+					count = 1,
+				},
+				{
+					class = require 'zelda.item.voxel.Stone_Half',
 					count = 1,
 				},
 			},
