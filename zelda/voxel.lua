@@ -212,11 +212,15 @@ local Shape = class()
 local CubeShape = Shape:subclass{name='Cube'}
 
 local HalfShape = Shape:subclass{name='Half'}
-HalfShape.model = OBJLoader():load('voxels/half.obj')
+HalfShape.model = OBJLoader():load'voxels/half.obj'
+
+local Slope45Shape = Shape:subclass{name='Slope45'}
+Slope45Shape.model = OBJLoader():load'voxels/slope45.obj'
 
 Tile.shapes = {}
 Tile.shapes[0] = CubeShape()
 table.insert(Tile.shapes, HalfShape())
+table.insert(Tile.shapes, Slope45Shape())
 
 -- Tile.shapes[0] exists
 Tile.shapeForName = {}		-- name => obj

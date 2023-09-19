@@ -17,7 +17,6 @@ local noise2d = require 'simplexnoise.2d'
 local noise3d = require 'simplexnoise.3d'
 local Map = require 'zelda.map'
 local Voxel = require 'zelda.voxel'
-local NPC = require 'zelda.obj.npc'
 
 local function hexcolor(i)
 	return
@@ -260,6 +259,10 @@ TODO how to handle multiple maps with objects-in-map ...
 		pos = houseCenter + vec3f(houseSize.x-1, -(houseSize.y-1), -(houseSize.z-1)) + .5,
 	}
 	map:newObj{
+		class = require 'zelda.obj.workbench',
+		pos = houseCenter + vec3f(houseSize.x-1, -(houseSize.y-1)+1, -(houseSize.z-1)) + .5,
+	}
+	map:newObj{
 		class = require 'zelda.obj.chest',
 		pos = houseCenter + vec3f(houseSize.x-1, houseSize.y-1, -(houseSize.z-1)) + .5,
 	}
@@ -386,6 +389,8 @@ function makeTownMap(game)
 		end
 	end
 
+	local NPC = require 'zelda.obj.npc'
+	
 	-- don't require until app.game is created
 	local plantTypes = require 'zelda.plants'
 	map:newObj{
