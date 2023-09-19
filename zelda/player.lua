@@ -80,12 +80,12 @@ function Player:storePrompt(options)
 	local player = self.obj
 	self.gamePrompt = function()
 		-- option is plantType or animalType
-		local function buy(option, amount)
-			assert(amount > 0)
-			local cost = option.cost * amount
+		local function buy(option, count)
+			assert(count > 0)
+			local cost = option.cost * count
 			if cost <= self.money then
 				local cl = option.seedClass or option.objClass
-				if player:addItem(cl, amount) then
+				if player:addItem(cl, count) then
 					self.money = self.money - cost
 				else
 					self:dialogPrompt("new room in inventory", "sorry")
@@ -118,10 +118,120 @@ function Player:storePrompt(options)
 			ig.igText('$'..option.cost..': '..option.name)
 		end
 
-		if ig.igButton'Ok' then
+		if #options > 0 then
+			if ig.igButton'Ok' then
+				self.gamePrompt = nil
+			end
+		end
+
+		ig.igSetWindowFontScale(1)
+		ig.igEnd()
+	end
+end
+
+-- TODO turn this into 'craftingPrompt'
+-- or maybe even generalize stores into this as well ... after all, they are just money -> goods ...
+function Player:workbenchPrompt()
+	local player = self.obj
+	self.gamePrompt = function()
+		local size = ig.igGetMainViewport().WorkSize
+		ig.igSetNextWindowPos(ig.ImVec2(size.x/2, 0), ig.ImGuiCond_Appearing, ig.ImVec2(.5, 0));
+		ig.igBegin('Crafting', nil, bit.bor(
+			ig.ImGuiWindowFlags_NoMove,
+			--ig.ImGuiWindowFlags_NoResize,
+			ig.ImGuiWindowFlags_NoCollapse
+		))
+		ig.igSetWindowFontScale(.5)
+
+		-- prompt crafting here
+		local craftOptions = {
+			-- TODO craft slopes? or dig slopes with a shovel?
+			{
+				input = {
+					{
+						class = require'zelda.item.voxel.Dirt',
+						count = 1,
+					},
+				},
+				output = {
+					{
+						class = require'zelda.item.voxel.Dirt_Slope45',
+						count = 1,
+					},
+				},
+			},
+			{
+				input = {
+					{
+						class = require'zelda.item.voxel.Wood',
+						count = 1,
+					},
+				},
+				output = {
+					{
+						class = require'zelda.item.voxel.Wood_Slope45',
+						count = 1,
+					},
+				},
+			},		
+			{
+				input = {
+					{
+						class = require'zelda.item.voxel.Stone',
+						count = 1,
+					},
+				},
+				output = {
+					{
+						class = require'zelda.item.voxel.Stone_Slope45',
+						count = 1,
+					},
+				},
+			},
+		}
+
+		if ig.igButton'Ok###Ok2' then
 			self.gamePrompt = nil
 		end
 
+		for i,opt in ipairs(craftOptions) do
+			local can = true
+			for _,inp in ipairs(opt.input) do
+				if not player:hasItem(inp.class, inp.count) then
+					can = false
+					break
+				end
+			end
+			if can then	
+				if ig.igButton('Go!###'..i) then
+					for _,inp in ipairs(opt.input) do
+						-- TODO what if something sneaks in between the gui detect and gui process?
+						-- ... can anything?  I hope not ...
+						assert(player:removeItem(inp.class, inp.count))
+					end
+					for _,outp in ipairs(opt.output) do
+						player:addItem(outp.class, outp.count)
+					end
+				end
+				for _,inp in ipairs(opt.input) do
+					ig.igSameLine()
+					ig.igText(inp.class.name..' x'..inp.count)
+				end
+				ig.igSameLine()
+				ig.igText' => '
+				for _,outp in ipairs(opt.output) do
+					ig.igSameLine()
+					ig.igText(outp.class.name..' x'..outp.count)
+				end
+			end
+		end
+
+		if #craftOptions > 0 then
+			if ig.igButton'Ok' then
+				self.gamePrompt = nil
+			end
+		end
+	
 		ig.igSetWindowFontScale(1)
 		ig.igEnd()
 	end

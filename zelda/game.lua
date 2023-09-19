@@ -260,7 +260,7 @@ TODO how to handle multiple maps with objects-in-map ...
 	}
 	map:newObj{
 		class = require 'zelda.obj.workbench',
-		pos = houseCenter + vec3f(houseSize.x-1, -(houseSize.y-1)+1, -(houseSize.z-1)) + .5,
+		pos = houseCenter + vec3f(-(houseSize.x-1), -(houseSize.y-1), -(houseSize.z-1)) + .5,
 	}
 	map:newObj{
 		class = require 'zelda.obj.chest',

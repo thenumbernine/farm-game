@@ -126,7 +126,9 @@ function PlayingMenu:updateGUI()
 	if appPlayer.gamePrompt then
 		-- TODO put zindex of new windows over the items, and just leave the items up
 		appPlayer.gamePrompt()
-	else
+	end
+	--else .. ?
+	do
 		local chestOpen = appPlayer.chestOpen
 		-- TODO this matches what's in zelda.obj.player ...
 		local maxItems = player.numSelectableItems

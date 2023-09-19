@@ -134,19 +134,17 @@ function TilledTile:onChangeFrom()
 	-- TODO remove all HoedGround objs at this tile location
 end
 
-
 local WateredTile = SolidTile:subclass{name='Watered'}
 -- TODO dirt on the sides, tilled on the top only
 setTexRects(WateredTile, 'watered')
 -- include a 9-patch for dirt borders?
-
-
 
 -- TODO hmm seeded tile ... but custom renderer per-seed type?
 
 -- TODO custom renderer per wood type?
 local WoodTile = SolidTile:subclass{name='Wood'}
 setTexRects(WoodTile, 'wood')
+
 
 local WaterTile = Tile:subclass{name='Water'}
 setTexRects(WaterTile, 'water_')
@@ -200,7 +198,8 @@ for index=0,#Tile.types do
 	else
 		print("can't find seqNames for voxel "..obj.name)
 	end
-	package.loaded['zelda.item.voxel.'..obj.name] = vcl
+	vcl.classname = 'zelda.item.voxel.'..obj.name
+	package.loaded[vcl.classname] = vcl
 end
 
 local OBJLoader = require 'mesh.objloader'
@@ -226,10 +225,24 @@ table.insert(Tile.shapes, Slope45Shape())
 Tile.shapeForName = {}		-- name => obj
 Tile.shapeValues = {}		-- name => index
 for index=0,#Tile.shapes do
-	local obj = Tile.shapes[index]
-	obj.index = index
-	Tile.shapeValues[obj.name] = index
-	Tile.shapeForName[obj.name] = obj
+	local shapeObj = Tile.shapes[index]
+	shapeObj.index = index
+	Tile.shapeValues[shapeObj.name] = index
+	Tile.shapeForName[shapeObj.name] = shapeObj
+
+	if shapeObj.name ~= 'Cube' then
+		for typeIndex=1,#Tile.types do
+			local typeObj = Tile.types[typeIndex]
+			if typeObj.solid then	-- TODO also skip tilled and watered tile types
+				local vcl = require 'zelda.item.placeabletile':subclass()
+				vcl.tileType = typeIndex
+				vcl.tileClass = typeObj	-- TODO 'tileObj' ? not sure ... or maybe don't put instances in the type[] table ...
+				vcl.name = typeObj.name..' '..shapeObj.name
+				vcl.classname = 'zelda.item.voxel.'..typeObj.name..'_'..shapeObj.name
+				package.loaded[vcl.classname] = vcl
+			end
+		end
+	end
 end
 
 return Tile

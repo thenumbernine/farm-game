@@ -405,6 +405,40 @@ function Player:addItem(cl, count)
 	return false
 end
 
+function Player:hasItem(cl, count)
+	assert(cl)
+	count = count or 1
+	for i=1,self.numInvItems do
+		local itemInfo = self.items[i]
+		if itemInfo then
+			if itemInfo.class == cl
+			and itemInfo.count >= count then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+function Player:removeItem(cl, count)
+	assert(cl)
+	count = count or 1
+	for i=1,self.numInvItems do
+		local itemInfo = self.items[i]
+		if itemInfo then
+			if itemInfo.class == cl
+			and itemInfo.count >= count then
+				itemInfo.count = itemInfo.count - count
+				if itemInfo.count == 0 then
+					self.items[i] = nil
+				end
+				return true
+			end
+		end
+	end
+	return false
+end
+
 function Player:removeSelectedItem()
 	local itemInfo = self.items[self.appPlayer.selectedItem]
 	if not itemInfo then return end
