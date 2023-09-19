@@ -37,15 +37,15 @@ enum { MAX_LUM = (1 << LUM_BITSIZE)-1 };
 typedef uint32_t voxel_basebits_t;
 typedef struct {
 	voxel_basebits_t type : 10;	// map-type, this maps to zelda.voxel 's .types, which now holds {[0]=empty, stone, grass, wood}
-	voxel_basebits_t tex : 5;	// tex = atlas per-tile to use. 
-	
+	voxel_basebits_t tex : 5;	// tex = atlas per-tile to use.
+
 	// enum: cube, half, slope, halfslope, stairs, fortification, fence, ... ?
 	voxel_basebits_t shape : 6;
-	
+
 	voxel_basebits_t rotx : 2;	// Euler angles, in 90' increments
 	voxel_basebits_t roty : 2;
 	voxel_basebits_t rotz : 2;
-	
+
 	voxel_basebits_t lumclean : 1;
 	voxel_basebits_t lum : <?=lumBitSize?>;	//how much light this tile is getting
 } voxel_t;
@@ -86,7 +86,7 @@ function CPUGPUBuf:init(args)
 		data = self.vec.v,
 		usage = gl.GL_DYNAMIC_DRAW,
 	}:unbind()
-	
+
 	-- TODO Don't reallocate gl buffers each time.
 	-- OpenGL growing buffers via glCopyBufferSubData:
 	-- https://stackoverflow.com/a/27751186/2714073
@@ -102,19 +102,19 @@ function CPUGPUBuf:init(args)
 		local oldv = self.v
 		oldreserve(self, newcap)	-- copies oldv to v, updates v and capacity
 --print('reserving from', oldcap, 'to', newcap)
-		
+
 		local sizeof = ffi.sizeof(ctype)
 		local oldcopysize = sizeof * oldcap
 		local newcopysize = sizeof * newcap
 
 local glreport = require 'gl.report'
-glreport'here'	
-		
+glreport'here'
+
 		--[[
 		cpugpu.buf:bind(gl.GL_COPY_READ_BUFFER)
 		local newbuf = GLArrayBuffer()
 glreport'here'
-		newbuf:unbind() 
+		newbuf:unbind()
 glreport'here'
 		newbuf:bind(gl.GL_COPY_WRITE_BUFFER)
 glreport'here'
@@ -122,40 +122,40 @@ glreport'here'
 		newbuf.size = newcopysize
 		newbuf.data = self.v
 		newbuf.usage = gl.GL_DYNAMIC_DRAW
-glreport'here'	
+glreport'here'
 		gl.glCopyBufferSubData(
 			gl.GL_COPY_READ_BUFFER,		--GLenum readtarget,
 			gl.GL_COPY_WRITE_BUFFER,	--GLenum writetarget,
 			0,							--GLintptr readoffset,
 			0,							--GLintptr writeoffset,
 			oldcopysize)	--GLsizeiptr size)
-glreport'here'	
+glreport'here'
 		GLArrayBuffer:unbind(gl.GL_COPY_READ_BUFFER)
-glreport'here'	
+glreport'here'
 		GLArrayBuffer:unbind(gl.GL_COPY_WRITE_BUFFER)
-glreport'here'	
+glreport'here'
 		cpugpu.buf = newbuf
 		--]]
 		--[[
 		cpugpu.buf:bind(gl.GL_COPY_READ_BUFFER)
-glreport'here'	
+glreport'here'
 		local newbuf = GLArrayBuffer{
 			size = newcopysize,
 			data = self.v,
 			usage = gl.GL_DYNAMIC_DRAW,
 		}
-glreport'here'	
+glreport'here'
 		gl.glCopyBufferSubData(
 			gl.GL_COPY_READ_BUFFER,		--GLenum readtarget,
 			newbuf.target,				--GLenum writetarget,
 			0,							--GLintptr readoffset,
 			0,							--GLintptr writeoffset,
 			oldcopysize)				--GLsizeiptr size)
-glreport'here'	
+glreport'here'
 		GLArrayBuffer:unbind(gl.GL_COPY_READ_BUFFER)
-glreport'here'	
+glreport'here'
 		newbuf:unbind()
-glreport'here'	
+glreport'here'
 		cpugpu.buf = newbuf
 		--]]
 		-- [[
@@ -183,7 +183,7 @@ function Chunk:init(args)
 	local app = map.game.app
 	self.map = map
 	self.pos = vec3i(assert(args.pos))
-	
+
 	self.v = ffi.new('voxel_t[?]', self.volume)
 	ffi.fill(self.v, 0, ffi.sizeof'voxel_t' * self.volume)	-- 0 = empty
 
@@ -225,9 +225,9 @@ function Chunk:init(args)
 	}
 end
 
--- TODO 
--- 1) divide map into chunks 
--- 2) grow-gl-buffers functionality 
+-- TODO
+-- 1) divide map into chunks
+-- 2) grow-gl-buffers functionality
 function Chunk:buildDrawArrays()
 	local map = self.map
 	local app = map.game.app
@@ -316,14 +316,14 @@ function Chunk:buildDrawArrays()
 									local voxelShape = Voxel.shapes[voxel.shape]
 									-- use a custom OBJ
 									-- and rotate it accordingly
-									if voxelShape 
+									if voxelShape
 									and voxelShape.model
 									then
 										local model = voxelShape.model
 										local lum = voxel.lum
 										for i=0,model.triIndexes.size-1 do
 											local vsrc = model.vtxs.v + model.triIndexes.v[i]
-										
+
 											local c = self.colors.vec:emplace_back()
 											local l = lum * (255/ffi.C.MAX_LUM)
 											c:set(l, l, l, 255)
@@ -334,7 +334,7 @@ function Chunk:buildDrawArrays()
 											local vtx = self.vtxs.vec:emplace_back()
 											vtx:set(i + vsrc.pos.x, j + vsrc.pos.y, k + vsrc.pos.z)
 										end
-									end						
+									end
 
 								end
 							else
@@ -351,7 +351,7 @@ function Chunk:buildDrawArrays()
 
 	-- 184816 vertexes total ...
 	-- ... from 196608 cubes
---[[	
+--[[
 	local volume = self.volume
 	print('volume', volume)
 	print('vtxs', self.vtxs.vec.size)
@@ -359,7 +359,7 @@ function Chunk:buildDrawArrays()
 
 	local vtxSize = self.vtxs.vec.size * ffi.sizeof(self.vtxs.vec.type)
 	local texcoordSize = self.texcoords.vec.size * ffi.sizeof(self.texcoords.vec.type)
-	local colorSize = self.colors.vec.size * ffi.sizeof(self.colors.vec.type)	
+	local colorSize = self.colors.vec.size * ffi.sizeof(self.colors.vec.type)
 
 --[[ right now i'm resizing the gl buffers with the c buffers
 -- I could instead only check here after all is done for a final resize
@@ -428,7 +428,7 @@ function Chunk:buildAlts()
 	for j=0,self.size.y-1 do
 		for i=0,self.size.x-1 do
 			local surface = self.surface + (i + self.size.x * j)
-			
+
 			local k=self.size.z-1
 			while k > 0 do
 				local tileInfo = self.v + (i + self.size.x * (j + self.size.y * k))
@@ -441,14 +441,14 @@ function Chunk:buildAlts()
 				end
 				k = k - 1
 			end
-		
+
 			local k=self.size.z-1
 			while k > 0 do
 				local tileInfo = self.v + (i + self.size.x * (j + self.size.y * k))
 				if tileInfo.type > 0 then
 					local tileClass = Voxel.types[tileInfo.type]
 					if not tileClass.transparent then
-						surface.lumAlt = k + baseAlt 
+						surface.lumAlt = k + baseAlt
 						break
 					end
 				end
@@ -536,7 +536,7 @@ function Chunk:initLight()
 		for j=0,self.size.y-1 do
 			for i=0,self.size.x-1 do
 				if k == self.size.z-1
-				or k >= surf[0].lumAlt - baseAlt 
+				or k >= surf[0].lumAlt - baseAlt
 				then
 					voxel.lum = ffi.C.MAX_LUM
 					voxel.lumclean = 1
@@ -629,7 +629,7 @@ function Map:buildDrawArrays(
 	maxx = bit.rshift(maxx, Chunk.bitsize.x)
 	maxy = bit.rshift(maxy, Chunk.bitsize.y)
 	maxz = bit.rshift(maxz, Chunk.bitsize.z)
-	
+
 	for cz=minz,maxz do
 		for cy=miny,maxy do
 			for cx=minx,maxx do
@@ -683,7 +683,7 @@ function Map:initLight()
 	end
 
 	-- now that we've set lum to full or empty ...
-	-- flood-fill inwards into any places 
+	-- flood-fill inwards into any places
 	-- ... this will call buildDrawArrays
 	self:updateLight(
 		0,
@@ -786,10 +786,10 @@ end
 function Map:newObj(args)
 --print('new', args.class.name, 'at', args.pos)
 	local cl = assert(args.class)
-	
+
 	args.game = self.game
 	args.map = self
-	
+
 	if not args.uid then
 		args.uid = self.game.nextObjUID
 		self.game.nextObjUID = self.game.nextObjUID + 1
@@ -810,7 +810,7 @@ function Map:updateLightAtPos(x,y,z)
 		z + ffi.C.MAX_LUM)
 end
 
--- assumes 
+-- assumes
 -- 	size is vec3i and all positive
 -- 	index is integer
 --	index is within [0, size.x*size.y*size.z)
@@ -857,7 +857,7 @@ function Map:updateLight_floodFill(
 	lightmaxx = math.min(self.size.x-1, lightmaxx)
 	lightmaxy = math.min(self.size.y-1, lightmaxy)
 	lightmaxz = math.min(self.size.z-1, lightmaxz)
-	
+
 	-- [[
 	local lightsizex = lightmaxx - lightminx + 1
 	local lightsizey = lightmaxy - lightminy + 1
@@ -891,7 +891,7 @@ function Map:updateLight_floodFill(
 						lightPrevPoss:emplace_back()[0]:set(x,y,z)
 						lightFlagPrevVec.v[lightindex] = 1
 						lightFlagAllVec.v[lightindex] = 1
---print('seed', x,y,z)					
+--print('seed', x,y,z)
 					else
 						--assert(voxel)
 						-- propagate only source lights within relight region
@@ -908,7 +908,7 @@ function Map:updateLight_floodFill(
 						end
 						-- clear all lum's within the relight area
 						local lum = math.clamp(lum, 0, ffi.C.MAX_LUM)
-						-- but only save for propagation those with lum >0 
+						-- but only save for propagation those with lum >0
 						if lum > 0 then
 							voxel.lum = lum
 							lightPrevPoss:emplace_back()[0]:set(x,y,z)
@@ -922,7 +922,7 @@ function Map:updateLight_floodFill(
 		end
 	end
 	-- flood-fill inwards ... could just use a poisson solver on the GPU, if I want to store the light sources in a separate buffer ...
-	local propagatedany 
+	local propagatedany
 	repeat
 		propagatedany = false
 		lightNextPoss:resize(0)
@@ -933,7 +933,7 @@ function Map:updateLight_floodFill(
 			local i = x + self.size.x * (y + self.size.y * z)
 			local lightindex = (x - lightminx) + lightsizex * ((y - lightminy) + lightsizey * (z - lightminz))
 			--local lum = lightFlagPrevVec.v[lightindex]	-- ... but if we're using a dense array ... zero light wont' set the flag ...
-			local lum = self:getTile(x,y,z).lum	
+			local lum = self:getTile(x,y,z).lum
 			if lum > 0 then
 				local x,y,z = unravel(i, self.size)
 				for sideIndex,dir in ipairs(sides.dirs) do
@@ -961,7 +961,7 @@ function Map:updateLight_floodFill(
 									-- If it diminishes by more than one then we need to propagate in space inverse-proportionally or else we could flood-fill into a cell, then put it on the 'already done' pile, and then not update it later correctly.
 									nbhdVoxel.lum = math.max(nbhdVoxel.lum, lum - nbhdVoxelType.lightDiminish)
 								end
---print('propagate', nx,ny,nz)								
+--print('propagate', nx,ny,nz)
 								lightNextPoss:emplace_back()[0]:set(nx,ny,nz)
 								lightFlagNextVec.v[nbhdlightindex] = 1
 							end
@@ -1021,7 +1021,7 @@ function Map:updateLight_brute(
 					local voxel = self:getTile(x,y,z)
 					if z >= surf[0].lumAlt then
 						voxel.lum = ffi.C.MAX_LUM
-						-- TOOD store this flag separtely / only use it for smaller regions when light settling 
+						-- TOOD store this flag separtely / only use it for smaller regions when light settling
 						voxel.lumclean = 1
 					else
 						local voxelIndex = x + self.size.x * (y + self.size.y * z)
@@ -1106,7 +1106,7 @@ function Map:getSaveData()
 				end
 			end
 			dstobjinfo.class = obj.class	-- 'require '..tolua(assert(obj.classname))	-- copy from class to obj
-			dstobjinfo.game = nil		
+			dstobjinfo.game = nil
 			dstobjinfo.map = nil
 			dstobjinfo.tiles = nil
 			dstobjinfo.voxel = nil
@@ -1121,7 +1121,7 @@ function Map:getSaveData()
 			-- opposite here: these are in classes but need to be copied onto the obj ...
 			dstobjinfo.plantType = obj.plantType
 			dstobjinfo.animalType = obj.animalType
-			
+
 			dstobjinfo:setmetatable(nil)
 			return dstobjinfo
 		end),
@@ -1141,7 +1141,7 @@ function Map:getSaveData()
 				for i,appPlayer in ipairs(app.players) do
 					if rawequal(x, appPlayer) then
 						return 'app.players['..i..']'
-					end			
+					end
 				end
 
 				for _,plantType in ipairs(plantTypes) do
@@ -1174,7 +1174,7 @@ function Map:getSaveData()
 							:gsub('\n', '')
 						..', '
 						..tolua(x.ctype)..')'
-				end			
+				end
 				return tolua.defaultSerializeForType.table(state, x, ...)
 			end,
 			cdata = function(state, x, ...)

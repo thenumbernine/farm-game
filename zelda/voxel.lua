@@ -62,9 +62,9 @@ function Tile:render(i,j,k, shader)
 			gl.glVertexAttrib1f(shader.attrs.lum.loc, v.z)
 			gl.glVertexAttrib2f(shader.attrs.texcoord.loc, unitquad[f][1], unitquad[f][2])
 			gl.glVertex3f(
-				i + (1 - v.x) * self.bbox.min.x + v.x * self.bbox.max.x, 
-				j + (1 - v.y) * self.bbox.min.y + v.y * self.bbox.max.y, 
-				k + (1 - v.z) * self.bbox.min.z + v.z * self.bbox.max.z) 
+				i + (1 - v.x) * self.bbox.min.x + v.x * self.bbox.max.x,
+				j + (1 - v.y) * self.bbox.min.y + v.y * self.bbox.max.y,
+				k + (1 - v.z) * self.bbox.min.z + v.z * self.bbox.max.z)
 		end
 	end
 	gl.glEnd()
@@ -72,12 +72,12 @@ end
 --]]
 
 -- assign here before making subclasses
-Tile.cubeVtxs = cubeVtxs 
-Tile.cubeFaces = cubeFaces 
+Tile.cubeVtxs = cubeVtxs
+Tile.cubeFaces = cubeFaces
 Tile.unitquad = unitquad
 Tile.unitQuadTris = unitQuadTris
 Tile.unitQuadTriIndexes = unitQuadTriIndexes
-Tile.unitQuadTriStripIndexes = unitQuadTriStripIndexes 
+Tile.unitQuadTriStripIndexes = unitQuadTriStripIndexes
 Tile.texrects = {}
 
 
@@ -152,13 +152,13 @@ WaterTile.isUnitCube = true	-- put in Tile?
 WaterTile.lightDiminish = 2
 -- TODO auto flag this if any texrect have a transparent pixel
 WaterTile.transparent = true
--- TODO contents = ... vacuum, air, poison gas, water, acid, lava, oil, ... plasma ... einstein-bose condensate ... quantum spin-liquid ... quark matter ... hole in the fabric of spacetime ... 
+-- TODO contents = ... vacuum, air, poison gas, water, acid, lava, oil, ... plasma ... einstein-bose condensate ... quantum spin-liquid ... quark matter ... hole in the fabric of spacetime ...
 WaterTile.contents = 'water'
 
 --[[
 what do i want ...
 - empty
-- harvestable ground with flags: 
+- harvestable ground with flags:
 	- hoed?
 	- watered?
 	- fertilized? / quality
@@ -190,6 +190,7 @@ for index=0,#Tile.types do
 	-- obvious TODO is make it handle objects
 	local vcl = require 'zelda.item.placeabletile':subclass()
 	vcl.tileType = index
+	vcl.tileShape = 0	-- default class is cube shape
 	vcl.tileClass = obj	-- misnomer, these ar stored as objects within Voxel.types[] ... not classes
 	vcl.name = obj.name
 	if obj.seqNames then
@@ -212,9 +213,11 @@ local CubeShape = Shape:subclass{name='Cube'}
 
 local HalfShape = Shape:subclass{name='Half'}
 HalfShape.model = OBJLoader():load'voxels/half.obj'
+HalfShape.model.filename = 'voxels/half.obj'
 
 local Slope45Shape = Shape:subclass{name='Slope45'}
 Slope45Shape.model = OBJLoader():load'voxels/slope45.obj'
+Slope45Shape.model.filename = 'voxels/slope45.obj'
 
 Tile.shapes = {}
 Tile.shapes[0] = CubeShape()
@@ -224,10 +227,10 @@ table.insert(Tile.shapes, Slope45Shape())
 -- Tile.shapes[0] exists
 Tile.shapeForName = {}		-- name => obj
 Tile.shapeValues = {}		-- name => index
-for index=0,#Tile.shapes do
-	local shapeObj = Tile.shapes[index]
-	shapeObj.index = index
-	Tile.shapeValues[shapeObj.name] = index
+for shapeIndex=0,#Tile.shapes do
+	local shapeObj = Tile.shapes[shapeIndex]
+	shapeObj.index = shapeIndex
+	Tile.shapeValues[shapeObj.name] = shapeIndex
 	Tile.shapeForName[shapeObj.name] = shapeObj
 
 	if shapeObj.name ~= 'Cube' then
@@ -236,6 +239,7 @@ for index=0,#Tile.shapes do
 			if typeObj.solid then	-- TODO also skip tilled and watered tile types
 				local vcl = require 'zelda.item.placeabletile':subclass()
 				vcl.tileType = typeIndex
+				vcl.tileShape = shapeIndex
 				vcl.tileClass = typeObj	-- TODO 'tileObj' ? not sure ... or maybe don't put instances in the type[] table ...
 				vcl.name = typeObj.name..' '..shapeObj.name
 				vcl.classname = 'zelda.item.voxel.'..typeObj.name..'_'..shapeObj.name

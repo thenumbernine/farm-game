@@ -43,7 +43,9 @@ function PlaceableVoxel:useInInventory(player)
 		and tile.type == Voxel.typeValues.Empty
 		then
 			player:removeSelectedItem()
+print('setting tile to', self.tileType, self.tileShape)
 			tile.type = self.tileType
+			tile.shape = self.tileShape
 			tile.tex = math.random(#self.tileClass.texrects)-1
 			-- if this is blocking a light sources ...
 			-- ... that means I need to update all blocks within MAX_LUM from this point.

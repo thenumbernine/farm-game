@@ -131,7 +131,7 @@ end
 
 -- TODO turn this into 'craftingPrompt'
 -- or maybe even generalize stores into this as well ... after all, they are just money -> goods ...
-function Player:workbenchPrompt()
+function Player:craftPrompt(craftOptions)
 	local player = self.obj
 	self.gamePrompt = function()
 		local size = ig.igGetMainViewport().WorkSize
@@ -142,53 +142,6 @@ function Player:workbenchPrompt()
 			ig.ImGuiWindowFlags_NoCollapse
 		))
 		ig.igSetWindowFontScale(.5)
-
-		-- prompt crafting here
-		local craftOptions = {
-			-- TODO craft slopes? or dig slopes with a shovel?
-			{
-				input = {
-					{
-						class = require'zelda.item.voxel.Dirt',
-						count = 1,
-					},
-				},
-				output = {
-					{
-						class = require'zelda.item.voxel.Dirt_Slope45',
-						count = 1,
-					},
-				},
-			},
-			{
-				input = {
-					{
-						class = require'zelda.item.voxel.Wood',
-						count = 1,
-					},
-				},
-				output = {
-					{
-						class = require'zelda.item.voxel.Wood_Slope45',
-						count = 1,
-					},
-				},
-			},		
-			{
-				input = {
-					{
-						class = require'zelda.item.voxel.Stone',
-						count = 1,
-					},
-				},
-				output = {
-					{
-						class = require'zelda.item.voxel.Stone_Slope45',
-						count = 1,
-					},
-				},
-			},
-		}
 
 		if ig.igButton'Ok###Ok2' then
 			self.gamePrompt = nil
@@ -202,7 +155,7 @@ function Player:workbenchPrompt()
 					break
 				end
 			end
-			if can then	
+			if can then
 				if ig.igButton('Go!###'..i) then
 					for _,inp in ipairs(opt.input) do
 						-- TODO what if something sneaks in between the gui detect and gui process?
@@ -231,7 +184,7 @@ function Player:workbenchPrompt()
 				self.gamePrompt = nil
 			end
 		end
-	
+
 		ig.igSetWindowFontScale(1)
 		ig.igEnd()
 	end

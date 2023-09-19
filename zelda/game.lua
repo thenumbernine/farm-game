@@ -389,33 +389,21 @@ function makeTownMap(game)
 		end
 	end
 
-	local NPC = require 'zelda.obj.npc'
+	local Clerk = require 'zelda.obj.clerk'
 	
 	-- don't require until app.game is created
 	local plantTypes = require 'zelda.plants'
 	map:newObj{
-		class = NPC,
+		class = Clerk,
 		pos = buildingPoss[1],
-		interactInWorld = function(interact, player)
-			local appPlayer = player.appPlayer
-			appPlayer:storePrompt(
-				table()
-					:append(plantTypes)
-			)
-		end,
+		storeOptions = table():append(plantTypes),
 	}
 
 	local animalTypes = require 'zelda.animals'
 	map:newObj{
-		class = NPC,
+		class = Clerk,
 		pos = buildingPoss[2],
-		interactInWorld = function(interact, player)
-			local appPlayer = player.appPlayer
-			appPlayer:storePrompt(
-				table()
-					:append(animalTypes)
-			)
-		end,
+		storeOptions = table():append(animalTypes),
 	}
 
 	addPlants(map, buildingPoss:mapi(function(pos)
