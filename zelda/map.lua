@@ -45,7 +45,7 @@ typedef struct {
 	// enum: cube, half, slope, halfslope, stairs, fortification, fence, ... ?
 	voxel_basebits_t shape : <?=shapeBitSize?>;
 
-	voxel_basebits_t rotx : 2;	// Euler angles, in 90' increments
+	//voxel_basebits_t rotx : 2;	// Euler angles, in 90' increments
 	voxel_basebits_t roty : 2;
 	voxel_basebits_t rotz : 2;
 
@@ -236,9 +236,52 @@ function Chunk:init(args)
 	}
 end
 
--- TODO
--- 1) divide map into chunks
--- 2) grow-gl-buffers functionality
+-- Lookup functions for rotations
+-- Have to see if it's faster to do this or idk what else ... 
+-- ... inline if-conditions for all cases?
+-- ... for-loops to repeatedly apply each rot
+--[[ symmath script 
+T = Matrix(
+	{1,0,0,frac(1,2)},
+	{0,1,0,frac(1,2)},
+	{0,0,1,frac(1,2)},
+	{0,0,0,1})
+v = Matrix{x,y,z,1}:T()
+Rs = table{
+	Matrix({1,0,0,0},{0,0,-1,0},{0,1,0,0},{0,0,0,1}),
+	Matrix({0,0,1,0},{0,1,0,0},{-1,0,0,0},{0,0,0,1}),
+	Matrix({0,-1,0,0},{1,0,0,0},{0,0,1,0},{0,0,0,1}),
+}
+RTs = Rs:mapi(function(R) return (T * R * T:inv())() end)
+for i,RT in ipairs(RTs) do
+	print('rot axis '..i)
+	print(Array{
+		(RT * v)(),
+		(RT * RT * v)(),
+		(RT * RT * RT * v)()
+	})
+end
+--]]
+local function identity(...) return ... end
+local rotx = {
+	[0] = identity,
+	function(x,y,z) return x, 1 - z,     y, 1 end,
+	function(x,y,z) return x, 1 - y, 1 - z, 1 end,
+	function(x,y,z) return x,     z, 1 - y, 1 end,
+}
+local roty = {
+	[0] = identity,
+	function(x,y,z) return     z, y, 1 - x, 1 end,
+	function(x,y,z) return 1 - x, y, 1 - z, 1 end,
+	function(x,y,z) return 1 - z, y,     x, 1 end,
+}
+local rotz = {
+	[0] = identity,
+	function(x,y,z) return 1 - y,     x, z, 1 end,
+	function(x,y,z) return 1 - x, 1 - y, z, 1 end,
+	function(x,y,z) return     y, 1 - x, z, 1 end,
+}
+
 function Chunk:buildDrawArrays()
 	local map = self.map
 	local app = map.game.app
@@ -263,6 +306,12 @@ function Chunk:buildDrawArrays()
 						if not texrect then
 							print("voxelType "..voxelTypeIndex.." has "..#voxelType.texrects.." texrects but index was "..voxel.tex)
 						else
+							-- roll = rotx (apply first ... or don't)
+							-- pitch = roty (apply second)
+							-- yaw = rotz (apply third)
+							local rotyfunc = roty[voxel.roty]
+							local rotzfunc = rotz[voxel.rotz]
+							
 							if voxelType.isUnitCube then
 								if voxel.shape == 0 then
 									-- full cube
@@ -319,7 +368,8 @@ function Chunk:buildDrawArrays()
 
 												local v = voxelType.cubeVtxs[vtxindex+1]
 												local vtx = self.vtxs.vec:emplace_back()
-												vtx:set(i + v.x, j + v.y, k + v.z)
+												local x,y,z = rotzfunc(rotyfunc(v:unpack()))
+												vtx:set(i + x, j + y, k + z)
 											end
 										end
 									end
@@ -349,7 +399,8 @@ function Chunk:buildDrawArrays()
 												)
 
 												local vtx = self.vtxs.vec:emplace_back()
-												vtx:set(i + vsrc.pos.x, j + vsrc.pos.y, k + vsrc.pos.z)
+												local x, y, z = rotzfunc(rotyfunc(vsrc.pos:unpack()))
+												vtx:set(i + x, j + y, k + z)
 											end
 										end
 									end

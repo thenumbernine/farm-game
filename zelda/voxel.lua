@@ -212,12 +212,10 @@ local Shape = class()
 local CubeShape = Shape:subclass{name='Cube'}
 
 local HalfShape = Shape:subclass{name='Half'}
-HalfShape.model = OBJLoader():load'voxels/half.obj'
-HalfShape.model.filename = 'voxels/half.obj'
+HalfShape.modelFilename = 'voxels/half.obj'
 
 local Slope45Shape = Shape:subclass{name='Slope45'}
-Slope45Shape.model = OBJLoader():load'voxels/slope45.obj'
-Slope45Shape.model.filename = 'voxels/slope45.obj'
+Slope45Shape.modelFilename = 'voxels/slope45.obj'
 
 Tile.shapes = {}
 Tile.shapes[0] = CubeShape()
@@ -246,6 +244,17 @@ for shapeIndex=0,#Tile.shapes do
 				package.loaded[vcl.classname] = vcl
 			end
 		end
+	end
+
+	-- index 0 doesn't have one ... but maybe could ...
+	if shapeObj.modelFilename then
+		shapeObj.model = OBJLoader():load(shapeObj.modelFilename)
+	
+		-- TODO here
+		-- cycle through all faces
+		-- if they are planar in the x/y/z +/- planes then flag them accordingly
+		-- also somehow detect if the full [0,1]^2 surface of that side is filled
+		-- then use that with occlusion
 	end
 end
 

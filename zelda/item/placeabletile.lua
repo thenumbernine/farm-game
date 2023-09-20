@@ -7,6 +7,10 @@ local Item = require 'zelda.item.item'
 local PlaceableVoxel = Item:subclass()
 PlaceableVoxel.classname = 'zelda.item.placeabletile'
 
+local function angleSnapTo90(angle)
+	return (angle / (.5 * math.pi)) % 4
+end
+
 --[[ subclass needs to provide all this
 -- or TODO allow objs to go in inventory, not just classes
 function PlaceableVoxel:init(args)
@@ -46,6 +50,11 @@ function PlaceableVoxel:useInInventory(player)
 print('setting tile to', self.tileType, self.tileShape)
 			tile.type = self.tileType
 			tile.shape = self.tileShape
+
+			--tile.rotx = 0
+			tile.roty = 0
+			tile.rotz = angleSnapTo90(player.angle)
+			
 			tile.tex = math.random(#self.tileClass.texrects)-1
 			-- if this is blocking a light sources ...
 			-- ... that means I need to update all blocks within MAX_LUM from this point.
