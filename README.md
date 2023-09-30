@@ -29,6 +29,10 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 
 ## TODO:
 
+- voxel system
+	- have the .mtl file point to files in the sprites folder / same keys as texpack
+	- then upon loading .objs, merge all material groups and remap texcoords to the texture atlas.
+	- then do some kind of system for swapping each texture of the voxel ... hmmm ... how to do that ... some way to map from src tex index to dst tex index.
 - overlays -> voxels
 	- make a dirt voxel type
 	- make a 'tilled ground' voxel type
@@ -97,9 +101,7 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 - digging:
 	- if you dig ground, (or remove stone or wood or any tile), it should remove sprites on top of the ground (hoed, watered, seeded)
 	- or if you try to dig ground that has a bush/tree on it, it should fail to dig.
-	- half-step voxels for grass and stone, and maybe some slope tiles, and maybe rotate them in any of the 4 directions, so I don't have to jump everywhere (stupid Minecraft, why did you make that a standard?)
-	- support rotating of half-step voxels
-	- rotating/placing of non-cuboid voxels?  do i have any of these yet?  un-animated things, like beds etc?
+	- if you dig, it should first replace with half-step voxel, or of slope? 1:1 or 1:2 slope?
 - biomes
 	- make plants randomly seed neighboring ground... only if they naturally grow in this biome ofc.
 	- also overcrowding of plants

@@ -11,7 +11,7 @@ Workbench.sprite = 'workbench'
 function Workbench:interactInWorld(player)
 	local options = table()
 	for _,tilename in ipairs{'Dirt', 'Wood', 'Stone'} do
-		for _,shapename in ipairs{'Slope45', 'Half'} do
+		for _,shapename in ipairs{'Half', 'Slope_1_1', 'Slope_1_2'} do
 			options:insert{
 				input = {
 					{
