@@ -214,20 +214,40 @@ local CubeShape = Shape:subclass{name='Cube'}
 local HalfShape = Shape:subclass{name='Half'}
 HalfShape.modelFilename = 'voxels/half.obj'
 
+-- 1:1 slope
 local Slope_1_1Shape = Shape:subclass{name='Slope_1_1'}
 Slope_1_1Shape.modelFilename = 'voxels/slope_1_1.obj'
 
+-- 1:2 slope
 local Slope_1_2Shape = Shape:subclass{name='Slope_1_2'}
 Slope_1_2Shape.modelFilename = 'voxels/slope_1_2.obj'
 
--- TOOD 1-point and 3-point slopes at 1:1 and 1:2
--- but for 3-point slopes, this means non-convex collision ...
+-- 1:1 slope with 1 corner up (at the 1,1 position)
+local Slope_1_1_1upShape = Shape:subclass{name='Slope_1_1_1up'}
+Slope_1_1_1upShape.modelFilename = 'voxels/slope_1_1_1up.obj'
+
+-- 1:2 slope with 1 corner up (at the 1,1 position)
+local Slope_1_2_1upShape = Shape:subclass{name='Slope_1_2_1up'}
+Slope_1_2_1upShape.modelFilename = 'voxels/slope_1_2_1up.obj'
+
+-- 1:1 slope with 3 corners up (the corner down is at the 0,0 position)
+local Slope_1_1_3upShape = Shape:subclass{name='Slope_1_1_3up'}
+Slope_1_1_3upShape.modelFilename = 'voxels/slope_1_1_3up.obj'
+
+-- 1:2 slope with 3 corners up (the corner down is at the 0,0 position)
+local Slope_1_2_3upShape = Shape:subclass{name='Slope_1_2_3up'}
+Slope_1_2_3upShape.modelFilename = 'voxels/slope_1_2_3up.obj'
+
 
 Tile.shapes = {}
 Tile.shapes[0] = CubeShape()
 table.insert(Tile.shapes, HalfShape())
 table.insert(Tile.shapes, Slope_1_1Shape())
 table.insert(Tile.shapes, Slope_1_2Shape())
+table.insert(Tile.shapes, Slope_1_1_1upShape())
+table.insert(Tile.shapes, Slope_1_2_1upShape())
+table.insert(Tile.shapes, Slope_1_1_3upShape())
+table.insert(Tile.shapes, Slope_1_2_3upShape())
 
 -- Tile.shapes[0] exists
 Tile.shapeForName = {}		-- name => obj
