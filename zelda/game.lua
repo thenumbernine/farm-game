@@ -114,6 +114,8 @@ TODO how to handle multiple maps with objects-in-map ...
 		}
 
 		-- simplex noise resolution
+		-- TODO run the simplex noise at 1/2 the resolution
+		-- then for the surface tiles, pick the appropriate sloped tile (and rotate it to match the sub-voxel isosurface)
 		local blockBits = 3
 		local blockSize = bit.lshift(1, blockBits)
 		local half = bit.rshift(map.size.z, 1)

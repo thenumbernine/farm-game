@@ -247,7 +247,7 @@ function Plant:die()
 			for i=1,self.numLogs do
 				local r = math.random() * 2
 				local theta = math.random() * 2 * math.pi
-				require 'zelda.item.log':toItemObj{
+				require 'zelda.item.voxel.Wood':toItemObj{
 					map = self.map,
 					pos = self.pos + vec3f(
 						math.cos(theta) * r,
