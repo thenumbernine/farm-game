@@ -85,6 +85,7 @@ App.showFPS = true
 local Menu = require 'gameapp.menu.menu'
 Menu.Splash = require 'zelda.menu.splash'
 
+Menu.Main = require 'zelda.menu.main'
 Menu.Playing = require 'zelda.menu.playing'
 
 --[[
@@ -128,55 +129,6 @@ PlayerKeysEditor.defaultKeys = {
 
 App.saveBaseDir = path'save'
 
--- just hack the main menu class instead of subclassing it.
-local MainMenu = require 'gameapp.menu.main'
-function MainMenu:update()
--- why does this hide the gui?
---	self.app.splashMenu:update()
-end
-MainMenu.menuOptions:removeObject(nil, function(o)
-	return o.name == 'New Game Co-op'
-end)
-MainMenu.menuOptions:removeObject(nil, function(o)
-	return o.name == 'High Scores'
-end)
-MainMenu.menuOptions:insert(3, {
-	name = 'Save Game',
-	click = function(self)
-		-- TODO save menu?
-		-- or TODO pick a filename upon 'new game' and just save there?
-		local app = self.app
-		local game = app.game
-		if not game then return end
-		app:saveGame(app.saveBaseDir/game.saveDir)
-		-- TODO print upon fail or something
-	end,
-	visible = function(self)
-		return not not (self.app and self.app.game)
-	end,
-})
-
-MainMenu.menuOptions:insert(4, {
-	name = 'Load Game',
-	click = function(self)
-		local app = self.app
-		app.menu = require 'zelda.menu.loadgame'(app)
-	end,
-	visible = function(self)
-		local app = self.app
-		-- TODO detect upon construction and upon save?
-		local num = 0
-		if app.saveBaseDir:exists()
-		and app.saveBaseDir:isdir() then
-			for fn in app.saveBaseDir:dir() do
-				if (app.saveBaseDir/fn):isdir() then
-					num = num + 1
-				end
-			end
-		end
-		return num > 0
-	end,
-})
 
 App.url = 'https://github.com/thenumbernine/zelda3d-lua'
 
@@ -748,7 +700,7 @@ function App:resetGame(dontMakeGame)
 	-- in degrees
 	self.targetViewYaw = 0
 	self.viewYaw = 0
-	self.viewPitch = math.rad(70)
+	self.viewPitch = math.rad(45)
 
 	-- NOTICE THIS IS A SHALLOW COPY
 	-- that means subtables (player keys, custom colors) won't be copied
