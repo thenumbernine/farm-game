@@ -1,4 +1,4 @@
-name = 'Zelda4D'
+name = 'FarmGame'
 luaDistVer = 'luajit'	-- luajit-openresty-2.1.0
 luaArgs = {'run.lua'}
 
@@ -11,7 +11,7 @@ files = {
 		'sprites',
 		'music',
 		'plants.csv',
-		'zelda',
+		'farmgame',
 	},
 	-- other paths go here
 	['..'] = table{

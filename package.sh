@@ -3,10 +3,10 @@
 rm -fr dist
 ../dist/run.lua
 # and maybe TODO have ../dist/run allow from->to mapping so this is easier to implement in distinfo
-rm dist/Zelda4D-linux64.zip
-mv dist/Zelda4D-linux64 dist/Zelda4D
-cp -R bin_Windows dist/Zelda4D/data/bin/Windows
-cp run_Windows/* dist/Zelda4D/
-mv dist/Zelda4D/run.sh dist/Zelda4D/run-linux.sh
+rm dist/FarmGame-linux64.zip
+mv dist/FarmGame-linux64 dist/FarmGame
+cp -R bin_Windows dist/FarmGame/data/bin/Windows
+cp run_Windows/* dist/FarmGame/
+mv dist/FarmGame/run.sh dist/FarmGame/run-linux.sh
 cd dist
-zip -r Zelda4D.zip Zelda4D/
+zip -r FarmGame.zip FarmGame/
