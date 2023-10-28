@@ -63,4 +63,4 @@ function table.pickWeighted(t)
 end
 
 
-return require 'zelda.app'():run()
+return require 'farmgame.app'():run()

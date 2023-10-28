@@ -130,7 +130,7 @@ PlayerKeysEditor.defaultKeys = {
 App.saveBaseDir = path'save'
 
 
-App.url = 'https://github.com/thenumbernine/zelda3d-lua'
+App.url = 'https://github.com/thenumbernine/farm-game'
 
 local AppPlayer = require 'farmgame.player'
 App.Player = AppPlayer
