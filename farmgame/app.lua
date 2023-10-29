@@ -127,8 +127,30 @@ PlayerKeysEditor.defaultKeys = {
 	},
 }
 
-App.saveBaseDir = path'save'
-
+-- os.home() is HOME for linux, USERPROFILE for windows
+--App.saveBaseDir = path(os.home())/'.config/FarmGame/save'
+-- TODO multiple locations, ending with cwd?
+do
+	local diropts = table()
+	if ffi.os == 'Windows' then
+		diropts:insert(os.getenv'APPDATA')
+	else
+		local home = os.getenv'HOME'
+		if home then
+			diropts:insert(home..'/.config')
+		end
+	end
+	diropts:insert'.'
+	for _,dir in ipairs(diropts) do
+		local p = path(dir)
+		print('testing save dir '..p)
+		if p:exists() then
+			App.saveBaseDir = p/'FarmGame/save'
+			break
+		end
+	end
+	print('using saveBaseDir '..App.saveBaseDir)
+end
 
 App.url = 'https://github.com/thenumbernine/farm-game'
 
@@ -718,7 +740,7 @@ function App:resetGame(dontMakeGame)
 		self.game = Game{app = self}
 
 		-- find the next available save dir name
-		self.saveBaseDir:mkdir()
+		self.saveBaseDir:mkdir(true)
 		for i=1,math.huge do
 			local dirname = tostring(i)
 			local thissave = self.saveBaseDir/dirname
