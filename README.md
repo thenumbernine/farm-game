@@ -223,7 +223,6 @@ When inventory is open, arrows navigate, and `interact with world` will drop the
 - disasters
 - rodents, crop fungus, hurricaines... goblin raiding party.
 - give logs plant-type. color them too just like seeds.  and add all those trees to the plant list.
-- Better separate game-player from game-obj-player.  move all the UI stuff / clientside-only to game-player, all serverside to game-obj-player.
 - generalize tile placement
 	- tile orientation is added, but make it do something.  won't matter until i get more than just half-blocks ...
 	- add material property to tiles ... either color, or some other way to change it based on the material ... and to store the material as well.

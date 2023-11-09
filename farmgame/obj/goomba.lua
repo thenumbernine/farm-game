@@ -1,6 +1,7 @@
 local Obj = require 'farmgame.obj.obj'
 
-local Goomba = require 'farmgame.obj.takesdamage'(Obj):subclass()
+-- TODO instead of 'enemy', 'combat', and give it to player
+local Goomba = require 'farmgame.obj.enemy'(Obj):subclass()
 Goomba.classname = 'farmgame.obj.goomba'
 
 Goomba.name = 'Goomba'	-- TODO require name?

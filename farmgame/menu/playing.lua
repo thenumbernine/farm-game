@@ -130,7 +130,7 @@ function PlayingMenu:updateGUI()
 	--else .. ?
 	do
 		local chestOpen = appPlayer.chestOpen
-		-- TODO this matches what's in farmgame.obj.player ...
+		-- TODO this matches what's in farmgame.obj.unit ...
 		local maxItems = player.numSelectableItems
 		if appPlayer.invOpen then
 			maxItems = player.numInvItems

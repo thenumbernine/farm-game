@@ -24,7 +24,7 @@ function FishingPole:useInInventory(player)
 	I could code all fishing as a coroutine right here
 	buuut
 	coroutines aren't so easy to serialize
-	and its locals are harder to access/debug than obj.player state vars
+	and its locals are harder to access/debug than obj.unit state vars
 	so ...
 	--]]
 	if not player.fishing then

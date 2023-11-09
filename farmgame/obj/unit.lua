@@ -1,3 +1,6 @@
+-- TODO 
+-- rename 'player' to 'human' or 'character' or 'person' or 'battleable' or 'unit'
+-- rename 'appPlayer' to 'player'
 local ffi = require 'ffi'
 local gl = require 'gl'
 local class = require 'ext.class'
@@ -11,50 +14,50 @@ local Obj = require 'farmgame.obj.obj'
 local sides = require 'farmgame.sides'
 
 
-local Player = require 'farmgame.obj.takesdamage'(Obj):subclass()
-Player.classname = 'farmgame.obj.player'
+local Unit = require 'farmgame.obj.takesdamage'(Obj):subclass()
+Unit.classname = 'farmgame.obj.unit'
 
-Player.name = 'Player'	-- TODO require name?
+Unit.name = 'Unit'	-- TODO require name?
 
-Player.sprite = 'link'
-Player.drawSize = vec2f(1, 1.5)
-Player.drawCenter = vec3f(.5, 1, 0)
+Unit.sprite = 'link'
+Unit.drawSize = vec2f(1, 1.5)
+Unit.drawCenter = vec3f(.5, 1, 0)
 
-Player.angle = 1.5 * math.pi
+Unit.angle = 1.5 * math.pi
 
-Player.bbox = box3f{
+Unit.bbox = box3f{
 	min = {-.3, -.3, 0},
 	max = {.3, .3, 1.5},
 }
 
-Player.hpMax = 10
-Player.foodMax = 10
+Unit.hpMax = 10
+Unit.foodMax = 10
 
-Player.walking = true	-- tell obj:move to traceline up, then velocity, then back down - to accomodate for steps
-Player.walkSpeed = 6
+Unit.walking = true	-- tell obj:move to traceline up, then velocity, then back down - to accomodate for steps
+Unit.walkSpeed = 6
 
-Player.attackTime = -1
-Player.attackEndTime = -1
-Player.attackDuration = .35
+Unit.attackTime = -1
+Unit.attackEndTime = -1
+Unit.attackDuration = .35
 
-Player.jumpVel = 5
-Player.swimUpVel = 1
+Unit.jumpVel = 5
+Unit.swimUpVel = 1
 
 -- how many items?
 -- minecraft inventory: 9x4 = 36
 -- stardew valley: 12x3 = 36
 -- D2: 4x10 = 40
-Player.numSelectableItems = 12
-Player.numInvItems = 48	-- including the selectable row
+Unit.numSelectableItems = 12
+Unit.numInvItems = 48	-- including the selectable row
 
 -- how much to turn the view when you press the rotate-view left/right buttons
 -- 90°:
---Player.rotateViewAmount = .5 * math.pi
+--Unit.rotateViewAmount = .5 * math.pi
 -- 45°:
-Player.rotateViewAmount = .25 * math.pi
+Unit.rotateViewAmount = .25 * math.pi
 
-function Player:init(args, ...)
-	Player.super.init(self, args, ...)
+function Unit:init(args, ...)
+	Unit.super.init(self, args, ...)
 
 	self.appPlayer = assert(args.appPlayer)
 
@@ -82,7 +85,7 @@ function Player:init(args, ...)
 	self:addItem(require 'farmgame.obj.torch', 999)
 end
 
-function Player:update(dt)
+function Unit:update(dt)
 	local map = self.map
 	local game = self.game
 	local app = game.app
@@ -255,7 +258,7 @@ function Player:update(dt)
 		end
 	end
 
-	Player.super.update(self, dt)
+	Unit.super.update(self, dt)
 
 	-- shake plants when you are near them
 	do
@@ -371,7 +374,7 @@ print'YOU CAUGHT A FISH'
 	end
 end
 
-function Player:useItem()
+function Unit:useItem()
 	local itemInfo = self.items[self.appPlayer.selectedItem]
 	if itemInfo then
 		local cl = itemInfo.class
@@ -381,7 +384,7 @@ function Player:useItem()
 	end
 end
 
-function Player:addItem(cl, count)
+function Unit:addItem(cl, count)
 	assert(cl)
 	count = count or 1
 	for i=1,self.numInvItems do
@@ -405,7 +408,7 @@ function Player:addItem(cl, count)
 	return false
 end
 
-function Player:hasItem(cl, count)
+function Unit:hasItem(cl, count)
 	assert(cl)
 	count = count or 1
 	for i=1,self.numInvItems do
@@ -420,7 +423,7 @@ function Player:hasItem(cl, count)
 	return false
 end
 
-function Player:removeItem(cl, count)
+function Unit:removeItem(cl, count)
 	assert(cl)
 	count = count or 1
 	for i=1,self.numInvItems do
@@ -439,7 +442,7 @@ function Player:removeItem(cl, count)
 	return false
 end
 
-function Player:removeSelectedItem()
+function Unit:removeSelectedItem()
 	local itemInfo = self.items[self.appPlayer.selectedItem]
 	if not itemInfo then return end
 	itemInfo.count = itemInfo.count - 1
@@ -449,12 +452,12 @@ function Player:removeSelectedItem()
 	return itemInfo.class
 end
 
-function Player:draw(...)
+function Unit:draw(...)
 	local game = self.game
 	local app = game.app
 
 	-- draw sprite
-	Player.super.draw(self, ...)
+	Unit.super.draw(self, ...)
 
 	if self.attackEndTime > game.time then
 		local buf = app.swordSwingVtxBuf
@@ -518,4 +521,4 @@ function Player:draw(...)
 	end
 end
 
-return Player
+return Unit

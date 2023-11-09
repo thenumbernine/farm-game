@@ -438,6 +438,9 @@ Game.secondsPerYear = Game.secondsPerMonth * Game.monthsPerYear
 -- when to start / wake up
 Game.wakeHour = 6
 
+-- how close to get to monsters to start a battle?
+Game.battleDistance = 5
+
 --[[
 args:
 	app = app
@@ -602,7 +605,7 @@ print"WARNING - player wasn't found in the save file"
 
 	-- [[ for new games, spawn the player, but only after we find out what the surface altitude is
 	if not app.players[1].obj then
-		local PlayerObj = require 'farmgame.obj.player'
+		local Unit = require 'farmgame.obj.unit'
 		local vec2i = require 'vec-ffi.vec2i'
 		local map = assert(self.maps[1])
 		local playerPos2D = vec2i(
@@ -615,7 +618,7 @@ print"WARNING - player wasn't found in the save file"
 				surf.solidAlt+1)
 		print('spawning player at', playerPos)
 		app.players[1].obj = map:newObj{
-			class = PlayerObj,
+			class = Unit,
 			pos = playerPos,
 			appPlayer = assert(app.players[1]),
 		}

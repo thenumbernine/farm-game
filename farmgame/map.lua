@@ -1147,11 +1147,17 @@ end
 
 Map.updateLight = Map.updateLight_brute
 
+local function handleError(err)
+	io.stderr:write(err, '\n', debug.traceback(), '\n')
+end
+
 function Map:update(dt)
 	for _,obj in ipairs(self.objs) do
-		if obj.update then obj:update(dt) end
+		-- xpcall to save the game even if something goes wrong
+		if obj.update then
+			xpcall(obj.update, handleError, obj, dt)
+		end
 	end
-
 end
 
 -- TODO this is slow.  coroutine and progress bar?

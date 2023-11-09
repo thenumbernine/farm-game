@@ -1,5 +1,5 @@
 --[[
-obj/player holds the object in the map that represents the player
+obj/unit holds the object in the map that represents the player
 	(stored alongside all the other objects)
 player holds the client-specific stuff
 	(stored in a list of per client stuff)
