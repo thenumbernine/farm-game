@@ -16,7 +16,7 @@ for _,srcfn in ipairs(fs) do
 	local src = path(srcfn)
 	local dstfn = assert(srcfn:gsub('^src_online', 'sprites'))
 	local dst = path(dstfn):setext'png'
-	path((dst:getdir())):mkdir(true)
+	dst:getdir():mkdir(true)
 
 	print('convert "'..src..'" "'..dst..'"')
 	--[[ imagemagick looks like it takes a lot of work to do this ...
@@ -133,7 +133,7 @@ print('targetsize', targetsize)
 	
 	--[[ last, copy it into its dst live folder ... ?
 	local dst2 = path(assert(dst.path:gsub('^sprites', '../sprites'))):setext'png'
-	path((dst2:getdir())):mkdir(true)
+	dst2:getdir():mkdir(true)
 	
 	print('also saving to', dst2)
 	dstimg:save(tostring(dst2))

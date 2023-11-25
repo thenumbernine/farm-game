@@ -13,6 +13,9 @@ local function applyEnemy(parent)
 		Enemy.super.update(self, ...)
 		local game = self.game	-- \__ why separate these two? ...
 		local app = game.app	-- /
+		-- TODO instead of checking all objs vs all players' objs here,
+		-- how about have a separate loop to check all players objs vs all players objs somewhere else?
+		-- or maybe that's not as easy to insert as this ? idk.
 		for _,appPlayer in ipairs(app.players) do
 			if appPlayer ~= self.appPlayer then
 				-- TODO .objs ?  for teams?
@@ -21,7 +24,9 @@ local function applyEnemy(parent)
 				local dist = (player.pos - self.pos):length()	-- TODO l1? l-inf?
 				if dist < game.battleDistance then
 					-- start new battle
-					game:newBattle(player, self.player)
+					Battle{
+						players = {player, self.player},
+					}
 				end
 			end
 		end
