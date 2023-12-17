@@ -51,7 +51,7 @@ for _,dir in ipairs(spriteNames) do
 	local prefix = 'sprites/'..dir..'/'
 	for _,f in ipairs(Atlas.getAllKeys(prefix)) do
 		local fbase = path(f:sub(#prefix+1)):getext()
-		sprite[fbase] = {
+		sprite[fbase.path] = {
 			{filename = f},
 		}
 	end
