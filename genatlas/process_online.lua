@@ -10,8 +10,7 @@ local string = require 'ext.string'
 local Image = require 'image'
 
 local srcdir = path'src_online'
-local fs = srcdir:rdir()		-- TODO will rdir use / or \ in Windows? I'm assuming / always, like path() uses
-for _,srcfn in ipairs(fs) do
+for srcfn in srcdir:rdir() do
 	local _, sprite, frame = string.split(srcfn, '/'):unpack()
 	local src = path(srcfn)
 	local dstfn = assert(srcfn:gsub('^src_online', 'sprites'))
