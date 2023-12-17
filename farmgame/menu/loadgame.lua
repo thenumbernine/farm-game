@@ -18,7 +18,7 @@ function LoadGameMenu:updateGUI()
 			local dir = app.saveBaseDir/fn
 			if dir:isdir() then
 				found = true
-				if ig.igButton(fn) then
+				if ig.igButton(fn.path) then
 					app:loadGame(dir)
 					app.menu = app.playingMenu
 					return
