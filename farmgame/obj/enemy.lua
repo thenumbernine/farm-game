@@ -9,6 +9,7 @@ local function applyEnemy(parent)
 	-- ... then we start a battle
 
 	-- or if the player walks up to a friendly and attacks it, then it goes enemy, and yeah enter battle
+--[=[
 	function Enemy:update(...)
 		Enemy.super.update(self, ...)
 		local game = self.game	-- \__ why separate these two? ...
@@ -31,7 +32,7 @@ local function applyEnemy(parent)
 			end
 		end
 	end
-
+--]=]
 	return Enemy
 end
 return applyEnemy
