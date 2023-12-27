@@ -23,7 +23,7 @@ not as long as I have .use() ...
 --]]
 
 local Bed = require 'farmgame.obj.placeableobj'(Obj):subclass()
-Bed.classname = 'farmgame.obj.bed'
+Bed.classname = ...
 
 Bed.name = 'bed'
 Bed.sprite = 'bed'

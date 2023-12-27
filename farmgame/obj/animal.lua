@@ -9,7 +9,7 @@ local Animal = require 'farmgame.behaviors'(
 	require 'farmgame.obj.placeableobj',
 	require 'farmgame.obj.takesdamage'	-- apply takesdamage last so it overrides :damage()
 ):subclass()
-Animal.classname = 'farmgame.obj.animal'
+Animal.classname = ...
 
 Animal.name = 'Animal'
 Animal.walking = true

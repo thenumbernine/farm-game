@@ -4,7 +4,7 @@ local WateredGround = require 'farmgame.obj.wateredground'
 local Item = require 'farmgame.item.item'
 
 local ItemWateringCan = Item:subclass()
-ItemWateringCan.classname = 'farmgame.item.wateringcan'
+ItemWateringCan.classname = ...
 ItemWateringCan.name = 'watering can'
 ItemWateringCan.sprite = 'item'
 ItemWateringCan.seq = 'wateringcan'

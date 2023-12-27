@@ -5,7 +5,7 @@ local vec3f = require 'vec-ffi.vec3f'
 local Item = require 'farmgame.item.item'
 
 local PlaceableVoxel = Item:subclass()
-PlaceableVoxel.classname = 'farmgame.item.placeabletile'
+PlaceableVoxel.classname = ...
 
 local function angleSnapTo90(angle)
 	return (angle / (.5 * math.pi)) % 4

@@ -6,7 +6,7 @@ local Obj = require 'farmgame.obj.obj'
 
 local Torch = require 'farmgame.obj.placeableobj'(Obj):subclass()
 
-Torch.classname = 'farmgame.obj.torch'
+Torch.classname = ...
 Torch.name = 'torch'
 Torch.sprite = 'torch'
 Torch.useGravity = false

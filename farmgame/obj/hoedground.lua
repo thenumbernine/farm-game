@@ -7,7 +7,7 @@ local Obj = require 'farmgame.obj.obj'
 local Game = require 'farmgame.game'
 
 local HoedGround = Obj:subclass()
-HoedGround.classname = 'farmgame.obj.hoedground'
+HoedGround.classname = ...
 HoedGround.name = 'HoedGround'
 
 HoedGround.sprite = ''	-- empty sprite

@@ -1,6 +1,6 @@
 local Obj = require 'farmgame.obj.obj'
 local Door = Obj:subclass()
-Door.classname = 'farmgame.obj.door'
+Door.classname = ...
 Door.name = 'door'
 Door.sprite = 'waterd'	-- todo ...
 Door.useGravity = false

@@ -3,7 +3,7 @@ local vec3f = require 'vec-ffi.vec3f'
 local Obj = require 'farmgame.obj.obj'
 
 local Workbench = require 'farmgame.obj.placeableobj'(Obj):subclass()
-Workbench.classname = 'farmgame.obj.workbench'
+Workbench.classname = ...
 
 Workbench.name = 'Workbench'
 Workbench.sprite = 'workbench'

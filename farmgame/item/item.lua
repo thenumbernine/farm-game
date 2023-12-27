@@ -7,7 +7,7 @@ local class = require 'ext.class'
 local table = require 'ext.table'
 
 local Item = class()
-Item.classname = 'farmgame.item.item'
+Item.classname = ...
 
 --[[
 TODO this matches Obj.toItem

@@ -2,7 +2,7 @@ local NPC = require 'farmgame.obj.npc'
 
 local Clerk = NPC:subclass()
 
-Clerk.classname = 'farmgame.obj.clerk'
+Clerk.classname = ...
 
 function Clerk:init(args)
 	Clerk.super.init(self, args)

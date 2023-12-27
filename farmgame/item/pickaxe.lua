@@ -5,7 +5,7 @@ local Voxel = require 'farmgame.voxel'
 local Item = require 'farmgame.item.item'
 
 local ItemPickaxe = Item:subclass()
-ItemPickaxe.classname = 'farmgame.item.pickaxe'
+ItemPickaxe.classname = ...
 ItemPickaxe.name = 'pickaxe'
 ItemPickaxe.sprite = 'item'
 ItemPickaxe.seq = 'pickaxe'

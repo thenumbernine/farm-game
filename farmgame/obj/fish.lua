@@ -12,7 +12,7 @@ because fish+animals
 local Obj = require 'farmgame.obj.obj'
 local Fish = Obj:subclass()
 
-Fish.classname = 'farmgame.obj.fish'
+Fish.classname = ...
 Fish.name = 'fish'
 Fish.sprite ='fish'
 

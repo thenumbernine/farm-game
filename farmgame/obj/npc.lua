@@ -4,7 +4,7 @@ local box3f = require 'vec-ffi.box3f'
 local Obj = require 'farmgame.obj.obj'
 
 local NPC = Obj:subclass()
-NPC.classname = 'farmgame.obj.npc'
+NPC.classname = ...
 
 NPC.name = 'NPC'
 NPC.sprite = 'link'

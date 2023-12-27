@@ -8,7 +8,7 @@ local vec2f = require 'vec-ffi.vec2f'
 local Obj = require 'farmgame.obj.obj'
 
 local Fruit = Obj:subclass()
-Fruit.classname = 'farmgame.obj.fruit'
+Fruit.classname = ...
 Fruit.name = 'fruit'
 Fruit.sprite = 'fruit'
 Fruit.seq = '1'	-- TODO multiple classes & pick randomly, like farmgame.obj.plant

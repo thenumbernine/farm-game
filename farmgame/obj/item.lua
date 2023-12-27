@@ -18,7 +18,7 @@ local box3f = require 'vec-ffi.box3f'
 local Obj = require 'farmgame.obj.obj'
 
 local Item = Obj:subclass()
-Item.classname = 'farmgame.obj.item'
+Item.classname = ...
 
 Item.name = 'Item'
 

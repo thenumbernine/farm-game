@@ -1,7 +1,7 @@
 local Item = require 'farmgame.item.item'
 
 local FishingPole = Item:subclass()
-FishingPole.classname = 'farmgame.item.fishingpole'
+FishingPole.classname = ...
 FishingPole.name = 'fishingpole'
 FishingPole.sprite = 'item'
 FishingPole.seq = 'fishingpole'

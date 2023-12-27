@@ -20,7 +20,7 @@ local function smoothstep(edge0,edge1,x)
 end
 
 local Obj = class()
-Obj.classname = 'farmgame.obj.obj'
+Obj.classname = ...
 
 -- default
 Obj.seq = 'stand'

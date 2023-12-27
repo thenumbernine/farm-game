@@ -2,7 +2,7 @@ local vec3f = require 'vec-ffi.vec3f'
 local Item = require 'farmgame.item.item'
 
 local ItemSword = Item:subclass()
-ItemSword.classname = 'farmgame.item.sword'
+ItemSword.classname = ...
 ItemSword.name = 'sword'
 ItemSword.sprite = 'item'
 ItemSword.seq = 'sword'

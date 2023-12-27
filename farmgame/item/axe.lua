@@ -4,7 +4,7 @@ local Voxel = require 'farmgame.voxel'
 local Item = require 'farmgame.item.item'
 
 local ItemAxe = Item:subclass()
-ItemAxe.classname = 'farmgame.item.axe'
+ItemAxe.classname = ...
 ItemAxe.name = 'axe'
 ItemAxe.sprite = 'item'
 ItemAxe.seq = 'axe'

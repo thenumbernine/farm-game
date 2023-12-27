@@ -7,7 +7,7 @@ local Plant = require 'farmgame.obj.plant'
 local Item = require 'farmgame.item.item'
 
 local ItemSeeds = Item:subclass()
-ItemSeeds.classname = 'farmgame.item.seeds'
+ItemSeeds.classname = ...
 
 ItemSeeds.name = 'seeds'
 ItemSeeds.sprite = 'seededground'

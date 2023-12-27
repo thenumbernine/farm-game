@@ -2,7 +2,7 @@ local box3f = require 'vec-ffi.box3f'
 local Obj = require 'farmgame.obj.obj'
 
 local Chest = require 'farmgame.obj.placeableobj'(Obj):subclass()
-Chest.classname = 'farmgame.obj.chest'
+Chest.classname = ...
 
 Chest.name = 'chest'
 Chest.sprite = 'chest'

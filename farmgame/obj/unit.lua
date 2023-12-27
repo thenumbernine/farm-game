@@ -15,7 +15,7 @@ local sides = require 'farmgame.sides'
 
 
 local Unit = require 'farmgame.obj.takesdamage'(Obj):subclass()
-Unit.classname = 'farmgame.obj.unit'
+Unit.classname = ...
 
 Unit.name = 'Unit'	-- TODO require name?
 

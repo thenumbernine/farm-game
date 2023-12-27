@@ -34,7 +34,7 @@ local box3f = require 'vec-ffi.box3f'
 local Obj = require 'farmgame.obj.obj'
 
 local Plant = require 'farmgame.obj.takesdamage'(Obj):subclass()
-Plant.classname = 'farmgame.obj.plant'
+Plant.classname = ...
 
 -- TODO makeSubclass based on plantType
 -- just like item/seeds
