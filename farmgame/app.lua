@@ -17,6 +17,7 @@ local GLProgram = require 'gl.program'
 local GLGeometry = require 'gl.geometry'
 local GLSceneObject = require 'gl.sceneobject'
 local GLTex2D = require 'gl.tex2d'
+local GLTex3D = require 'gl.tex3d'
 local GLArrayBuffer = require 'gl.arraybuffer'
 local Game = require 'farmgame.game'
 local getTime = require 'ext.timer'.getTime
@@ -167,6 +168,9 @@ function App:initGL()
 	self.glslHeader = [[
 #version 300 es
 precision highp float;
+]]
+	local sampler3Dprec = [[
+precision mediump sampler3D;
 ]]
 
 -- [=[ load sprite texture atlas
@@ -632,7 +636,7 @@ void main() {
 	gl_Position = projMat * viewPos;
 }
 ]],
-		fragmentCode = self.glslHeader..[[
+		fragmentCode = self.glslHeader..sampler3Dprec..[[
 in vec3 worldPosv;
 in vec3 viewPosv;
 in vec2 texcoordv;
@@ -648,6 +652,9 @@ uniform float sunAngle;
 uniform sampler2D sunAngleTex;
 uniform vec3 chunkSize;
 
+//lighting on gpu
+uniform sampler3D lumTex;
+
 // map view clipping
 uniform bool useSeeThru;
 uniform vec3 playerViewPos;
@@ -657,12 +664,16 @@ uniform vec3 playerViewPos;
 const float cosClipAngle = .9;	// = cone with 25 degree from axis
 
 void main() {
+	vec3 chunkCoord = worldPosv.xyz / chunkSize.xyz;
+	vec4 lumColor = texture(lumTex, chunkCoord);
+
 	fragColor = texture(tex, texcoordv);
-	fragColor.xyz *= colorv.xyz;
+	//lumTex 'x' is the emissivity, 'y' is the luminance
+	fragColor.xyz *= colorv.xyz * lumColor.y;
 
 	// technically I should also subtract the chunkPos
-	// but texcoords are fraational part, so the integer part is thrown away anyways ...
-	vec2 sunTc = worldPosv.xy / chunkSize.xy;
+	// but texcoords are fractional part, so the integer part is thrown away anyways ...
+	vec2 sunTc = chunkCoord.xy;
 	vec2 sunAngles = texture(sunAngleTex, sunTc).xy;
 	const float sunWidthInRadians = .1;
 	const float ambient = .5;
@@ -696,10 +707,134 @@ void main() {
 		uniforms = {
 			tex = 0,
 			sunAngleTex = 1,
+			lumTex = 2,
 			chunkSize = {Chunk.size:unpack()},
 		},
 	}:useNone()
 
+	self.lumUpdateShader = GLProgram{
+		vertexCode = self.glslHeader..[[
+in vec2 vertex;
+out vec3 tc;
+uniform float sliceZ;
+void main() {
+	tc = vec3(
+		(vertex.xy * 31. + .5)/32.,
+		sliceZ);
+	gl_Position = vec4(2. * vertex.xy - 1., 0., 1.); 
+}
+]],
+		fragmentCode = self.glslHeader
+			..sampler3Dprec
+			..[[
+in vec3 tc;
+out vec4 fragColor;
+uniform sampler2D randTex;
+uniform sampler3D lumTex;
+#if 0
+uniform sampler3D lumTexXL;
+uniform sampler3D lumTexYL;
+uniform sampler3D lumTexZL;
+uniform sampler3D lumTexXR;
+uniform sampler3D lumTexYR;
+uniform sampler3D lumTexZR;
+#endif
+uniform vec2 moduloVec;
+void main() {
+	fragColor = texture(lumTex, tc);
+#if 0
+	vec3 nextpos = tc;
+	// TODO diminish relative to distance
+	nextpos += (texture(randTex, tc.xy + moduloVec).xyz * 2. - 1.) * 1./32.;
+	// TODO here if we wrapped then lookup from a neighbor ...
+	// TODO only diminish the y value (lum), not the x value (emissivity)
+	fragColor.xyz = mix(
+		fragColor.xyz,
+		texture(lumTex, nextpos).xyz,
+		.03);
+#else
+	vec3 nextval = max(
+		max(
+			texture(lumTex, tc + vec3(1./32., 0., 0.)).xyz,
+			texture(lumTex, tc - vec3(1./32., 0., 0.)).xyz
+		),
+		max(
+			max(
+				texture(lumTex, tc + vec3(0., 1./32., 0.)).xyz,
+				texture(lumTex, tc - vec3(0., 1./32., 0.)).xyz
+			),
+			max(
+				texture(lumTex, tc + vec3(0., 0., 1./32.)).xyz,
+				texture(lumTex, tc - vec3(0., 0., 1./32.)).xyz
+			)
+		)
+	);
+	fragColor.xyz = mix(fragColor.xyz, nextval, .03);
+#endif
+	fragColor.w = 1.; 
+}
+]],
+		uniforms = {
+			randTex = 0,
+			lumTex = 1,
+			lumTexXL = 2,
+			lumTexYL = 3,
+			lumTexZL = 4,
+			lumTexXR = 5,
+			lumTexYR = 6,
+			lumTexZR = 7,
+		},
+	}
+
+	local randSize = 4 * Chunk.size.x * Chunk.size.y
+	local randData = ffi.new('uint8_t[?]', randSize)
+	for i=0,randSize-1 do
+		randData[i] = math.random(0,255)
+	end
+	self.randTex = GLTex2D{
+		width = Chunk.size.x,
+		height = Chunk.size.y,
+		format = gl.GL_RGBA,
+		internalFormat = gl.GL_RGBA,
+		type = gl.GL_UNSIGNED_BYTE,
+		data = randData,
+		minFilter = gl.GL_NEAREST,
+		magFilter = gl.GL_NEAREST,
+	}:unbind()
+	
+	-- temp buffer for writing into 
+	-- make this just like the lumTex in Chunk
+	self.lumTmpTex = GLTex3D{
+		width = Chunk.size.x,
+		height = Chunk.size.y,
+		depth = Chunk.size.z,
+		internalFormat = gl.GL_RGBA,
+		format = gl.GL_RGBA,
+		type = gl.GL_UNSIGNED_BYTE,
+		data = lumData,
+		magFilter = gl.GL_NEAREST,
+		minFilter = gl.GL_NEAREST,
+	}:unbind()
+
+	self.lumUpdateObj = GLSceneObject{
+		geometry = self.quadGeom,
+		program = self.lumUpdateShader,
+		attrs = {
+			vertex = self.quadVertexBuf,
+		},
+		texs = {
+			self.randTex,
+			self.lumTmpTex,
+		},
+	}
+
+
+	local FBO = require 'gl.fbo'
+	local Chunk = require 'farmgame.map'.Chunk
+	self.lumFBO = FBO{
+		width = Chunk.size.x,
+		height = Chunk.size.y,
+	}:unbind()
 
 	--[[
 	TODO:

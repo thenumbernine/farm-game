@@ -37,7 +37,7 @@ function ItemShovel:useInInventory(player)
 			tile.type = Voxel.typeValues.Empty
 			-- TODO here remove all the hoe and water and seeds and stuff somehow ...
 			-- in fact, seeds => pick-up-able seeds?
-			map:updateLightAtPos(x, y, z+dz)	
+			map:updateMeshAndLight(x, y, z+dz)	
 			-- TODO instead of addItem, have it plop out an item object first ...
 			-- in case the player's inventory is full
 			player:addItem(require 'farmgame.item.voxel.Dirt')

@@ -32,7 +32,7 @@ function ItemPickaxe:useInInventory(player)
 		and tile.type == Voxel.typeValues.Stone
 		then
 			tile.type = Voxel.typeValues.Empty
-			map:updateLightAtPos(x, y, z+dz)	
+			map:updateMeshAndLight(x, y, z+dz)	
 			-- TODO an obj for all tile types?
 			player:addItem(require 'farmgame.item.voxel.Stone')
 			return

@@ -18,6 +18,7 @@ local GLArrayBuffer = require 'gl.arraybuffer'
 local GLSceneObject = require 'gl.sceneobject'
 local GLGeometry = require 'gl.geometry'
 local GLTex2D = require 'gl.tex2d'
+local GLTex3D = require 'gl.tex3d'
 local Voxel = require 'farmgame.voxel'
 local sides = require 'farmgame.sides'
 
@@ -206,8 +207,23 @@ function Chunk:init(args)
 	self.texcoords = CPUGPUBuf{type='vec2f_t', volume=volume}
 	self.colors = CPUGPUBuf{type='vec4ub_t', volume=volume}
 
-	-- TODO put this in a GLSceneObject object instead
-	-- and give that its own set of attrs, uniforms, shader, geometry
+	-- lighting on the GPU?
+	-- TODO keep track of this for cpu/gpu transfers? or something? idk?
+	local lumData = ffi.new('vec4ub_t[?]', self.volume)
+	ffi.fill(lumData, ffi.sizeof'vec4ub_t' * self.volume, 0xff000000)
+	-- chunk size = 32^3 <-> lumTex size = 128kb
+	self.lumTex = GLTex3D{
+		width = self.size.x,
+		height = self.size.y,
+		depth = self.size.z,
+		internalFormat = gl.GL_RGBA,
+		format = gl.GL_RGBA,
+		type = gl.GL_UNSIGNED_BYTE,
+		data = lumData,
+		magFilter = gl.GL_NEAREST,
+		minFilter = gl.GL_NEAREST,
+	}
+
 	self.sceneObj = GLSceneObject{
 		geometry = GLGeometry{
 			mode = gl.GL_TRIANGLES,
@@ -326,9 +342,9 @@ function Chunk:buildDrawArrays()
 										-- TODO test if it's along the sides, if not just use offset + step
 										-- if so then use map:getType
 										local nbhdVoxel = map:getTile(nx, ny, nz)
-										local lum = 0
+										--local lum = 0
 										if nbhdVoxel then
-											lum = nbhdVoxel.lum
+											--lum = nbhdVoxel.lum
 											if nbhdVoxel.shape == 0 then
 												local nbhdVoxelTypeIndex = nbhdVoxel.type
 												-- only if the neighbor is solid ...
@@ -357,7 +373,8 @@ function Chunk:buildDrawArrays()
 												local vtxindex = faces[vi]
 
 												local c = self.colors.vec:emplace_back()
-												local l = lum * (255/ffi.C.MAX_LUM)
+												--local l = lum * (255/ffi.C.MAX_LUM)
+												local l = 255
 												c:set(l, l, l, 255)
 
 												local tc = self.texcoords.vec:emplace_back()
@@ -384,12 +401,13 @@ function Chunk:buildDrawArrays()
 											print("voxelShap "..voxel.shape.." has no model")
 										else
 											local model = voxelShape.model
-											local lum = voxel.lum
+											--local lum = voxel.lum
 											for l=0,model.triIndexes.size-1 do
 												local vsrc = model.vtxs.v + model.triIndexes.v[l]
 
 												local c = self.colors.vec:emplace_back()
-												local l = lum * (255/ffi.C.MAX_LUM)
+												--local l = lum * (255/ffi.C.MAX_LUM)
+												local l = 255
 												c:set(l, l, l, 255)
 
 												local tc = self.texcoords.vec:emplace_back()
@@ -488,6 +506,7 @@ function Chunk:draw(app, game)
 	-- just bind as we go, not in sceneObj
 	--self.sceneObj.texs[1] = app.spriteAtlasTex
 	--self.sceneObj.texs[2] = self.sunAngleTex
+	--self.sceneObj.texs[3] = self.lumTex
 	self.sceneObj:draw()
 end
 
@@ -628,6 +647,14 @@ local Map = class()
 
 Map.Chunk = Chunk
 
+local function ravelIndex2D(x,y,sizex)
+	return x + sizex * y
+end
+
+local function ravelIndex3D(x,y,z,size)
+	return x + size.x * (y + size.y * z)
+end
+
 -- voxel-based
 --[[
 args =
@@ -701,7 +728,7 @@ function Map:buildDrawArrays(
 	for cz=minz,maxz do
 		for cy=miny,maxy do
 			for cx=minx,maxx do
-				local chunkIndex = cx + self.sizeInChunks.x * (cy + self.sizeInChunks.y * cz)
+				local chunkIndex = ravelIndex3D(cx, cy, cz, self.sizeInChunks)
 				-- [[
 				self.chunks[chunkIndex]:buildDrawArrays()
 				--]]
@@ -716,6 +743,11 @@ function Map:buildDrawArrays(
 	end
 end
 
+function Map:updateMeshAndLight(x,y,z)
+	self:buildMesh(x,y,z,x,y,z)
+	self:updateLight(x,y,z,x,y,z)
+end
+
 function Map:draw()
 	local game = self.game
 	local app = game.app
@@ -723,8 +755,10 @@ function Map:draw()
 	for chunkIndex=0,self.chunkVolume-1 do
 		local chunk = self.chunks[chunkIndex]
 		chunk.sunAngleTex:bind(1)
+		chunk.lumTex:bind(2)
 		chunk:draw(app, game)
 	end
+	GLTex3D:unbind(2)
 	GLTex2D:unbind(1)
 	GLTex2D:unbind(0)
 end
@@ -750,6 +784,7 @@ function Map:initLight()
 		self.chunks[chunkIndex]:initLight()
 	end
 
+	--[[
 	-- now that we've set lum to full or empty ...
 	-- flood-fill inwards into any places
 	-- ... this will call buildDrawArrays
@@ -760,6 +795,17 @@ function Map:initLight()
 		self.size.x-1,
 		self.size.y-1,
 		self.size.z-1)
+	--]]
+	-- [[ gpu-light update method doesn't rebuild the draw arrays, so only rebuild them ehre:
+	-- (and wherever we're modifying the geometr)
+	self:buildDrawArrays(
+		0,
+		0,
+		0,
+		self.size.x-1,
+		self.size.y-1,
+		self.size.z-1)
+	--]]
 end
 
 -- i,j,k integers
@@ -778,7 +824,7 @@ function Map:getTile(i,j,k)
 	local dx = bit.band(i, Chunk.bitmask.x)
 	local dy = bit.band(j, Chunk.bitmask.y)
 	local dz = bit.band(k, Chunk.bitmask.z)
-	local chunkIndex = cx + self.sizeInChunks.x * (cy + self.sizeInChunks.y * cz)
+	local chunkIndex = ravelIndex3D(cx, cy, cz, self.sizeInChunks)
 	local chunk = self.chunks[chunkIndex]
 	local index = bit.bor(dx, bit.lshift(bit.bor(dy, bit.lshift(dz, Chunk.bitsize.y)), Chunk.bitsize.x))
 	return chunk.v + index
@@ -794,7 +840,7 @@ function Map:getSurface(i,j)
 	local cy = bit.rshift(j, Chunk.bitsize.y)
 	local dx = bit.band(i, Chunk.bitmask.x)
 	local dy = bit.band(j, Chunk.bitmask.y)
-	local chunkIndex = cx + self.sizeInChunks.x * cy
+	local chunkIndex = ravelIndex2D(cx, cy, self.sizeInChunks.x)
 	local chunk = self.chunks[chunkIndex]
 	local index = bit.bor(dx, bit.lshift(dy, Chunk.bitsize.x))
 	return chunk.surface + index
@@ -870,12 +916,12 @@ end
 
 function Map:updateLightAtPos(x,y,z)
 	return self:updateLight(
-		x - ffi.C.MAX_LUM,
-		y - ffi.C.MAX_LUM,
-		z - ffi.C.MAX_LUM,
-		x + ffi.C.MAX_LUM,
-		y + ffi.C.MAX_LUM,
-		z + ffi.C.MAX_LUM)
+		x,
+		y,
+		z,
+		x,
+		y,
+		z)
 end
 
 -- assumes
@@ -1145,7 +1191,91 @@ function Map:updateLight_brute(
 		lightmaxz)
 end
 
-Map.updateLight = Map.updateLight_brute
+local tmpcolor = vec4ub()
+function Map:updateLight_lumTex(
+	lightminx,
+	lightminy,
+	lightminz,
+	lightmaxx,
+	lightmaxy,
+	lightmaxz
+)
+	-- update lights in this region
+	-- TODO better update,
+	-- like queue all the boundary tiles and all light sources
+	-- then flood fill through all the remaining tiles within the region
+	if lightmaxx >= 0
+	and lightmaxy >= 0
+	and lightmaxz >= 0
+	and lightminx <= self.size.x-1
+	and lightminy <= self.size.y-1
+	and lightminz <= self.size.z-1
+	then
+		local lastChunk
+		
+		lightminx = math.max(0, lightminx)
+		lightminy = math.max(0, lightminy)
+		lightminz = math.max(0, lightminz)
+		lightmaxx = math.min(self.size.x-1, lightmaxx)
+		lightmaxy = math.min(self.size.y-1, lightmaxy)
+		lightmaxz = math.min(self.size.z-1, lightmaxz)
+		-- flood fill from borders
+		for z=lightminz,lightmaxz do
+			for y=lightminy,lightmaxy do
+				for x=lightminx,lightmaxx do
+					local surf = self:getSurface(x,y)
+					local voxel = self:getTile(x,y,z)
+					local lum = ffi.C.MAX_LUM
+					if z < surf[0].lumAlt then
+						local voxelIndex = ravelIndex3D(x, y, z, self.size)
+						lum = 0
+						local objs = self.objsPerTileIndex[voxelIndex]
+						if objs then
+							for _,obj in ipairs(objs) do
+								lum = lum + obj.light
+							end
+						end
+						lum = math.clamp(lum, 0, ffi.C.MAX_LUM)
+					end
+				
+					local cx = bit.rshift(x, Chunk.bitsize.x)
+					local cy = bit.rshift(y, Chunk.bitsize.y)
+					local cz = bit.rshift(z, Chunk.bitsize.z)
+					local dx = bit.band(x, Chunk.bitmask.x)
+					local dy = bit.band(y, Chunk.bitmask.y)
+					local dz = bit.band(z, Chunk.bitmask.z)
+					local chunkIndex = ravelIndex3D(cx, cy, cz, self.sizeInChunks)
+					local chunk = self.chunks[chunkIndex]
+					--local index = bit.bor(dx, bit.lshift(bit.bor(dy, bit.lshift(dz, Chunk.bitsize.y)), Chunk.bitsize.x))
+					if chunk ~= lastChunk then
+						if lastChunk then
+							lastChunk.lumTex:unbind()
+						end
+						lastChunk = chunk
+						chunk.lumTex:bind()
+					end
+					
+					lum = lum * 255 / ffi.C.MAX_LUM
+					tmpcolor:set(lum, lum, lum, 255)
+					gl.glTexSubImage3D(
+						chunk.lumTex.target,
+						0,
+						dx, dy, dz,
+						1, 1, 1,
+						gl.GL_RGBA,
+						gl.GL_UNSIGNED_BYTE,
+						tmpcolor.s)
+				end
+			end
+		end
+		if lastChunk then
+			lastChunk.lumTex:unbind()
+		end
+	end
+end
+
+--Map.updateLight = Map.updateLight_brute
+Map.updateLight = Map.updateLight_lumTex
 
 local function handleError(err)
 	io.stderr:write(err, '\n', debug.traceback(), '\n')
@@ -1158,6 +1288,82 @@ function Map:update(dt)
 			xpcall(obj.update, handleError, obj, dt)
 		end
 	end
+
+	-- now do a lighting update
+	-- I could do this on OpenCL if i had CL/GL interop ... do I? not on linux, because lazy intel.
+	-- I could do an opencl compute ... I do have that on linux.
+	-- for now, I'll just do a GPU update.
+	-- bind the layers on all 6 sides from this layer
+	-- then randomly push light values around
+-- [=[
+	local app = self.game.app
+	local shader = app.lumUpdateShader
+	local fbo = app.lumFBO
+gl.glDisable(gl.GL_DEPTH_TEST)
+gl.glDisable(gl.GL_CULL_FACE)
+gl.glDisable(gl.GL_BLEND)
+	gl.glViewport(0, 0, fbo.width, fbo.height)
+	--shader:use()
+	--gl.glUniform2f(shader.uniforms.moduloVec.loc, math.random(), math.random())
+	--app.randTex:bind(0)
+	for cz=0,self.sizeInChunks.z-1 do
+		for cy=0,self.sizeInChunks.y-1 do
+			for cx=0,self.sizeInChunks.x-1 do
+				local chunkIndex = ravelIndex3D(cx, cy, cz, self.sizeInChunks)
+				local chunk = self.chunks[chunkIndex]
+				app.lumUpdateObj.texs[2] = chunk.lumTex
+				--[[
+				app.lumUpdateObj.texs[3] = self.chunks[ravelIndex3D(math.max(0,cx-1),cy,cz,self.sizeInChunks)].lumTex:bind(2)	-- xl
+				app.lumUpdateObj.texs[4] = self.chunks[ravelIndex3D(cx,math.max(0,cy-1),cz,self.sizeInChunks)].lumTex:bind(3)	-- yl
+				app.lumUpdateObj.texs[5] = self.chunks[ravelIndex3D(cx,cy,math.max(0,cz-1),self.sizeInChunks)].lumTex:bind(4)	-- zl
+				app.lumUpdateObj.texs[6] = self.chunks[ravelIndex3D(math.min(cx+1,self.sizeInChunks.x-1),cy,cz,self.sizeInChunks)].lumTex:bind(5)	-- xr
+				app.lumUpdateObj.texs[7] = self.chunks[ravelIndex3D(cx,math.min(cy+1,self.sizeInChunks.y-1),cz,self.sizeInChunks)].lumTex:bind(6)	-- yr
+				app.lumUpdateObj.texs[8] = self.chunks[ravelIndex3D(cx,cy,math.min(cz+1,self.sizeInChunks.z-1),self.sizeInChunks)].lumTex:bind(7)	-- zr
+				--]]
+			
+				-- in opengl you can't read and write to the same tex ...
+				-- in opencl you can ... 
+				-- bleh
+
+				for z=0,Chunk.size.z-1 do
+					local sliceZ = (z + .5) / tonumber(Chunk.size.z)
+					fbo:bind()
+					--gl.glUniform1f(shader.uniforms.sliceZ.loc, sliceZ)
+					fbo:setColorAttachmentTex3D(app.lumTmpTex.id, 0, z)
+					local res, err = fbo.check()
+					if not res then print(err) end
+					--app.quadGeom:draw()
+					app.lumUpdateObj:draw{
+						uniforms = {
+							moduloVec = {math.random(), math.random()},
+							sliceZ = sliceZ,
+						}
+					}
+					--[[ opengl only, and not gles?
+					chunk.lumTex:bind(0)
+					gl.glCopyTexSubImage3D(gl.GL_TEXTURE_3D, 0, 0, 0, z, 0, 0, Chunk.size.x, Chunk.size.y)
+					chunk.lumTex:unbind(0)
+					--]]
+					fbo:unbind()
+				end
+		
+				-- [[
+				-- just swap refs
+				chunk.lumTex, app.lumTmpTex = app.lumTmpTex, chunk.lumTex
+				--]]
+			end
+		end
+	end
+--	for i=7,1,-1 do
+--		GLTex3D:unbind(i)
+--	end
+--	GLTex2D:unbind(0)
+--	shader:useNone()
+	gl.glViewport(0, 0, app.width, app.height)
+gl.glEnable(gl.GL_DEPTH_TEST)
+gl.glEnable(gl.GL_CULL_FACE)
+gl.glEnable(gl.GL_BLEND)
+--]=]
 end
 
 -- TODO this is slow.  coroutine and progress bar?

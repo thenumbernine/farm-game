@@ -51,7 +51,7 @@ function ItemAxe:useInInventory(player)
 		then
 			tile.type = Voxel.typeValues.Empty
 			-- change map type => change opacity => refresh light => refresh mesh
-			map:updateLightAtPos(x, y, z+dz)
+			map:updateMeshAndLight(x, y, z+dz)
 			require 'farmgame.item.voxel.Wood':toItemObj{
 				map = map,
 				pos = vec3f(x,y,z+dz) + .5,

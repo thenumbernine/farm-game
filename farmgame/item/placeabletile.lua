@@ -58,7 +58,7 @@ print('setting tile to', self.tileType, self.tileShape)
 			tile.tex = math.random(#self.tileClass.texrects)-1
 			-- if this is blocking a light sources ...
 			-- ... that means I need to update all blocks within MAX_LUM from this point.
-			map:updateLightAtPos(dst:unpack())
+			map:updateMeshAndLight(dst:unpack())
 			return
 		end
 	end
