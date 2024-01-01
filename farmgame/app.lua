@@ -739,7 +739,7 @@ uniform sampler3D lumTexXR;
 uniform sampler3D lumTexYR;
 uniform sampler3D lumTexZR;
 #endif
-uniform vec2 moduloVec;
+//uniform vec2 moduloVec;
 void main() {
 	fragColor = texture(lumTex, tc);
 #if 0
@@ -826,10 +826,6 @@ void main() {
 		program = self.lumUpdateShader,
 		attrs = {
 			vertex = self.quadVertexBuf,
-		},
-		texs = {
-			self.randTex,
-			self.lumTmpTex,
 		},
 	}
 

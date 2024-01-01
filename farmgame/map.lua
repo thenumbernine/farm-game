@@ -1296,22 +1296,24 @@ function Map:update(dt)
 	-- bind the layers on all 6 sides from this layer
 	-- then randomly push light values around
 -- [=[
-	local app = self.game.app
-	local shader = app.lumUpdateShader
-	local fbo = app.lumFBO
 gl.glDisable(gl.GL_DEPTH_TEST)
 gl.glDisable(gl.GL_CULL_FACE)
 gl.glDisable(gl.GL_BLEND)
+	local app = self.game.app
+	local shader = app.lumUpdateShader
+	local fbo = app.lumFBO
+	fbo:bind()
 	gl.glViewport(0, 0, fbo.width, fbo.height)
-	--shader:use()
+	shader:use()
+	app.lumUpdateObj:enableAndSetAttrs()
 	--gl.glUniform2f(shader.uniforms.moduloVec.loc, math.random(), math.random())
-	--app.randTex:bind(0)
+	app.randTex:bind(0)
 	for cz=0,self.sizeInChunks.z-1 do
 		for cy=0,self.sizeInChunks.y-1 do
 			for cx=0,self.sizeInChunks.x-1 do
 				local chunkIndex = ravelIndex3D(cx, cy, cz, self.sizeInChunks)
 				local chunk = self.chunks[chunkIndex]
-				app.lumUpdateObj.texs[2] = chunk.lumTex
+				chunk.lumTex:bind(1)
 				--[[
 				app.lumUpdateObj.texs[3] = self.chunks[ravelIndex3D(math.max(0,cx-1),cy,cz,self.sizeInChunks)].lumTex:bind(2)	-- xl
 				app.lumUpdateObj.texs[4] = self.chunks[ravelIndex3D(cx,math.max(0,cy-1),cz,self.sizeInChunks)].lumTex:bind(3)	-- yl
@@ -1327,24 +1329,17 @@ gl.glDisable(gl.GL_BLEND)
 
 				for z=0,Chunk.size.z-1 do
 					local sliceZ = (z + .5) / tonumber(Chunk.size.z)
-					fbo:bind()
-					--gl.glUniform1f(shader.uniforms.sliceZ.loc, sliceZ)
+					gl.glUniform1f(shader.uniforms.sliceZ.loc, sliceZ)
 					fbo:setColorAttachmentTex3D(app.lumTmpTex.id, 0, z)
 					local res, err = fbo.check()
 					if not res then print(err) end
-					--app.quadGeom:draw()
-					app.lumUpdateObj:draw{
-						uniforms = {
-							moduloVec = {math.random(), math.random()},
-							sliceZ = sliceZ,
-						}
-					}
-					--[[ opengl only, and not gles?
+					app.quadGeom:draw()
+					
+					--[[ copy back to the original tex3d
 					chunk.lumTex:bind(0)
 					gl.glCopyTexSubImage3D(gl.GL_TEXTURE_3D, 0, 0, 0, z, 0, 0, Chunk.size.x, Chunk.size.y)
 					chunk.lumTex:unbind(0)
 					--]]
-					fbo:unbind()
 				end
 		
 				-- [[
@@ -1357,9 +1352,12 @@ gl.glDisable(gl.GL_BLEND)
 --	for i=7,1,-1 do
 --		GLTex3D:unbind(i)
 --	end
---	GLTex2D:unbind(0)
---	shader:useNone()
+	GLTex3D:unbind(1)
+	GLTex2D:unbind(0)
+	app.lumUpdateObj:disableAttrs()
+	shader:useNone()
 	gl.glViewport(0, 0, app.width, app.height)
+	fbo:unbind()
 gl.glEnable(gl.GL_DEPTH_TEST)
 gl.glEnable(gl.GL_CULL_FACE)
 gl.glEnable(gl.GL_BLEND)
