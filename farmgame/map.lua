@@ -744,7 +744,7 @@ function Map:buildDrawArrays(
 end
 
 function Map:updateMeshAndLight(x,y,z)
-	self:buildMesh(x,y,z,x,y,z)
+	self:buildDrawArrays(x,y,z,x,y,z)
 	self:updateLight(x,y,z,x,y,z)
 end
 
@@ -1288,6 +1288,9 @@ function Map:update(dt)
 			xpcall(obj.update, handleError, obj, dt)
 		end
 	end
+
+	-- how often to update light ...
+	if math.random() < .5 then return end
 
 	-- now do a lighting update
 	-- I could do this on OpenCL if i had CL/GL interop ... do I? not on linux, because lazy intel.

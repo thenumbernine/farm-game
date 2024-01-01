@@ -719,7 +719,7 @@ out vec3 tc;
 uniform float sliceZ;
 void main() {
 	tc = vec3(
-		(vertex.xy * 31. + .5)/32.,
+		(vertex.xy * 31. + .5)/32.,	//TODO necessary?  change the texwrap instead?
 		sliceZ);
 	gl_Position = vec4(2. * vertex.xy - 1., 0., 1.); 
 }
@@ -742,40 +742,32 @@ uniform sampler3D lumTexZR;
 //uniform vec2 moduloVec;
 void main() {
 	fragColor = texture(lumTex, tc);
-#if 0
-	vec3 nextpos = tc;
-	// TODO diminish relative to distance
-	nextpos += (texture(randTex, tc.xy + moduloVec).xyz * 2. - 1.) * 1./32.;
-	// TODO here if we wrapped then lookup from a neighbor ...
-	// TODO only diminish the y value (lum), not the x value (emissivity)
-	fragColor.xyz = mix(
-		fragColor.xyz,
-		texture(lumTex, nextpos).xyz,
-		.03);
-#else
-	vec3 dx = vec3(1./32., 0., 0.);
-	fragColor.xyz = max(
+	const vec3 dx = vec3(1./32., 0., 0.);
+	//.x = emissivity
+	//.y = luminance
+	fragColor.y = max(
 		max(
-			fragColor.xyz,
 			max(
-				texture(lumTex, tc + dx.xyz).xyz,
-				texture(lumTex, tc - dx.xyz).xyz
+				fragColor.x,
+				fragColor.y
+			),
+			max(
+				texture(lumTex, tc + dx.xyz).y,
+				texture(lumTex, tc - dx.xyz).y
 			)
 		),
 		max(
 			max(
-				texture(lumTex, tc + dx.zxy).xyz,
-				texture(lumTex, tc - dx.zxy).xyz
+				texture(lumTex, tc + dx.zxy).y,
+				texture(lumTex, tc - dx.zxy).y
 			),
 			max(
-				texture(lumTex, tc + dx.yzx).xyz,
-				texture(lumTex, tc - dx.yzx).xyz
+				texture(lumTex, tc + dx.yzx).y,
+				texture(lumTex, tc - dx.yzx).y
 			)
 		)
 	) - .1;	//TODO decrement based on the distance of what we picked as the max
 			//TODO don't pick from light-blocking tiles (upload light-blocking flag into the lumTex as well)
-			//TODO upload light source info into the lumTex as well, and only update when it changes, not every frame.
-#endif
 	fragColor.w = 1.; 
 }
 ]],
