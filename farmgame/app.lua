@@ -753,23 +753,28 @@ void main() {
 		texture(lumTex, nextpos).xyz,
 		.03);
 #else
-	vec3 nextval = max(
+	vec3 dx = vec3(1./32., 0., 0.);
+	fragColor.xyz = max(
 		max(
-			texture(lumTex, tc + vec3(1./32., 0., 0.)).xyz,
-			texture(lumTex, tc - vec3(1./32., 0., 0.)).xyz
+			fragColor.xyz,
+			max(
+				texture(lumTex, tc + dx.xyz).xyz,
+				texture(lumTex, tc - dx.xyz).xyz
+			)
 		),
 		max(
 			max(
-				texture(lumTex, tc + vec3(0., 1./32., 0.)).xyz,
-				texture(lumTex, tc - vec3(0., 1./32., 0.)).xyz
+				texture(lumTex, tc + dx.zxy).xyz,
+				texture(lumTex, tc - dx.zxy).xyz
 			),
 			max(
-				texture(lumTex, tc + vec3(0., 0., 1./32.)).xyz,
-				texture(lumTex, tc - vec3(0., 0., 1./32.)).xyz
+				texture(lumTex, tc + dx.yzx).xyz,
+				texture(lumTex, tc - dx.yzx).xyz
 			)
 		)
-	);
-	fragColor.xyz = mix(fragColor.xyz, nextval, .03);
+	) - .1;	//TODO decrement based on the distance of what we picked as the max
+			//TODO don't pick from light-blocking tiles (upload light-blocking flag into the lumTex as well)
+			//TODO upload light source info into the lumTex as well, and only update when it changes, not every frame.
 #endif
 	fragColor.w = 1.; 
 }
