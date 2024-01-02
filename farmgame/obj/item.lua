@@ -36,9 +36,9 @@ Item.bbox = box3f{
 }
 
 Item.drawSize = vec2f(.8, .8)
-Item.drawCenter = vec3f(.5, .5, 0)
+Item.drawCenter = vec3f(.5, .5, .5)
 Item.rotation = math.pi * .5
-Item.disableBillboard = true
+--Item.disableBillboard = true
 Item.spritePosOffset = vec3f(0, 0, 0)
 
 function Item:init(args)

@@ -712,6 +712,17 @@ void main() {
 		},
 	}:useNone()
 
+	--[[
+	TODO also 
+	- make a surfaceTex.  store lumAlt, minAngle, maxAngle - normalized. (don't need solidAngle I think...)
+	- for any tile over lumAlt, immediately light it via minAngle, maxAngle, and sunAngle
+	
+	- in lumTex, also store if a voxel is blocking-light
+	- then when doing flood-fill, don't propagate if we're blocking light
+
+	- in updateMeshAndLight we will have to also update the lumTex's blocking-light flag ...
+	
+	--]]
 	self.lumUpdateShader = GLProgram{
 		vertexCode = self.glslHeader..[[
 in vec2 vertex;

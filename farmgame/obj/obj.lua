@@ -171,10 +171,10 @@ function Obj:setLight(newLight)
 	if newLight == nil then
 		newLight = self.class.light
 	end
---	if newLight ~= self.light then
+	if newLight ~= self.light then
 		self.light = newLight
 		self:updateLightOnMove()
---	end
+	end
 end
 
 function Obj:unlink()

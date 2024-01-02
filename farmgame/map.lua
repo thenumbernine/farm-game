@@ -200,6 +200,20 @@ function Chunk:init(args)
 	ffi.fill(self.v, 0, ffi.sizeof'voxel_t' * self.volume)	-- 0 = empty
 
 	self.surface = ffi.new('surface_t[?]', self.size.x * self.size.y)
+	-- TODO similar to CPUGPUBuf, but for textures?  just store tex.data buffer? idk ...
+	self.surfaceTex = GLTex2D{
+		width = self.size.x,
+		height = self.size.y,
+		format = gl.GL_RGBA,
+		internalFormat = gl.GL_RGBA,
+		type = gl.GL_UNSIGNED_BYTE,
+		-- TODO ... either convert all fields to uint8, or use an intermediate ...
+		-- if we convert all fields, then that means our max altitude is 256
+		-- another option is convert all fields to uint16 ...
+		data = self.surface,	
+		minFilter = gl.GL_NEAREST,
+		magFilter = gl.GL_NEAREST,
+	}
 
 	-- geometry
 	local volume = self.volume
