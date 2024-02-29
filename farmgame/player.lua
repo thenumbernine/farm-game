@@ -4,12 +4,12 @@ obj/unit holds the object in the map that represents the player
 player holds the client-specific stuff
 	(stored in a list of per client stuff)
 --]]
-local class = require 'ext.class'
 local table = require 'ext.table'
 local ig = require 'imgui'
+local GameAppPlayer = require 'gameapp.player'
 
 -- TODO instances should be a member of game?
-local Player = class()
+local Player = GameAppPlayer:subclass() 
 
 -- gameplay keys to record for demos (excludes pause)
 Player.gameKeyNames = table{
@@ -40,15 +40,7 @@ Player.gameKeySet = Player.gameKeyNames:mapi(function(k)
 end):setmetatable(nil)
 
 function Player:init(args)
-	self.app = assert(args.app)
-	self.index = assert(args.index)
-	self.keyPress = {}
-	self.keyPressLast = {}
-	for _,k in ipairs(self.keyNames) do
-		self.keyPress[k] = false
-		self.keyPressLast[k] = false
-	end
-
+	Player.super.init(self, args)
 	self.money = 1000
 end
 
