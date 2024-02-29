@@ -753,13 +753,14 @@ uniform sampler3D lumTexZR;
 //uniform vec2 moduloVec;
 void main() {
 	fragColor = texture(lumTex, tc);
-	const vec3 dx = vec3(1./32., 0., 0.);
-	//.x = emissivity
-	//.y = luminance
+	const vec3 dx = vec3(1./32., 0., 0.);	// 32 = chunk size in xyz
+	//.x = emissivity (light source value)
+	//.y = luminance (current light state)
+	//.z = diminish (change in light wrt neighbors)
 	fragColor.y = max(
 		max(
 			max(
-				fragColor.x,
+				fragColor.x,	// source
 				fragColor.y
 			),
 			max(
@@ -858,22 +859,13 @@ end
 
 -- called by menu.NewGame
 function App:resetGame(dontMakeGame)
+	-- makes self.players
+	App.super.resetGame(self)
+
 	-- in degrees
 	self.targetViewYaw = 0
 	self.viewYaw = 0
 	self.viewPitch = math.rad(45)
-
-	-- NOTICE THIS IS A SHALLOW COPY
-	-- that means subtables (player keys, custom colors) won't be copied
-	-- not sure if i should bother since neither of those things are used by playcfg but ....
-	self.playcfg = table(self.cfg):setmetatable(nil)
-
-	self.players = range(self.playcfg.numPlayers):mapi(function(i)
-		return AppPlayer{index=i, app=self}
-	end)
-
-	-- TODO put this in parent class
-	self.rng = self.RNG(self.playcfg.randseed)
 
 	if not dontMakeGame then
 		self.game = Game{app = self}
