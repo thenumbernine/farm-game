@@ -423,20 +423,22 @@ void main() {
 
 	-- NOTICE these have a big perf hit when resizing ...
 	local vector = require 'ffi.cpp.vector'
-	self.spritesBufCPU = vector'sprite_t'
+	self.spritesBufCPU = vector'sprite_t'()
 	self.spritesBufCPU:reserve(60000)	-- TODO error on growing, like the map vectors, and TODO better vector<->GLArrayBuffer coupling + growing of GL buffers
 	self.spritesBufGPU = GLArrayBuffer{
-		size = ffi.sizeof'sprite_t' * self.spritesBufCPU.capacity,
+		size = ffi.sizeof'sprite_t' * self.spritesBufCPU:capacity(),
 		data = self.spritesBufCPU.v,
 		usage = gl.GL_DYNAMIC_DRAW,
 	}
 
-	-- hmm no resizing for now
+	--[[ hmm no resizing for now
+	-- TODO new system, this won't affect the class (and shouldn't since luajit ffi says don't touch cdata metatables...)
 	self.spritesBufCPU.reserve = function(self, newcap)
-		if newcap <= self.capacity then return end
-		print('asked for resize to', newcap, 'when our cap was', self.capacity)
+		if newcap <= self:capacity() then return end
+		print('asked for resize to', newcap, 'when our cap was', self:capacity())
 		error'here'
 	end
+	--]]
 
 	self.spriteSceneObj = GLSceneObject{
 		geometry = GLGeometry{

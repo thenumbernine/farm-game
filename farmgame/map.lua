@@ -24,9 +24,10 @@ local sides = require 'farmgame.sides'
 
 
 local typeBitSize = 10
-local texBitSize = 5
-local shapeBitSize = 6
-local lumBitSize = 4
+local texBitSize = 8
+local shapeBitSize = 8
+-- ... and then 6 bits for the orientation
+
 -- TODO how about bitflags for orientation ... https://thenumbernine.github.io/symmath/tests/output/Platonic%20Solids/Cube.html
 -- the automorphism rotation group size is 24 ... so 5 bits for rotations.  including reflection is 48, so 6 bits.
 ffi.cdef(template([[
@@ -34,9 +35,6 @@ enum { CHUNK_BITSIZE = 5 };
 enum { CHUNK_SIZE = 1 << CHUNK_BITSIZE };
 enum { CHUNK_BITMASK = CHUNK_SIZE - 1 };
 enum { CHUNK_VOLUME = 1 << (3 * CHUNK_BITSIZE) };
-
-enum { LUM_BITSIZE = <?=lumBitSize?> };
-enum { MAX_LUM = (1 << LUM_BITSIZE)-1 };
 
 typedef uint32_t voxel_basebits_t;
 typedef struct {
@@ -49,10 +47,16 @@ typedef struct {
 	//voxel_basebits_t rotx : 2;	// Euler angles, in 90' increments
 	voxel_basebits_t roty : 2;
 	voxel_basebits_t rotz : 2;
-
-	voxel_basebits_t lumclean : 1;
-	voxel_basebits_t lum : <?=lumBitSize?>;	//how much light this tile is getting
 } voxel_t;
+
+
+// ok voxel_t was my go-to, but I want to target GLES, and idk that mobile supports compute, so ... I'm going to put these in their own data structure
+typedef struct {
+	uint8_t source;
+	uint8_t lum;
+	uint8_t lightDiminish;	//baked in from the voxel type
+	uint8_t padding;
+} lumvox_t;
 
 typedef struct {
 	int16_t lumAlt;		//tallest tile that is opaque
@@ -63,10 +67,10 @@ typedef struct {
 ]], {
 	typeBitSize = typeBitSize,
 	texBitSize = texBitSize,
-	lumBitSize = lumBitSize,
 	shapeBitSize = shapeBitSize,
 }))
 assert(ffi.sizeof'voxel_t' == ffi.sizeof'voxel_basebits_t')
+assert(ffi.sizeof'lumvox_t' == 4)
 assert(#Voxel.types <= bit.lshift(1,typeBitSize))	-- make sure our # types can fit
 assert(#Voxel.shapes <= bit.lshift(1,shapeBitSize))	-- make sure our # shapes can fit
 for _,tileType in ipairs(Voxel.types) do
@@ -90,11 +94,11 @@ args:
 --]]
 function CPUGPUBuf:init(args)
 	local ctype = assert(args.type)
-	self.vec = vector(ctype)
+	self.vec = vector(ctype)()
 	-- using reserve and heuristic of #cubes ~ #vec: brings time taken from 12 s to 0.12 s
 	self.vec:reserve(args.volume)
 	self.buf = GLArrayBuffer{
-		size = ffi.sizeof(ctype) * self.vec.capacity,
+		size = ffi.sizeof(ctype) * self.vec:capacity(),
 		data = self.vec.v,
 		usage = gl.GL_DYNAMIC_DRAW,
 	}:unbind()
@@ -109,8 +113,8 @@ function CPUGPUBuf:init(args)
 	local cpugpu = self
 	local oldreserve = self.vec.reserve
 	local function newreserve(self, newcap)
-		if newcap <= self.capacity then return end
-		local oldcap = self.capacity
+		if newcap <= self:capacity() then return end
+		local oldcap = self:capacity()
 		local oldv = self.v
 		oldreserve(self, newcap)	-- copies oldv to v, updates v and capacity
 --print('reserving from', oldcap, 'to', newcap)
@@ -178,6 +182,8 @@ glreport'here'
 		}:unbind()
 		--]]
 	end
+	
+	-- TODO ... hmmm
 	self.vec.reserve = newreserve
 end
 
@@ -223,9 +229,10 @@ function Chunk:init(args)
 
 	-- lighting on the GPU?
 	-- TODO keep track of this for cpu/gpu transfers? or something? idk?
-	local lumData = ffi.new('vec4ub_t[?]', self.volume)
-	ffi.fill(lumData, ffi.sizeof'vec4ub_t' * self.volume, 0xff000000)
+	self.lumData = ffi.new('lumvox_t[?]', self.volume)
+	ffi.fill(self.lumData, ffi.sizeof'lumvox_t' * self.volume)
 	-- chunk size = 32^3 <-> lumTex size = 128kb
+	-- TODO ... just store voxel_t as a 32-bit texture, don't bother use this separately.
 	self.lumTex = GLTex3D{
 		width = self.size.x,
 		height = self.size.y,
@@ -233,7 +240,7 @@ function Chunk:init(args)
 		internalFormat = gl.GL_RGBA,
 		format = gl.GL_RGBA,
 		type = gl.GL_UNSIGNED_BYTE,
-		data = lumData,
+		data = self.lumData,
 		magFilter = gl.GL_NEAREST,
 		minFilter = gl.GL_NEAREST,
 	}
@@ -241,7 +248,7 @@ function Chunk:init(args)
 	self.sceneObj = GLSceneObject{
 		geometry = GLGeometry{
 			mode = gl.GL_TRIANGLES,
-			count = self.vtxs.vec.size,
+			count = self.vtxs.vec:size(),
 		},
 		program = app.mapShader,
 		attrs = {
@@ -356,9 +363,7 @@ function Chunk:buildDrawArrays()
 										-- TODO test if it's along the sides, if not just use offset + step
 										-- if so then use map:getType
 										local nbhdVoxel = map:getTile(nx, ny, nz)
-										--local lum = 0
 										if nbhdVoxel then
-											--lum = nbhdVoxel.lum
 											if nbhdVoxel.shape == 0 then
 												local nbhdVoxelTypeIndex = nbhdVoxel.type
 												-- only if the neighbor is solid ...
@@ -387,9 +392,8 @@ function Chunk:buildDrawArrays()
 												local vtxindex = faces[vi]
 
 												local c = self.colors.vec:emplace_back()
-												--local l = lum * (255/ffi.C.MAX_LUM)
-												local l = 255
-												c:set(l, l, l, 255)
+												-- TODO do we even need vertex colors?
+												c:set(255, 255, 255, 255)
 
 												local tc = self.texcoords.vec:emplace_back()
 												tc:set(
@@ -415,14 +419,11 @@ function Chunk:buildDrawArrays()
 											print("voxelShap "..voxel.shape.." has no model")
 										else
 											local model = voxelShape.model
-											--local lum = voxel.lum
 											for l=0,model.triIndexes.size-1 do
 												local vsrc = model.vtxs.v + model.triIndexes.v[l]
 
 												local c = self.colors.vec:emplace_back()
-												--local l = lum * (255/ffi.C.MAX_LUM)
-												local l = 255
-												c:set(l, l, l, 255)
+												c:set(255, 255, 255, 255)
 
 												local tc = self.texcoords.vec:emplace_back()
 												tc:set(
@@ -454,12 +455,12 @@ function Chunk:buildDrawArrays()
 --[[
 	local volume = self.volume
 	print('volume', volume)
-	print('vtxs', self.vtxs.vec.size)
+	print('vtxs', self.vtxs.vec:size())
 --]]
 
-	local vtxSize = self.vtxs.vec.size * ffi.sizeof(self.vtxs.vec.type)
-	local texcoordSize = self.texcoords.vec.size * ffi.sizeof(self.texcoords.vec.type)
-	local colorSize = self.colors.vec.size * ffi.sizeof(self.colors.vec.type)
+	local vtxSize = self.vtxs.vec:size() * ffi.sizeof(self.vtxs.vec.type)
+	local texcoordSize = self.texcoords.vec:size() * ffi.sizeof(self.texcoords.vec.type)
+	local colorSize = self.colors.vec:size() * ffi.sizeof(self.colors.vec.type)
 
 --[[ right now i'm resizing the gl buffers with the c buffers
 -- I could instead only check here after all is done for a final resize
@@ -506,7 +507,7 @@ function Chunk:buildDrawArrays()
 	self.sceneObj.vao:setAttrs()
 --]]
 
-	self.sceneObj.geometry.count = self.vtxs.vec.size
+	self.sceneObj.geometry.count = self.vtxs.vec:size()
 end
 
 function Chunk:draw(app, game)
@@ -631,30 +632,43 @@ function Chunk:initLight()
 	local baseAlt = self.pos.z * self.size.z
 	local sliceSize = self.size.x * self.size.y
 	local voxelSlice = self.v + self.volume - sliceSize
+	local lumSlice = self.lumData + self.volume - sliceSize
 	for k=self.size.z-1,0,-1 do
 		local surf = self.surface
 		local voxel = voxelSlice
+		local lumvox = lumSlice
 		for j=0,self.size.y-1 do
 			for i=0,self.size.x-1 do
 				if k == self.size.z-1
-				or k >= surf[0].lumAlt - baseAlt
+				or k + baseAlt >= surf[0].lumAlt
 				then
-					voxel.lum = ffi.C.MAX_LUM
-					voxel.lumclean = 1
+					lumvox.source = ffi.C.MAX_LUM
+					lumvox.lum = ffi.C.MAX_LUM
 				else
 					-- slowly decrement?
 					--voxel.lum = math.max(0, voxel[sliceSize].lum - 1)
 					-- or just zero?
-					voxel.lum = 0
-					voxel.lumclean = 0
+					lumvox.source = 0
+					lumvox.lum = 0
 				end
+				local voxelTypeIndex = voxel.type
+				local voxelType = Voxel.types[voxelTypeIndex] or Voxel.types[0]
+--DEBUG:assert(voxelType.lightDiminish)
+				lumvox.lightDiminish = voxelType.lightDiminish
 				voxel = voxel + 1
 				surf = surf + 1
 			end
 		end
 		voxelSlice = voxelSlice - sliceSize
+		lumSlice = lumSlice - sliceSize
 	end
-	assert(voxelSlice == self.v - sliceSize)
+--DEBUG:assert(voxelSlice == self.v - sliceSize)
+--DEBUG:assert(lumSlice == self.lumData - sliceSize)
+--DEBUG:assert(self.lumTex.data == self.lumData)
+	self.lumTex
+		:bind()
+		:subimage()
+		:unbind()
 end
 
 local Map = class()
@@ -950,11 +964,11 @@ local function unravel(index, size)
 	return x, y, index
 end
 
-local lightFlagAllVec = vector'uint8_t'
-local lightFlagPrevVec = vector'uint8_t'
-local lightFlagNextVec = vector'uint8_t'
-local lightPrevPoss = vector'vec3i_t'
-local lightNextPoss = vector'vec3i_t'
+local lightFlagAllVec = vector'uint8_t'()
+local lightFlagPrevVec = vector'uint8_t'()
+local lightFlagNextVec = vector'uint8_t'()
+local lightPrevPoss = vector'vec3i_t'()
+local lightNextPoss = vector'vec3i_t'()
 
 -- update a region of light
 -- uses flood fill algorithm
@@ -992,11 +1006,11 @@ function Map:updateLight_floodFill(
 	local lightsizez = lightmaxz - lightminz + 1
 	local lightvolume = lightsizex * lightsizey * lightsizez
 	lightFlagAllVec:resize(lightvolume)
-	ffi.fill(lightFlagAllVec.v, lightFlagAllVec.size)
+	ffi.fill(lightFlagAllVec.v, lightFlagAllVec:size())
 	lightFlagPrevVec:resize(lightvolume)
-	ffi.fill(lightFlagPrevVec.v, lightFlagPrevVec.size)
+	ffi.fill(lightFlagPrevVec.v, lightFlagPrevVec:size())
 	lightFlagNextVec:resize(lightvolume)
-	ffi.fill(lightFlagNextVec.v, lightFlagNextVec.size)
+	ffi.fill(lightFlagNextVec.v, lightFlagNextVec:size())
 	--]]
 
 	-- calculate borders and sources (similar to Lagrangian multipliers...)
@@ -1054,7 +1068,7 @@ function Map:updateLight_floodFill(
 	repeat
 		propagatedany = false
 		lightNextPoss:resize(0)
-		ffi.fill(lightFlagNextVec.v, lightFlagNextVec.size)
+		ffi.fill(lightFlagNextVec.v, lightFlagNextVec:size())
 		for pi=0,lightPrevPoss.size-1 do
 			local pos = lightPrevPoss.v[pi]
 			local x,y,z = pos:unpack()
@@ -1098,7 +1112,7 @@ function Map:updateLight_floodFill(
 				end
 			end
 		end
-		ffi.fill(lightFlagPrevVec.v, lightFlagPrevVec.size)
+		ffi.fill(lightFlagPrevVec.v, lightFlagPrevVec:size())
 		for pi=0,lightNextPoss.size-1 do
 			local x,y,z = lightNextPoss.v[pi]:unpack()
 			local lightindex = (x - lightminx) + lightsizex * ((y - lightminy) + lightsizey * (z - lightminz))
@@ -1239,19 +1253,27 @@ function Map:updateLight_lumTex(
 				for x=lightminx,lightmaxx do
 					local surf = self:getSurface(x,y)
 					local voxel = self:getTile(x,y,z)
+					local voxelTypeIndex = voxel.type
+					local voxelType = Voxel.types[voxelTypeIndex] or Voxel.types[0]
 					local lum = ffi.C.MAX_LUM
-					if z < surf[0].lumAlt then
+--print('z', z, 'lumAlt', surf[0].lumAlt)				
+					-- TODO only use full-bright when above-ground *AND* in angle for the sun time
+					do --if z < surf[0].lumAlt then
+--print('z < lumAlt')
 						local voxelIndex = ravelIndex3D(x, y, z, self.size)
 						lum = 0
 						local objs = self.objsPerTileIndex[voxelIndex]
 						if objs then
 							for _,obj in ipairs(objs) do
+--print('obj.light', obj.light)								
 								lum = lum + obj.light
 							end
 						end
+--print('lum before clamp', lum)						
 						lum = math.clamp(lum, 0, ffi.C.MAX_LUM)
+--print('lum after clamp', lum)						
 					end
-				
+--print('updateLightOnMove',x,y,z,lum)
 					local cx = bit.rshift(x, Chunk.bitsize.x)
 					local cy = bit.rshift(y, Chunk.bitsize.y)
 					local cz = bit.rshift(z, Chunk.bitsize.z)
@@ -1270,7 +1292,7 @@ function Map:updateLight_lumTex(
 					end
 					
 					lum = lum * 255 / ffi.C.MAX_LUM
-					tmpcolor:set(lum, lum, lum, 255)
+					tmpcolor:set(lum, lum, voxelType.lightDiminish, 255)
 					gl.glTexSubImage3D(
 						chunk.lumTex.target,
 						0,

@@ -1,8 +1,18 @@
+local ffi = require 'ffi'
+local template = require 'template'
 local class = require 'ext.class'
 local table = require 'ext.table'
 local vec3f = require 'vec-ffi.vec3f'
 local box3f = require 'vec-ffi.box3f'
 local gl = require 'gl'
+
+local lumBitSize = 8	-- one channel in lumvox_t
+ffi.cdef(template([[
+enum { LUM_BITSIZE = <?=lumBitSize?> };
+enum { MAX_LUM = (1 << LUM_BITSIZE)-1 };
+]], {
+	lumBitSize = lumBitSize,
+}))
 
 local cubeFaces = table()
 for pm=0,1 do	-- plus/minus
@@ -101,14 +111,14 @@ local EmptyTile = Tile:subclass()
 EmptyTile.name = 'Empty'	-- excluding 'Tile' suffix of all Tile classes ...
 -- TODO give each Tile an obj, and give Empty none
 EmptyTile.render = nil
-EmptyTile.lightDiminish = 1
+EmptyTile.lightDiminish = math.floor(1/15*ffi.C.MAX_LUM)
 
 
 local SolidTile = Tile:subclass()
 SolidTile.name = 'Solid'
 SolidTile.solid = true
 SolidTile.isUnitCube = true	-- render shorthand for side occlusion
-SolidTile.lightDiminish = 15	-- TODO unless .shape>0, then just diminish ... .... half?
+SolidTile.lightDiminish = math.floor(15/15*ffi.C.MAX_LUM)	-- TODO unless .shape>0, then just diminish ... .... half?
 assert(SolidTile.cubeFaces)
 
 local StoneTile = SolidTile:subclass{name='Stone'}
@@ -149,7 +159,7 @@ setTexRects(WoodTile, 'wood')
 local WaterTile = Tile:subclass{name='Water'}
 setTexRects(WaterTile, 'water_')
 WaterTile.isUnitCube = true	-- put in Tile?
-WaterTile.lightDiminish = 2
+WaterTile.lightDiminish = math.floor(2/15*ffi.C.MAX_LUM)
 -- TODO auto flag this if any texrect have a transparent pixel
 WaterTile.transparent = true
 -- TODO contents = ... vacuum, air, poison gas, water, acid, lava, oil, ... plasma ... einstein-bose condensate ... quantum spin-liquid ... quark matter ... hole in the fabric of spacetime ...

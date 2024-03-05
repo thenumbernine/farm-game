@@ -5,15 +5,6 @@ local GameAppPlayingMenu = require 'gameapp.menu.playing'
 
 local PlayingMenu = GameAppPlayingMenu:subclass()
 
--- called from gameapp.menu.newgame
-function PlayingMenu:startNewGame()
-	local app = self.app
-	-- sets app.paused = false
-	PlayingMenu.super.startNewGame(self)
-
-	app:resetGame()
-end
-
 function PlayingMenu:updateGUI()
 	local app = self.app
 	local game = app.game

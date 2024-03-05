@@ -33,16 +33,16 @@ require 'gl.setup'(glfn)
 
 -- hack vector, instead of resizing by 32 bytes (slowly)
 -- how about increase by 20% then round up to nearest 32
-local vector = require 'ffi.cpp.vector'
-function vector:resize(newsize)
+local vectorbase = require 'ffi.cpp.vector'.vectorbase
+function vectorbase:resize(newsize)
 	newsize = tonumber(newsize)
-	if newsize > self.capacity then
+	if newsize > self:capacity() then
 		local newcap = newsize + bit.rshift(newsize, 1)
 		newcap = bit.lshift(bit.rshift(newcap, 5) + 1, 5)
---print('resizing from', self.capacity, 'to', newcap)
+--print('resizing from', self:capacity(), 'to', newcap)
 		self:reserve(newcap)
 	end
-	self.size = newsize
+	self.finish = self.start + newsize
 end
 
 
