@@ -12,6 +12,7 @@ files = {
 		'music',
 		'plants.csv',
 		'farmgame',
+		'voxels',
 	},
 	-- other paths go here
 	['..'] = table{
