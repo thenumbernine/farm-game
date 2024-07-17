@@ -28,7 +28,7 @@ local texBitSize = 8
 local shapeBitSize = 8
 -- ... and then 6 bits for the orientation
 
--- TODO how about bitflags for orientation ... https://thenumbernine.github.io/symmath/tests/output/Platonic%20Solids/Cube.html
+-- TODO how about bitflags for orientation ... https://thenumbernine.github.io/lua/symmath/tests/output/Platonic%20Solids/Cube.html
 -- the automorphism rotation group size is 24 ... so 5 bits for rotations.  including reflection is 48, so 6 bits.
 ffi.cdef(template([[
 enum { CHUNK_BITSIZE = 5 };
