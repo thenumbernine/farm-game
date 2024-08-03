@@ -165,10 +165,6 @@ function App:initGL()
 
 	self.view.fovY = 90
 
-	self.glslHeader = [[
-#version 300 es
-precision highp float;
-]]
 	local sampler3Dprec = [[
 precision mediump sampler3D;
 ]]
@@ -235,7 +231,9 @@ error("you're using .obj")
 	}
 
 	self.skyShader = GLProgram{
-		vertexCode = self.glslHeader..[[
+		version = 'latest',
+		precision = 'best',
+		vertexCode = [[
 in vec2 vertex;
 out vec2 vtxv;
 uniform mat4 mvProjMat;
@@ -244,7 +242,7 @@ void main() {
 	gl_Position = mvProjMat * vec4(vertex, 0., 1.);
 }
 ]],
-		fragmentCode = self.glslHeader..[[
+		fragmentCode = [[
 in vec2 vtxv;
 out vec4 fragColor;
 uniform float timeOfDay;
@@ -273,7 +271,9 @@ void main() {
 	}
 
 	self.spriteShader = GLProgram{
-		vertexCode = self.glslHeader..[[
+		version = 'latest',
+		precision = 'best',
+		vertexCode = [[
 in vec2 vertex;
 
 // this sprite's texcoord pos and size in the atlas
@@ -376,7 +376,7 @@ void main() {
 	gl_Position = projMat * viewPos;
 }
 ]],
-		fragmentCode = self.glslHeader..[[
+		fragmentCode = [[
 in vec2 texcoordv;
 in vec3 viewPosv;
 flat in mat4 colorMatrixv;
@@ -576,12 +576,12 @@ void main() {
 
 
 
-	self.meshShader = require 'mesh':makeShader{
-		glslHeader = self.glslHeader,
-	}
+	self.meshShader = require 'mesh':makeShader()
 
 	self.swordShader = GLProgram{
-		vertexCode = self.glslHeader..[[
+		version = 'latest',
+		precision = 'best',
+		vertexCode = [[
 in vec3 vertex;
 in vec4 color;
 out vec4 colorv;
@@ -591,7 +591,7 @@ void main() {
 	gl_Position = mvProjMat * vec4(vertex, 1.);
 }
 ]],
-		fragmentCode = self.glslHeader..[[
+		fragmentCode = [[
 in vec4 colorv;
 out vec4 fragColor;
 void main() {
@@ -612,7 +612,9 @@ void main() {
 	-- setup shader before creating chunks
 	local Chunk = require 'farmgame.map'.Chunk
 	self.mapShader = GLProgram{
-		vertexCode = self.glslHeader..[[
+		version = 'latest',
+		precision = 'best',
+		vertexCode = [[
 in vec3 vertex;
 in vec2 texcoord;
 in vec4 color;
@@ -638,7 +640,7 @@ void main() {
 	gl_Position = projMat * viewPos;
 }
 ]],
-		fragmentCode = self.glslHeader..sampler3Dprec..[[
+		fragmentCode = sampler3Dprec..[[
 in vec3 worldPosv;
 in vec3 viewPosv;
 in vec2 texcoordv;
@@ -726,7 +728,9 @@ void main() {
 	
 	--]]
 	self.lumUpdateShader = GLProgram{
-		vertexCode = self.glslHeader..[[
+		version = 'latest',
+		precision = 'best',
+		vertexCode = [[
 in vec2 vertex;
 out vec3 tc;
 uniform float sliceZ;
@@ -737,9 +741,8 @@ void main() {
 	gl_Position = vec4(2. * vertex.xy - 1., 0., 1.); 
 }
 ]],
-		fragmentCode = self.glslHeader
-			..sampler3Dprec
-			..[[
+		fragmentCode = sampler3Dprec
+..[[
 in vec3 tc;
 out vec4 fragColor;
 uniform sampler2D randTex;
@@ -960,30 +963,30 @@ print('dir', v)
 	self.lastTime = sysThisTime
 end
 
-function App:event(event, ...)
-	App.super.event(self, event, ...)
+function App:event(event)
+	App.super.event(self, event)
 
 -- [[ mouse rotate support?
 	local canHandleMouse = not ig.igGetIO()[0].WantCaptureMouse
-	if event.type == sdl.SDL_MOUSEMOTION then
+	if event[0].type == sdl.SDL_MOUSEMOTION then
 		if canHandleMouse
-		and bit.band(event.motion.state, 1) == 1
+		and bit.band(event[0].motion.state, 1) == 1
 		then
-			local dx = event.motion.xrel
+			local dx = event[0].motion.xrel
 			self.viewYaw = self.viewYaw + math.rad(dx)
 			self.view.angle = quatd():fromAngleAxis(0, 0, 1, math.deg(self.viewYaw))
 							* quatd():fromAngleAxis(1,0,0,30)
 			self.view.pos = self.view.angle:zAxis() * (self.view.pos - self.view.orbit):length() + self.view.orbit
 		end
-	elseif event.type == sdl.SDL_KEYDOWN then
-		if event.key.keysym.sym == ('`'):byte() then
+	elseif event[0].type == sdl.SDL_KEYDOWN then
+		if event[0].key.keysym.sym == ('`'):byte() then
 			self.playingMenu.consoleOpen = not self.playingMenu.consoleOpen
 		end
 	end
 --]]
 
 	if self.game then
-		self.game:event(event)
+		self.game:event(event[0])
 	end
 end
 

@@ -14,7 +14,9 @@ function SplashMenu:init(app, ...)
 	app.paused = true
 
 	self.splashShader = GLProgram{
-		vertexCode = app.shaderHeader..[[
+		version = 'latest',
+		precision = 'best',
+		vertexCode = [[
 in vec2 vertex;
 out vec2 texcoordv;
 uniform mat4 mvProjMat;
@@ -23,7 +25,7 @@ void main() {
 	gl_Position = mvProjMat * vec4(vertex, 0., 1.);
 }
 ]],
-		fragmentCode = app.shaderHeader..[[
+		fragmentCode = [[
 in vec2 texcoordv;
 out vec4 fragColor;
 
