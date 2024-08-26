@@ -782,9 +782,9 @@ function Game:draw()
 		gl.glLoadMatrixf(view.mvMat.v)
 		--]=]
 		-- [=[
-		view.useBuiltinMatrixMath = false
+		view.useGLMatrixMode = true
 		view:setup(app.width / app.height)
-		view.useBuiltinMatrixMath = true
+		view.useGLMatrixMode = nil
 		--]=]
 
 		--gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_FILL)

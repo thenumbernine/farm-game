@@ -23,8 +23,6 @@ local Game = require 'farmgame.game'
 local getTime = require 'ext.timer'.getTime
 local OBJLoader = require 'mesh.objloader'
 
-require 'glapp.view'.useBuiltinMatrixMath = true
-
 --[[
 so dilemma
 1) put each attr in a separate buffer
