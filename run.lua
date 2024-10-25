@@ -33,16 +33,17 @@ require 'gl.setup'(glfn)
 
 -- hack vector, instead of resizing by 32 bytes (slowly)
 -- how about increase by 20% then round up to nearest 32
-local vectorbase = require 'ffi.cpp.vector'.vectorbase
+-- Can't modify ffi.cpp.vector's .reserve() function because it's in the metatype ... I guess I could but you're not supposed to after it's been bound to the ctype ...
+local vectorbase = require 'ffi.cpp.vector-lua'
 function vectorbase:resize(newsize)
 	newsize = tonumber(newsize)
-	if newsize > self:capacity() then
+	if newsize > self.capacity then
 		local newcap = newsize + bit.rshift(newsize, 1)
 		newcap = bit.lshift(bit.rshift(newcap, 5) + 1, 5)
---print('resizing from', self:capacity(), 'to', newcap)
+--print('resizing from', self.capacity, 'to', newcap)
 		self:reserve(newcap)
 	end
-	self.finish = self.start + newsize
+	self.size = newsize
 end
 
 

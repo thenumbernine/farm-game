@@ -5,7 +5,7 @@ local table = require 'ext.table'
 local math = require 'ext.math'
 local tolua = require 'ext.tolua'
 local range = require 'ext.range'
-local vector = require 'ffi.cpp.vector'
+local vector = require 'ffi.cpp.vector-lua'
 local vec2i = require 'vec-ffi.vec2i'
 local vec3i = require 'vec-ffi.vec3i'
 local vec3f = require 'vec-ffi.vec3f'
@@ -94,11 +94,11 @@ args:
 --]]
 function CPUGPUBuf:init(args)
 	local ctype = assert(args.type)
-	self.vec = vector(ctype)()
+	self.vec = vector(ctype)
 	-- using reserve and heuristic of #cubes ~ #vec: brings time taken from 12 s to 0.12 s
 	self.vec:reserve(args.volume)
 	self.buf = GLArrayBuffer{
-		size = ffi.sizeof(ctype) * self.vec:capacity(),
+		size = ffi.sizeof(ctype) * self.vec.capacity,
 		data = self.vec.v,
 		usage = gl.GL_DYNAMIC_DRAW,
 	}:unbind()
@@ -113,8 +113,8 @@ function CPUGPUBuf:init(args)
 	local cpugpu = self
 	local oldreserve = self.vec.reserve
 	local function newreserve(self, newcap)
-		if newcap <= self:capacity() then return end
-		local oldcap = self:capacity()
+		if newcap <= self.capacity then return end
+		local oldcap = self.capacity
 		local oldv = self.v
 		oldreserve(self, newcap)	-- copies oldv to v, updates v and capacity
 --print('reserving from', oldcap, 'to', newcap)
@@ -248,7 +248,7 @@ function Chunk:init(args)
 	self.sceneObj = GLSceneObject{
 		geometry = GLGeometry{
 			mode = gl.GL_TRIANGLES,
-			count = self.vtxs.vec:size(),
+			count = #self.vtxs.vec,
 		},
 		program = app.mapShader,
 		attrs = {
@@ -455,12 +455,12 @@ function Chunk:buildDrawArrays()
 --[[
 	local volume = self.volume
 	print('volume', volume)
-	print('vtxs', self.vtxs.vec:size())
+	print('vtxs', #self.vtxs.vec)
 --]]
 
-	local vtxSize = self.vtxs.vec:size() * ffi.sizeof(self.vtxs.vec.type)
-	local texcoordSize = self.texcoords.vec:size() * ffi.sizeof(self.texcoords.vec.type)
-	local colorSize = self.colors.vec:size() * ffi.sizeof(self.colors.vec.type)
+	local vtxSize = #self.vtxs.vec * ffi.sizeof(self.vtxs.vec.type)
+	local texcoordSize = #self.texcoords.vec * ffi.sizeof(self.texcoords.vec.type)
+	local colorSize = #self.colors.vec * ffi.sizeof(self.colors.vec.type)
 
 --[[ right now i'm resizing the gl buffers with the c buffers
 -- I could instead only check here after all is done for a final resize
@@ -507,7 +507,7 @@ function Chunk:buildDrawArrays()
 	self.sceneObj.vao:setAttrs()
 --]]
 
-	self.sceneObj.geometry.count = self.vtxs.vec:size()
+	self.sceneObj.geometry.count = #self.vtxs.vec
 end
 
 function Chunk:draw(app, game)
@@ -964,11 +964,11 @@ local function unravel(index, size)
 	return x, y, index
 end
 
-local lightFlagAllVec = vector'uint8_t'()
-local lightFlagPrevVec = vector'uint8_t'()
-local lightFlagNextVec = vector'uint8_t'()
-local lightPrevPoss = vector'vec3i_t'()
-local lightNextPoss = vector'vec3i_t'()
+local lightFlagAllVec = vector'uint8_t'
+local lightFlagPrevVec = vector'uint8_t'
+local lightFlagNextVec = vector'uint8_t'
+local lightPrevPoss = vector'vec3i_t'
+local lightNextPoss = vector'vec3i_t'
 
 -- update a region of light
 -- uses flood fill algorithm
@@ -1006,11 +1006,11 @@ function Map:updateLight_floodFill(
 	local lightsizez = lightmaxz - lightminz + 1
 	local lightvolume = lightsizex * lightsizey * lightsizez
 	lightFlagAllVec:resize(lightvolume)
-	ffi.fill(lightFlagAllVec.v, lightFlagAllVec:size())
+	ffi.fill(lightFlagAllVec.v, #lightFlagAllVec)
 	lightFlagPrevVec:resize(lightvolume)
-	ffi.fill(lightFlagPrevVec.v, lightFlagPrevVec:size())
+	ffi.fill(lightFlagPrevVec.v, #lightFlagPrevVec)
 	lightFlagNextVec:resize(lightvolume)
-	ffi.fill(lightFlagNextVec.v, lightFlagNextVec:size())
+	ffi.fill(lightFlagNextVec.v, #lightFlagNextVec)
 	--]]
 
 	-- calculate borders and sources (similar to Lagrangian multipliers...)
@@ -1068,7 +1068,7 @@ function Map:updateLight_floodFill(
 	repeat
 		propagatedany = false
 		lightNextPoss:resize(0)
-		ffi.fill(lightFlagNextVec.v, lightFlagNextVec:size())
+		ffi.fill(lightFlagNextVec.v, #lightFlagNextVec)
 		for pi=0,lightPrevPoss.size-1 do
 			local pos = lightPrevPoss.v[pi]
 			local x,y,z = pos:unpack()
@@ -1112,7 +1112,7 @@ function Map:updateLight_floodFill(
 				end
 			end
 		end
-		ffi.fill(lightFlagPrevVec.v, lightFlagPrevVec:size())
+		ffi.fill(lightFlagPrevVec.v, #lightFlagPrevVec)
 		for pi=0,lightNextPoss.size-1 do
 			local x,y,z = lightNextPoss.v[pi]:unpack()
 			local lightindex = (x - lightminx) + lightsizex * ((y - lightminy) + lightsizey * (z - lightminz))
