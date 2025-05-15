@@ -25,7 +25,7 @@ files = {
 		'threadmanager',
 		'image',
 		'gl',
-			
+
 		--[[ this folder is a mess so ...
 		'mesh',
 		--]]
@@ -36,7 +36,6 @@ files = {
 
 		'glapp',
 		'imgui',
-		'imguiapp',
 		'gameapp',
 		'audio',
 		'csv',
@@ -51,9 +50,9 @@ luajitLibs = {
 		'SDL2',
 		--'GLESv2' ?
 		'cimgui_sdl',
-		'ogg',
 		'vorbis',
 		'vorbisfile',
+		'ogg',
 		'openal32',
 	},
 	linux = {
@@ -67,8 +66,11 @@ luajitLibs = {
 		'openal',		-- openal-soft
 	},
 	osx = {
-		'sdl',
-		'libpng',
-		'libimgui',
+		'SDL2',
+		'png',
+		'cimgui_sdl',
+		'vorbis',
+		'vorbisfile',
+		'ogg',
 	},
 }

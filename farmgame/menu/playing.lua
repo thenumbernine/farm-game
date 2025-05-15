@@ -46,7 +46,7 @@ function PlayingMenu:updateGUI()
 	--]]
 
 
-	-- taken from imguiapp/tests/console.lua
+	-- taken from imgui/tests/console.lua
 	if self.consoleOpen then
 		-- how do you change in-window font-scale *AND* window-title-bar font-scale? ...
 		--[[ can't do this, it won't set.  maybe it takes a frame for imgui to respond?
