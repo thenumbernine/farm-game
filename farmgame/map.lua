@@ -107,7 +107,7 @@ function CPUGPUBuf:init(args)
 	-- TODO Don't reallocate gl buffers each time.
 	-- OpenGL growing buffers via glCopyBufferSubData:
 	-- https://stackoverflow.com/a/27751186/2714073
-	-- TODO TODO I dn't really need glCopyBufferSubData
+	-- TODO TODO I don't really need glCopyBufferSubData
 	-- since the cpu side is getting copied around already
 	-- and the gpu update is only at the end
 
@@ -118,7 +118,7 @@ function CPUGPUBuf:init(args)
 		local oldcap = self.capacity
 		local oldv = self.v
 		oldreserve(self, newcap)	-- copies oldv to v, updates v and capacity
---print('reserving from', oldcap, 'to', newcap)
+--DEBUG:print('reserving from', oldcap, 'to', newcap)
 
 		local sizeof = ffi.sizeof(ctype)
 		local oldcopysize = sizeof * oldcap
@@ -220,7 +220,7 @@ function Chunk:init(args)
 		data = self.surface,
 		minFilter = gl.GL_NEAREST,
 		magFilter = gl.GL_NEAREST,
-	}
+	}:unbind()
 
 	-- geometry
 	local volume = self.volume
@@ -244,7 +244,7 @@ function Chunk:init(args)
 		data = self.lumData,
 		magFilter = gl.GL_NEAREST,
 		minFilter = gl.GL_NEAREST,
-	}
+	}:unbind()
 
 	self.sceneObj = GLSceneObject{
 		geometry = GLGeometry{
@@ -572,7 +572,7 @@ function Chunk:calcSunAngles()
 		for i=0,self.size.x-1 do
 			local x = i + bit.lshift(self.pos.x, self.bitsize.x)
 			local surface = self.surface + (i + self.size.x * j)
---print(i,j ,surface.lumAlt)
+--DEBUG:print(i,j ,surface.lumAlt)
 			local alt = surface.lumAlt
 			surface.minAngle = 0
 			surface.maxAngle = 2 *math.pi
@@ -586,7 +586,7 @@ function Chunk:calcSunAngles()
 					local alt2 = chunk2.surface[di2 + self.size.x * j].lumAlt
 					local dz = alt2 - alt
 					local angle = (math.atan2(dx, -dz) + 2 * math.pi) % (2 * math.pi)
---print('x2', x2, 'alt2', alt2, 'dx', dx, 'dz', dz, 'angle', angle)
+--DEBUG:print('x2', x2, 'alt2', alt2, 'dx', dx, 'dz', dz, 'angle', angle)
 					if x2 < x then
 						-- west = setting sun, pick the minimum maxAngle
 						surface.maxAngle = math.min(surface.maxAngle, angle)
@@ -596,7 +596,7 @@ function Chunk:calcSunAngles()
 					end
 				end
 			end
---print('result minAngle', surface.minAngle, 'maxAngle', surface.maxAngle)
+--DEBUG:print('result minAngle', surface.minAngle, 'maxAngle', surface.maxAngle)
 		end
 	end
 
@@ -928,7 +928,7 @@ function Map:hasObjType(x,y,z,cl)
 end
 
 function Map:newObj(args)
---print('new', args.class.name, 'at', args.pos)
+--DEBUG:print('new', args.class.name, 'at', args.pos)
 	local cl = assert(args.class)
 
 	args.game = self.game
@@ -1035,7 +1035,7 @@ function Map:updateLight_floodFill(
 						lightPrevPoss:emplace_back()[0]:set(x,y,z)
 						lightFlagPrevVec.v[lightindex] = 1
 						lightFlagAllVec.v[lightindex] = 1
---print('seed', x,y,z)
+--DEBUG:print('seed', x,y,z)
 					else
 						--assert(voxel)
 						-- propagate only source lights within relight region
@@ -1058,7 +1058,7 @@ function Map:updateLight_floodFill(
 							lightPrevPoss:emplace_back()[0]:set(x,y,z)
 							lightFlagPrevVec.v[lightindex] = 1
 							lightFlagAllVec.v[lightindex] = 1
---print('seed', x,y,z)
+--DEBUG:print('seed', x,y,z)
 						end
 					end
 				end
@@ -1105,7 +1105,7 @@ function Map:updateLight_floodFill(
 									-- If it diminishes by more than one then we need to propagate in space inverse-proportionally or else we could flood-fill into a cell, then put it on the 'already done' pile, and then not update it later correctly.
 									nbhdVoxel.lum = math.max(nbhdVoxel.lum, lum - nbhdVoxelType.lightDiminish)
 								end
---print('propagate', nx,ny,nz)
+--DEBUG:print('propagate', nx,ny,nz)
 								lightNextPoss:emplace_back()[0]:set(nx,ny,nz)
 								lightFlagNextVec.v[nbhdlightindex] = 1
 							end
@@ -1258,24 +1258,24 @@ function Map:updateLight_lumTex(
 					local voxelTypeIndex = voxel.type
 					local voxelType = Voxel.types[voxelTypeIndex] or Voxel.types[0]
 					local lum = ffi.C.MAX_LUM
---print('z', z, 'lumAlt', surf[0].lumAlt)
+--DEBUG:print('z', z, 'lumAlt', surf[0].lumAlt)
 					-- TODO only use full-bright when above-ground *AND* in angle for the sun time
 					do --if z < surf[0].lumAlt then
---print('z < lumAlt')
+--DEBUG:print('z < lumAlt')
 						local voxelIndex = ravelIndex3D(x, y, z, self.size)
 						lum = 0
 						local objs = self.objsPerTileIndex[voxelIndex]
 						if objs then
 							for _,obj in ipairs(objs) do
---print('obj.light', obj.light)
+--DEBUG:print('obj.light', obj.light)
 								lum = lum + obj.light
 							end
 						end
---print('lum before clamp', lum)
+--DEBUG:print('lum before clamp', lum)
 						lum = math.clamp(lum, 0, ffi.C.MAX_LUM)
---print('lum after clamp', lum)
+--DEBUG:print('lum after clamp', lum)
 					end
---print('updateLightOnMove',x,y,z,lum)
+--DEBUG:print('updateLightOnMove',x,y,z,lum)
 					local cx = bit.rshift(x, Chunk.bitsize.x)
 					local cy = bit.rshift(y, Chunk.bitsize.y)
 					local cz = bit.rshift(z, Chunk.bitsize.z)

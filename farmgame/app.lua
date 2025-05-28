@@ -176,7 +176,7 @@ precision mediump sampler3D;
 		filename = 'sprites/atlas.png',
 		magFilter = gl.GL_LINEAR,
 		minFilter = gl.GL_NEAREST,
-	}
+	}:unbind()
 	-- key/value from filename to rect
 	local spriteAtlasMap = require 'farmgame.atlas'.atlasMap
 --]=]
@@ -804,7 +804,7 @@ void main() {
 			lumTexYR = 6,
 			lumTexZR = 7,
 		},
-	}
+	}:useNone()
 
 	local randSize = 4 * Chunk.size.x * Chunk.size.y
 	local randData = ffi.new('uint8_t[?]', randSize)
@@ -893,7 +893,7 @@ function App:resetGame(dontMakeGame)
 				break
 			end
 		end
-print('App:resetGame', self.game.saveDir)
+--DEBUG:print('App:resetGame', self.game.saveDir)
 	end
 end
 
@@ -925,9 +925,9 @@ function App:updateGame()
 	end
 	if game and self.needsResortSprites then
 		self.needsResortSprites = false
-print('updating sprite z order')
+--DEBUG:print('updating sprite z order')
 		local v = self.view.angle:zAxis()
-print('dir', v)
+--DEBUG:print('dir', v)
 		game.objs:sort(function(a,b)
 			return a.pos:dot(v) < b.pos:dot(v)
 		end)
