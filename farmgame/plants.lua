@@ -3,6 +3,7 @@
 -- used with item/seeds .plant, obj/seededground .plant etc
 local table = require 'ext.table'
 local path = require 'ext.path'
+local assert = require 'ext.assert'
 local string = require 'ext.string'
 local vec2f = require 'vec-ffi.vec2f'
 local vec3f = require 'vec-ffi.vec3f'
@@ -127,22 +128,22 @@ local plantTypes = plantcsv.rows:mapi(function(row,i)
 	plantType.colorMatrix = colorMatrix
 
 	plantType.sprite = table{
-		{weight=1, sprite='tree'},	-- grows slowly, maybe makes fruit every so many days
-		{weight=5, sprite='bush'},	-- grows medium, also fruit
-		{weight=5, sprite='plant'},	-- grows fast, scythe to get veg
-		{weight=10, sprite='vegetable'},	-- grows fast, pull up to get veg
-	}:pickWeighted().sprite
+		tree=1,	-- grows slowly, maybe makes fruit every so many days
+		bush=5,	-- grows medium, also fruit
+		plant=5,	-- grows fast, scythe to get veg
+		vegetable=10,	-- grows fast, pull up to get veg
+	}:pickWeighted()
 
 	-- pick a random sequence <-> plant sub-type
 	-- TODO CAN'T DO THIS ANYMORE WITH SAVE AND LOAD
-	local sprite = assert(anim[plantType.sprite])
+	local sprite = assert.index(anim, plantType.sprite)
 	local seqnames = table.keys(sprite)
 	local seqname = seqnames:pickRandom()
 	plantType.seq = seqname
 
-	local seq = assert(sprite[seqname])
-	local frame = assert(seq[1])
-	local framesize = assert(frame.atlasTcSize)
+	local seq = assert.index(sprite, seqname)
+	local frame = assert.index(seq, 1)
+	local framesize = assert.index(frame, 'atlasTcSize')
 	plantType.drawSize = framesize / 20
 
 
@@ -156,7 +157,7 @@ local plantTypes = plantcsv.rows:mapi(function(row,i)
 			classname = 'farmgame.obj.fruit.'..plantType.name,	-- TODO proper name for fruit?
 		}
 	)
-	assert(#fruitClasses == 1) -- for now
+	assert.len(fruitClasses, 1) -- for now
 
 	if plantType.sprite == 'tree' then
 		plantType.numLogs = 10

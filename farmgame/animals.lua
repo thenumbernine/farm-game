@@ -1,4 +1,5 @@
 local table = require 'ext.table'
+local assert = require 'ext.assert'
 local matrix_ffi = require 'matrix.ffi'
 
 local Atlas = require 'farmgame.atlas'
@@ -30,10 +31,10 @@ end):mapi(function(spriteName)
 	animalType.seq = seqname
 	--]]
 
-	local sprite = assert(anim[spriteName])
-	local seq = assert(sprite[seqname])
-	local frame = assert(seq[1])
-	local framesize = assert(frame.atlasTcSize)
+	local sprite = assert.index(anim, spriteName)
+	local seq = assert.index(sprite, seqname)
+	local frame = assert.index(seq, 1)
+	local framesize = assert.index(frame, 'atlasTcSize')
 	animalType.drawSize = framesize / 20
 
 	-- TODO ... classname and serialization

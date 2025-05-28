@@ -2,6 +2,7 @@ local ffi = require 'ffi'
 local bit = require 'bit'
 local range = require 'ext.range'
 local table = require 'ext.table'
+local assert = require 'ext.assert'
 local path = require 'ext.path'
 local tolua = require'ext.tolua'
 local sdl = require 'sdl'
@@ -19,6 +20,7 @@ local GLSceneObject = require 'gl.sceneobject'
 local GLTex2D = require 'gl.tex2d'
 local GLTex3D = require 'gl.tex3d'
 local GLArrayBuffer = require 'gl.arraybuffer'
+local glreport = require 'gl.report'
 local Game = require 'farmgame.game'
 local getTime = require 'ext.timer'.getTime
 local OBJLoader = require 'mesh.objloader'
@@ -160,6 +162,7 @@ function App:initGL()
 	-- instead of proj * mv , imma separate into: proj view model
 	-- that means view.mvMat is really the view matrix
 	App.super.initGL(self)
+glreport'here'
 
 	self.view.fovY = 90
 
@@ -187,7 +190,7 @@ precision mediump sampler3D;
 					local fn = frame.filename
 					if fn:sub(-4) == '.png' then
 						-- .pos, .size
-						local texrect = assert(spriteAtlasMap[frame.filename], "failed to find map for sprite "..tolua(frame.filename))
+						local texrect = assert.index(spriteAtlasMap, frame.filename, "failed to find map for sprite")
 						-- atlas pos and size
 						frame.atlasTcPos = vec2f(table.unpack(texrect.pos))
 						frame.atlasTcSize = vec2f(table.unpack(texrect.size))
@@ -226,7 +229,8 @@ error("you're using .obj")
 			s = gl.GL_CLAMP_TO_EDGE,
 			t = gl.GL_CLAMP_TO_EDGE,
 		},
-	}
+	}:unbind()
+glreport'here'
 
 	self.skyShader = GLProgram{
 		version = 'latest',
@@ -256,6 +260,7 @@ void main() {
 			inside = 0,
 		},
 	}:useNone()
+glreport'here'
 
 	self.skySceneObj = GLSceneObject{
 		geometry = self.quadGeom,
@@ -267,6 +272,7 @@ void main() {
 			self.skyTex,
 		},
 	}
+glreport'here'
 
 	self.spriteShader = GLProgram{
 		version = 'latest',
@@ -417,6 +423,7 @@ void main() {
 			},
 		},
 	}:useNone()
+glreport'here'
 
 
 	-- NOTICE these have a big perf hit when resizing ...
@@ -427,7 +434,8 @@ void main() {
 		size = ffi.sizeof'sprite_t' * self.spritesBufCPU.capacity,
 		data = self.spritesBufCPU.v,
 		usage = gl.GL_DYNAMIC_DRAW,
-	}
+	}:unbind()
+glreport'here'
 
 	--[[ hmm no resizing for now
 	-- TODO new system, this won't affect the class (and shouldn't since luajit ffi says don't touch cdata metatables...)
@@ -439,7 +447,7 @@ void main() {
 	--]]
 
 	self.spriteSceneObj = GLSceneObject{
-		geometry = GLGeometry{
+		geometry = {
 			mode = gl.GL_TRIANGLE_STRIP,
 			count = 0,
 		},
@@ -452,8 +460,9 @@ void main() {
 				size = 1,
 				-- https://stackoverflow.com/a/67653318/2714073
 				-- so looks like I need to add behavior to gl/attribute.lua to pick the right setter of glVertexAttrib*Pointer
+				type = gl.GL_UNSIGNED_BYTE,
 				--type = gl.GL_INT,
-				type = gl.GL_FLOAT,
+				--type = gl.GL_FLOAT,
 				normalize = false,
 				stride = ffi.sizeof'sprite_t',
 				offset = ffi.offsetof('sprite_t', 'flags'),
@@ -571,8 +580,7 @@ void main() {
 		},
 		texs = {},
 	}
-
-
+glreport'here'
 
 	self.meshShader = require 'mesh':makeShader()
 
@@ -989,7 +997,7 @@ function App:event(event)
 end
 
 function App:saveGame(folder)
-	local game = assert(self.game)
+	local game = assert.index(self, 'game')
 	folder:mkdir(true)
 	assert(folder:isdir(), "mkdir failed")
 	local gamesavedata = tolua({

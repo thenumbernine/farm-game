@@ -3,6 +3,7 @@ local template = require 'template'
 local class = require 'ext.class'
 local table = require 'ext.table'
 local math = require 'ext.math'
+local assert = require 'ext.assert'
 local tolua = require 'ext.tolua'
 local range = require 'ext.range'
 local vector = require 'ffi.cpp.vector-lua'
@@ -69,12 +70,12 @@ typedef struct {
 	texBitSize = texBitSize,
 	shapeBitSize = shapeBitSize,
 }))
-assert(ffi.sizeof'voxel_t' == ffi.sizeof'voxel_basebits_t')
-assert(ffi.sizeof'lumvox_t' == 4)
-assert(#Voxel.types <= bit.lshift(1,typeBitSize))	-- make sure our # types can fit
-assert(#Voxel.shapes <= bit.lshift(1,shapeBitSize))	-- make sure our # shapes can fit
+assert.eq(ffi.sizeof'voxel_t', ffi.sizeof'voxel_basebits_t')
+assert.eq(ffi.sizeof'lumvox_t', 4)
+assert.le(#Voxel.types, bit.lshift(1,typeBitSize))	-- make sure our # types can fit
+assert.le(#Voxel.shapes, bit.lshift(1,shapeBitSize))	-- make sure our # shapes can fit
 for _,tileType in ipairs(Voxel.types) do
-	assert(#tileType.texrects <= bit.lshift(1, texBitSize))	-- make sure all our textures per voxel type can fit
+	assert.le(#tileType.texrects, bit.lshift(1, texBitSize))	-- make sure all our textures per voxel type can fit
 end
 
 local voxel_t = ffi.metatype('voxel_t', {
@@ -93,7 +94,7 @@ args:
 	type = ctype
 --]]
 function CPUGPUBuf:init(args)
-	local ctype = assert(args.type)
+	local ctype = assert.index(args, 'type')
 	self.vec = vector(ctype)
 	-- using reserve and heuristic of #cubes ~ #vec: brings time taken from 12 s to 0.12 s
 	self.vec:reserve(args.volume)
@@ -182,7 +183,7 @@ glreport'here'
 		}:unbind()
 		--]]
 	end
-	
+
 	-- TODO ... hmmm
 	self.vec.reserve = newreserve
 end
@@ -216,7 +217,7 @@ function Chunk:init(args)
 		-- TODO ... either convert all fields to uint8, or use an intermediate ...
 		-- if we convert all fields, then that means our max altitude is 256
 		-- another option is convert all fields to uint16 ...
-		data = self.surface,	
+		data = self.surface,
 		minFilter = gl.GL_NEAREST,
 		magFilter = gl.GL_NEAREST,
 	}
@@ -274,10 +275,10 @@ function Chunk:init(args)
 end
 
 -- Lookup functions for rotations
--- Have to see if it's faster to do this or idk what else ... 
+-- Have to see if it's faster to do this or idk what else ...
 -- ... inline if-conditions for all cases?
 -- ... for-loops to repeatedly apply each rot
---[[ symmath script 
+--[[ symmath script
 T = Matrix(
 	{1,0,0,frac(1,2)},
 	{0,1,0,frac(1,2)},
@@ -348,7 +349,7 @@ function Chunk:buildDrawArrays()
 							-- yaw = rotz (apply third)
 							local rotyfunc = roty[voxel.roty]
 							local rotzfunc = rotz[voxel.rotz]
-							
+
 							if voxelType.isUnitCube then
 								if voxel.shape == 0 then
 									-- full cube
@@ -560,6 +561,7 @@ function Chunk:buildAlts()
 	end
 end
 
+assert(gl.GL_RGBA32F)	-- hmm, what if it's not here
 function Chunk:calcSunAngles()
 	local map = self.map
 
@@ -609,7 +611,7 @@ function Chunk:calcSunAngles()
 				maxAngle,
 				0, 1
 		end),
-		internalFormat = assert(gl.GL_RGBA32F),
+		internalFormat = gl.GL_RGBA32F,
 		format = gl.GL_RGBA,
 		type = gl.GL_FLOAT,
 		minFilter = gl.GL_NEAREST,
@@ -653,7 +655,7 @@ function Chunk:initLight()
 				end
 				local voxelTypeIndex = voxel.type
 				local voxelType = Voxel.types[voxelTypeIndex] or Voxel.types[0]
---DEBUG:assert(voxelType.lightDiminish)
+--DEBUG:assert.index(voxelType, 'lightDiminish')
 				lumvox.lightDiminish = voxelType.lightDiminish
 				voxel = voxel + 1
 				surf = surf + 1
@@ -662,9 +664,9 @@ function Chunk:initLight()
 		voxelSlice = voxelSlice - sliceSize
 		lumSlice = lumSlice - sliceSize
 	end
---DEBUG:assert(voxelSlice == self.v - sliceSize)
---DEBUG:assert(lumSlice == self.lumData - sliceSize)
---DEBUG:assert(self.lumTex.data == self.lumData)
+--DEBUG:assert.eq(voxelSlice, self.v - sliceSize)
+--DEBUG:assert.eq(lumSlice, self.lumData - sliceSize)
+--DEBUG:assert.eq(self.lumTex.data, self.lumData)
 	self.lumTex
 		:bind()
 		:subimage()
@@ -691,7 +693,7 @@ args =
 	chunkData = (optional) xyz major order, per-chunk
 --]]
 function Map:init(args)
-	self.game = assert(args.game)
+	self.game = assert.index(args, 'game')
 	local game = self.game
 	local app = game.app
 
@@ -728,7 +730,7 @@ function Map:init(args)
 	end
 
 	if args.chunkData then
-		assert(#args.chunkData == self.volume * ffi.sizeof'voxel_t')
+		assert.len(args.chunkData, self.volume * ffi.sizeof'voxel_t')
 		local p = ffi.cast('voxel_t*', ffi.cast('char*', args.chunkData))
 		for chunkIndex=0,self.chunkVolume-1 do
 			local chunk = self.chunks[chunkIndex]
@@ -1240,7 +1242,7 @@ function Map:updateLight_lumTex(
 	and lightminz <= self.size.z-1
 	then
 		local lastChunk
-		
+
 		lightminx = math.max(0, lightminx)
 		lightminy = math.max(0, lightminy)
 		lightminz = math.max(0, lightminz)
@@ -1256,7 +1258,7 @@ function Map:updateLight_lumTex(
 					local voxelTypeIndex = voxel.type
 					local voxelType = Voxel.types[voxelTypeIndex] or Voxel.types[0]
 					local lum = ffi.C.MAX_LUM
---print('z', z, 'lumAlt', surf[0].lumAlt)				
+--print('z', z, 'lumAlt', surf[0].lumAlt)
 					-- TODO only use full-bright when above-ground *AND* in angle for the sun time
 					do --if z < surf[0].lumAlt then
 --print('z < lumAlt')
@@ -1265,13 +1267,13 @@ function Map:updateLight_lumTex(
 						local objs = self.objsPerTileIndex[voxelIndex]
 						if objs then
 							for _,obj in ipairs(objs) do
---print('obj.light', obj.light)								
+--print('obj.light', obj.light)
 								lum = lum + obj.light
 							end
 						end
---print('lum before clamp', lum)						
+--print('lum before clamp', lum)
 						lum = math.clamp(lum, 0, ffi.C.MAX_LUM)
---print('lum after clamp', lum)						
+--print('lum after clamp', lum)
 					end
 --print('updateLightOnMove',x,y,z,lum)
 					local cx = bit.rshift(x, Chunk.bitsize.x)
@@ -1290,7 +1292,7 @@ function Map:updateLight_lumTex(
 						lastChunk = chunk
 						chunk.lumTex:bind()
 					end
-					
+
 					lum = lum * 255 / ffi.C.MAX_LUM
 					tmpcolor:set(lum, lum, voxelType.lightDiminish, 255)
 					gl.glTexSubImage3D(
@@ -1361,9 +1363,9 @@ gl.glDisable(gl.GL_BLEND)
 				app.lumUpdateObj.texs[7] = self.chunks[ravelIndex3D(cx,math.min(cy+1,self.sizeInChunks.y-1),cz,self.sizeInChunks)].lumTex:bind(6)	-- yr
 				app.lumUpdateObj.texs[8] = self.chunks[ravelIndex3D(cx,cy,math.min(cz+1,self.sizeInChunks.z-1),self.sizeInChunks)].lumTex:bind(7)	-- zr
 				--]]
-			
+
 				-- in opengl you can't read and write to the same tex ...
-				-- in opencl you can ... 
+				-- in opencl you can ...
 				-- bleh
 
 				for z=0,Chunk.size.z-1 do
@@ -1373,14 +1375,14 @@ gl.glDisable(gl.GL_BLEND)
 					local res, err = fbo.check()
 					if not res then print(err) end
 					app.quadGeom:draw()
-					
+
 					--[[ copy back to the original tex3d
 					chunk.lumTex:bind(0)
 					gl.glCopyTexSubImage3D(gl.GL_TEXTURE_3D, 0, 0, 0, z, 0, 0, Chunk.size.x, Chunk.size.y)
 					chunk.lumTex:unbind(0)
 					--]]
 				end
-		
+
 				-- [[
 				-- just swap refs
 				chunk.lumTex, app.lumTmpTex = app.lumTmpTex, chunk.lumTex

@@ -1,6 +1,7 @@
 local ffi = require 'ffi'
 local template = require 'template'
 local class = require 'ext.class'
+local assert = require 'ext.assert'
 local table = require 'ext.table'
 local vec3f = require 'vec-ffi.vec3f'
 local box3f = require 'vec-ffi.box3f'
@@ -119,7 +120,7 @@ SolidTile.name = 'Solid'
 SolidTile.solid = true
 SolidTile.isUnitCube = true	-- render shorthand for side occlusion
 SolidTile.lightDiminish = math.floor(15/15*ffi.C.MAX_LUM)	-- TODO unless .shape>0, then just diminish ... .... half?
-assert(SolidTile.cubeFaces)
+assert.index(SolidTile, 'cubeFaces')
 
 local StoneTile = SolidTile:subclass{name='Stone'}
 setTexRects(StoneTile, 'cavestone')
