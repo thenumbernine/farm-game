@@ -105,25 +105,25 @@ and then have farmgame/player subclass them
 local PlayerKeysEditor = require 'gameapp.menu.playerkeys'
 PlayerKeysEditor.defaultKeys = {
 	{
-		up = {sdl.SDL_KEYDOWN, sdl.SDLK_UP},
-		down = {sdl.SDL_KEYDOWN, sdl.SDLK_DOWN},
-		left = {sdl.SDL_KEYDOWN, sdl.SDLK_LEFT},
-		right = {sdl.SDL_KEYDOWN, sdl.SDLK_RIGHT},
-		jump = {sdl.SDL_KEYDOWN, ('x'):byte()},
-		useItem = {sdl.SDL_KEYDOWN, ('z'):byte()},
-		interact = {sdl.SDL_KEYDOWN, ('c'):byte()},
-		invLeft = {sdl.SDL_KEYDOWN, ('a'):byte()},
-		invRight = {sdl.SDL_KEYDOWN, ('s'):byte()},
-		openInventory = {sdl.SDL_KEYDOWN, ('d'):byte()},
-		rotateLeft = {sdl.SDL_KEYDOWN, ('q'):byte()},
-		rotateRight = {sdl.SDL_KEYDOWN, ('w'):byte()},
-		pause = {sdl.SDL_KEYDOWN, sdl.SDLK_ESCAPE},
+		up = {sdl.SDL_EVENT_KEY_DOWN, sdl.SDLK_UP},
+		down = {sdl.SDL_EVENT_KEY_DOWN, sdl.SDLK_DOWN},
+		left = {sdl.SDL_EVENT_KEY_DOWN, sdl.SDLK_LEFT},
+		right = {sdl.SDL_EVENT_KEY_DOWN, sdl.SDLK_RIGHT},
+		jump = {sdl.SDL_EVENT_KEY_DOWN, ('x'):byte()},
+		useItem = {sdl.SDL_EVENT_KEY_DOWN, ('z'):byte()},
+		interact = {sdl.SDL_EVENT_KEY_DOWN, ('c'):byte()},
+		invLeft = {sdl.SDL_EVENT_KEY_DOWN, ('a'):byte()},
+		invRight = {sdl.SDL_EVENT_KEY_DOWN, ('s'):byte()},
+		openInventory = {sdl.SDL_EVENT_KEY_DOWN, ('d'):byte()},
+		rotateLeft = {sdl.SDL_EVENT_KEY_DOWN, ('q'):byte()},
+		rotateRight = {sdl.SDL_EVENT_KEY_DOWN, ('w'):byte()},
+		pause = {sdl.SDL_EVENT_KEY_DOWN, sdl.SDLK_ESCAPE},
 	},
 	{
-		up = {sdl.SDL_KEYDOWN, ('w'):byte()},
-		down = {sdl.SDL_KEYDOWN, ('s'):byte()},
-		left = {sdl.SDL_KEYDOWN, ('a'):byte()},
-		right = {sdl.SDL_KEYDOWN, ('d'):byte()},
+		up = {sdl.SDL_EVENT_KEY_DOWN, ('w'):byte()},
+		down = {sdl.SDL_EVENT_KEY_DOWN, ('s'):byte()},
+		left = {sdl.SDL_EVENT_KEY_DOWN, ('a'):byte()},
+		right = {sdl.SDL_EVENT_KEY_DOWN, ('d'):byte()},
 		pause = {},	-- sorry keypad player 2
 	},
 }
@@ -974,7 +974,7 @@ function App:event(event)
 
 -- [[ mouse rotate support?
 	local canHandleMouse = not ig.igGetIO()[0].WantCaptureMouse
-	if event[0].type == sdl.SDL_MOUSEMOTION then
+	if event[0].type == sdl.SDL_EVENT_MOUSE_MOTION then
 		if canHandleMouse
 		and bit.band(event[0].motion.state, 1) == 1
 		then
@@ -984,8 +984,8 @@ function App:event(event)
 							* quatd():fromAngleAxis(1,0,0,30)
 			self.view.pos = self.view.angle:zAxis() * (self.view.pos - self.view.orbit):length() + self.view.orbit
 		end
-	elseif event[0].type == sdl.SDL_KEYDOWN then
-		if event[0].key.keysym.sym == ('`'):byte() then
+	elseif event[0].type == sdl.SDL_EVENT_KEY_DOWN then
+		if event[0].key.key == ('`'):byte() then
 			self.playingMenu.consoleOpen = not self.playingMenu.consoleOpen
 		end
 	end

@@ -912,10 +912,10 @@ function Game:event(event, ...)
 	if not appPlayer then return end
 	if app.playingMenu.consoleOpen then return end
 
-	if event.type == sdl.SDL_KEYDOWN
-	or event.type == sdl.SDL_KEYUP
+	if event.type == sdl.SDL_EVENT_KEY_DOWN
+	or event.type == sdl.SDL_EVENT_KEY_UP
 	then
-		local down = event.type == sdl.SDL_KEYDOWN
+		local down = event.type == sdl.SDL_EVENT_KEY_DOWN
 
 		-- menu items 1-12
 		-- how about another two buttons for switching active menu left + right?
@@ -923,15 +923,15 @@ function Game:event(event, ...)
 		-- and whatver that is among the top 12 is whatver you're selected on when you close menu
 		-- and that way console controls work.
 		if down then
-			if event.key.keysym.sym >= ('1'):byte()
-			and event.key.keysym.sym <= ('9'):byte()
+			if event.key.key >= ('1'):byte()
+			and event.key.key <= ('9'):byte()
 			then
-				appPlayer.selectedItem = event.key.keysym.sym - ('1'):byte() + 1
-			elseif event.key.keysym.sym == ('0'):byte() then
+				appPlayer.selectedItem = event.key.key - ('1'):byte() + 1
+			elseif event.key.key == ('0'):byte() then
 				appPlayer.selectedItem = 10
-			elseif event.key.keysym.sym == ('-'):byte() then
+			elseif event.key.key == ('-'):byte() then
 				appPlayer.selectedItem = 11
-			elseif event.key.keysym.sym == ('='):byte() then
+			elseif event.key.key == ('='):byte() then
 				appPlayer.selectedItem = 12
 			end
 		end
