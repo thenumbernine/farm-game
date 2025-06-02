@@ -232,7 +232,7 @@ function PlayingMenu:itemButton(itemInfo, bw, bh)
 				cb = cl.colorMatrix.ptr[10]
 			end
 			local result = ig.igImageButton('',
-				ffi.cast('uint64_t', app.spriteAtlasTex.id),
+				ffi.cast('ImTextureID', app.spriteAtlasTex.id),
 				size,		-- how come the image gets clipped?
 				ig.ImVec2(
 					frame.atlasTcPos.x / app.spriteAtlasTex.width,
