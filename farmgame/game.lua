@@ -936,30 +936,6 @@ function Game:event(event, ...)
 			end
 		end
 	end
-
-	if event.type == sdl.SDL_EVENT_MOUSE_MOTION then
-		local app = self.app
-		local mouse = app.mouse
-		-- unproject mouse
-		local mx = math.floor(mouse.pos.x * app.width)
-		local my = math.floor(mouse.pos.y * app.height)
-		local depthValuePtr = ffi.new('GLfloat[1]')
-		gl.glReadBuffer(gl.GL_BACK)
-		gl.glReadPixels(mx, my, 1, 1, gl.GL_DEPTH_COMPONENT, gl.GL_FLOAT, depthValuePtr)
-		local pix = depthValuePtr[0]
-		if pix ~= 1 then -- full depth means a cleared-depth value, means nothing was here
-			local projX, projY, projZ, projW = app.view.mvProjMat:inv4x4():mul4x4v4(
-				mouse.pos.x * 2 - 1,
-				mouse.pos.y * 2 - 1,
-				pix * 2 - 1,
-				1)
-			projX = projX / projW
-			projY = projY / projW
-			projZ = projZ / projW
-
-			print('mouse over', projX, projY, projZ)
-		end
-	end
 end
 
 function Game:getObjByUID(uid)

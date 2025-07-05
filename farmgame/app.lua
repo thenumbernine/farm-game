@@ -164,6 +164,8 @@ function App:initGL()
 	App.super.initGL(self)
 glreport'here'
 
+	self.mousePos3D = vec3f()
+
 	self.view.fovY = 90
 
 	local sampler3Dprec = [[
@@ -990,6 +992,69 @@ function App:event(event)
 		end
 	end
 --]]
+
+	if event.type == sdl.SDL_EVENT_MOUSE_MOTION then
+		local mouse = self.mouse
+		-- unproject mouse
+		local mx = math.floor(mouse.pos.x * self.width)
+		local my = math.floor(mouse.pos.y * self.height)
+		local depthValuePtr = ffi.new('GLfloat[1]')
+		gl.glReadBuffer(gl.GL_BACK)
+		gl.glReadPixels(mx, my, 1, 1, gl.GL_DEPTH_COMPONENT, gl.GL_FLOAT, depthValuePtr)
+		local pix = depthValuePtr[0]
+		if pix ~= 1 then -- full depth means a cleared-depth value, means nothing was here
+			local mvProjInvMat = self.view.mvProjMat:inv4x4()
+			local projX, projY, projZ, projW = mvProjInvMat:mul4x4v4(
+				mouse.pos.x * 2 - 1,
+				mouse.pos.y * 2 - 1,
+				pix * 2 - 1,
+				1)
+			local proj = vec3f(projX, projY, projZ) / projW
+
+			local eyeX, eyeY, eyeZ, eyeW = mvProjInvMat:mul4x4v4(0, 0, -1, 1)
+			local eye = vec3f(eyeX, eyeY, eyeZ) / eyeW
+			local dir = (proj - eye):normalize()
+			self.mousePos3D = proj + .1 * dir
+			
+			-- TODO offset by normal? or by view dir?
+			print('mouse over', self.mousePos3D)
+		end
+	end
+	--[[ TODO
+	mouse click
+	place voxel
+	but what about plants and other object?
+	need separate editor mode
+	one for selecting objects
+	one for placing voxels
+	--]]
+	if event.type == sdl.SDL_EVENT_MOUSE_BUTTON_DOWN then
+		local map = require 'ext.op'.safeindex(self, 'players', 1, 'obj', 'map')
+		if not map then
+			print('players[1] has no map...')
+		end
+		if map then
+			print('player pos', self.players[1].obj.pos)
+			local i,j,k = self.mousePos3D:unpack()
+			i, j, k = math.floor(i), math.floor(j), math.floor(k)
+			local voxel = map:getTile(i,j,k)
+			if not voxel then
+				print('nothing there')
+			end
+			if voxel then
+				local voxelType = self.editorVoxelType
+				print('setting map at', i, j, k)
+				if voxelType then
+					voxel.type = voxelType.index
+					voxel.tex = math.random(#voxelType.texrects)-1
+				else
+					voxel.type = 0
+					voxel.tex = 0
+				end
+				map:updateMeshAndLight(i, j, k)	-- and either side of dz?
+			end
+		end
+	end
 
 	if self.game then
 		self.game:event(event[0])
