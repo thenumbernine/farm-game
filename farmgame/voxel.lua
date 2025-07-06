@@ -166,6 +166,13 @@ WaterTile.transparent = true
 -- TODO contents = ... vacuum, air, poison gas, water, acid, lava, oil, ... plasma ... einstein-bose condensate ... quantum spin-liquid ... quark matter ... hole in the fabric of spacetime ...
 WaterTile.contents = 'water'
 
+-- TODO ...
+-- castle stone wall tile
+-- FFT terrains:
+-- Natural Surface, Road, Wasteland, Waterway, River, Lake, Sea, Waterfall, Grassland, Thicket, Water Plant, Ivy,
+-- Gravel, Stone Wall, Stone Floor, Tombstone, Mud Wall, Rocky Cliff, Lava Rocks, Moss, Tree, Swamp, Marsh, Poisoned Marsh, Sand Area, Stalactite,
+-- Book, Brick, Bridge, Furniture, Iron Plate, Coffin, Wooden Floor, Rug, Box, Stairs, Deck, Salt, Snow, Ice, Roof, Sky, Chimney, Lava, Machine
+
 --[[
 what do i want ...
 - empty
@@ -287,7 +294,7 @@ for shapeIndex=0,#Tile.shapes do
 	-- index 0 doesn't have one ... but maybe could ...
 	if shapeObj.modelFilename then
 		shapeObj.model = OBJLoader():load(shapeObj.modelFilename)
-	
+
 		-- TODO here
 		-- cycle through all faces
 		-- if they are planar in the x/y/z +/- planes then flag them accordingly

@@ -164,6 +164,7 @@ function App:initGL()
 	App.super.initGL(self)
 glreport'here'
 
+	self.mouseDir3D = vec3f(0,0,1)
 	self.mousePos3D = vec3f()
 
 	self.view.fovY = 90
@@ -254,7 +255,7 @@ uniform float inside;		// set to 1 when we're inside, or some interpolation ther
 uniform sampler2D skyTex;
 void main() {
 	fragColor.xyz = (1. - inside) * texture(skyTex, vec2(timeOfDay, vtxv.y)).xyz;
-	fragColor.w = 1.; 
+	fragColor.w = 1.;
 }
 ]],
 		uniforms = {
@@ -362,7 +363,7 @@ void main() {
 	} else {
 		ex = vec3(viewMat[0].x, viewMat[1].x, viewMat[2].x);
 		ez = vec3(viewMat[0].z, viewMat[1].z, viewMat[2].z);
-#if 1	//use view matrix	
+#if 1	//use view matrix
 		ey = vec3(viewMat[0].y, viewMat[1].y, viewMat[2].y);
 #else	//make sure up is world z+ aligned
 		// this still only looks good at near-horizontal views, when we might as well use the first case.
@@ -405,7 +406,7 @@ void main() {
 
 	if (useSeeThruv != 0) {
 		// flatten the cone = no clipping near the player
-		if (viewPosv.z > playerViewPos.z 
+		if (viewPosv.z > playerViewPos.z
 			// + .4 // hmm at what distance should I occlude sprites?
 		) {
 			vec3 testViewPos = playerViewPos + vec3(0., 1., -2.);
@@ -725,15 +726,15 @@ void main() {
 	}:useNone()
 
 	--[[
-	TODO also 
+	TODO also
 	- make a surfaceTex.  store lumAlt, minAngle, maxAngle - normalized. (don't need solidAngle I think...)
 	- for any tile over lumAlt, immediately light it via minAngle, maxAngle, and sunAngle
-	
+
 	- in lumTex, also store if a voxel is blocking-light
 	- then when doing flood-fill, don't propagate if we're blocking light
 
 	- in updateMeshAndLight we will have to also update the lumTex's blocking-light flag ...
-	
+
 	--]]
 	self.lumUpdateShader = GLProgram{
 		version = 'latest',
@@ -746,7 +747,7 @@ void main() {
 	tc = vec3(
 		(vertex.xy * 31. + .5)/32.,	//TODO necessary?  change the texwrap instead?
 		sliceZ);
-	gl_Position = vec4(2. * vertex.xy - 1., 0., 1.); 
+	gl_Position = vec4(2. * vertex.xy - 1., 0., 1.);
 }
 ]],
 		fragmentCode = sampler3Dprec
@@ -793,7 +794,7 @@ void main() {
 		)
 	) - .1;	//TODO decrement based on the distance of what we picked as the max
 			//TODO don't pick from light-blocking tiles (upload light-blocking flag into the lumTex as well)
-	fragColor.w = 1.; 
+	fragColor.w = 1.;
 }
 ]],
 		uniforms = {
@@ -823,8 +824,8 @@ void main() {
 		minFilter = gl.GL_NEAREST,
 		magFilter = gl.GL_NEAREST,
 	}:unbind()
-	
-	-- temp buffer for writing into 
+
+	-- temp buffer for writing into
 	-- make this just like the lumTex in Chunk
 	self.lumTmpTex = GLTex3D{
 		width = Chunk.size.x,
@@ -971,6 +972,7 @@ function App:updateGame()
 	self.lastTime = sysThisTime
 end
 
+App.editorVoxelTypeIndex = 0
 function App:event(event)
 	App.super.event(self, event)
 
@@ -1009,15 +1011,14 @@ function App:event(event)
 				mouse.pos.y * 2 - 1,
 				pix * 2 - 1,
 				1)
-			local proj = vec3f(projX, projY, projZ) / projW
+			self.mousePos3D = vec3f(projX, projY, projZ) / projW
 
 			local eyeX, eyeY, eyeZ, eyeW = mvProjInvMat:mul4x4v4(0, 0, -1, 1)
 			local eye = vec3f(eyeX, eyeY, eyeZ) / eyeW
-			local dir = (proj - eye):normalize()
-			self.mousePos3D = proj + .1 * dir
-			
-			-- TODO offset by normal? or by view dir?
-			print('mouse over', self.mousePos3D)
+			self.mouseDir3D = (self.mousePos3D - eye):normalize()
+
+			-- TODO offset by normal? or by view self.mouseDir3D?
+			print('mouse over', self.mousePos3D, 'dir', self.mouseDir3D)
 		end
 	end
 	--[[ TODO
@@ -1030,29 +1031,34 @@ function App:event(event)
 	--]]
 	if event.type == sdl.SDL_EVENT_MOUSE_BUTTON_DOWN then
 		local map = require 'ext.op'.safeindex(self, 'players', 1, 'obj', 'map')
-		if not map then
-			print('players[1] has no map...')
-		end
 		if map then
-			print('player pos', self.players[1].obj.pos)
-			local i,j,k = self.mousePos3D:unpack()
+			local Voxel = require 'farmgame.voxel'
+			local voxelType = Voxel.types[self.editorVoxelTypeIndex]
+
+			-- only push forward by 0.1 if we are writing empty / deleting
+			-- if we are writing solid then push back by 0.1
+			local i,j,k = (self.mousePos3D + (self.editorVoxelTypeIndex ~= 0 and -.02 or .02) * self.mouseDir3D):unpack()
 			i, j, k = math.floor(i), math.floor(j), math.floor(k)
 			local voxel = map:getTile(i,j,k)
 			if not voxel then
 				print('nothing there')
 			end
 			if voxel then
-				local voxelType = self.editorVoxelType
 				print('setting map at', i, j, k)
-				if voxelType then
-					voxel.type = voxelType.index
-					voxel.tex = math.random(#voxelType.texrects)-1
-				else
-					voxel.type = 0
-					voxel.tex = 0
-				end
+				voxel.type = voxelType.index
+				voxel.tex = math.random(#voxelType.texrects)-1
 				map:updateMeshAndLight(i, j, k)	-- and either side of dz?
 			end
+		end
+	end
+	if event.type == sdl.SDL_EVENT_KEY_DOWN then
+		local Voxel = require 'farmgame.voxel'
+		if event.key.key == sdl.SDLK_LEFTBRACKET then
+			self.editorVoxelTypeIndex = self.editorVoxelTypeIndex - 1
+			self.editorVoxelTypeIndex = self.editorVoxelTypeIndex % #Voxel.types
+		elseif event.key.key == sdl.SDLK_RIGHTBRACKET then
+			self.editorVoxelTypeIndex = self.editorVoxelTypeIndex + 1
+			self.editorVoxelTypeIndex = self.editorVoxelTypeIndex % #Voxel.types
 		end
 	end
 
