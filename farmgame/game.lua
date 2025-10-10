@@ -565,7 +565,10 @@ print"WARNING - player wasn't found in the save file"
 		local townMap = makeTownMap(self)
 		self.maps:insert(townMap)
 
-		-- [[ doors
+		-- TODO dungeon map or something
+		-- with some NPCs or something waiting there for you
+
+		-- [[ doors between maps ... TODO depict it somehow
 		farmMap:newObj{
 			class = require 'farmgame.obj.door',
 			pos = vec3f(

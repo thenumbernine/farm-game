@@ -1,4 +1,4 @@
--- TODO 
+-- TODO
 -- rename 'player' to 'human' or 'character' or 'person' or 'battleable' or 'unit'
 -- rename 'appPlayer' to 'player'
 local ffi = require 'ffi'
@@ -106,7 +106,7 @@ function Unit:update(dt)
 	if not appPlayer.gamePrompt then
 
 		if appPlayer.invOpen then
-			
+
 			local chestOpen = appPlayer.chestOpen
 			local maxItems = self.numInvItems
 			if chestOpen then
@@ -118,7 +118,7 @@ function Unit:update(dt)
 				appPlayer.selectedItem = (appPlayer.selectedItem - 1) % maxItems + 1
 			end
 			if appPlayer.keyPress.left and not appPlayer.keyPressLast.left then
-				appPlayer.selectedItem = appPlayer.selectedItem - 1 
+				appPlayer.selectedItem = appPlayer.selectedItem - 1
 				appPlayer.selectedItem = (appPlayer.selectedItem - 1) % maxItems + 1
 			end
 			if appPlayer.keyPress.up and not appPlayer.keyPressLast.up then
@@ -128,7 +128,7 @@ function Unit:update(dt)
 			if appPlayer.keyPress.down and not appPlayer.keyPressLast.down then
 				appPlayer.selectedItem = appPlayer.selectedItem - self.numSelectableItems
 				appPlayer.selectedItem = (appPlayer.selectedItem - 1) % maxItems + 1
-			end	
+			end
 			-- drop item
 			if appPlayer.keyPress.interact and not appPlayer.keyPressLast.interact then
 				local cl = self:removeSelectedItem()
@@ -147,7 +147,7 @@ function Unit:update(dt)
 			end
 		else
 			appPlayer.selectedItem = (appPlayer.selectedItem-1) % self.numSelectableItems + 1
-			
+
 			local dx = 0
 			local dy = 0
 			if appPlayer.keyPress.right then dx = dx + 1 end
@@ -167,7 +167,7 @@ function Unit:update(dt)
 
 			local zDir = app.view.angle:zAxis()	-- down dir
 			local xDir = app.view.angle:xAxis()	-- right dir
-			
+
 			if localAngle then
 				self.angle = localAngle + math.atan2(xDir.y, xDir.x)
 			end
@@ -232,14 +232,14 @@ function Unit:update(dt)
 			end
 		end
 
-		local turnLeft = appPlayer.keyPress.rotateLeft and not appPlayer.keyPressLast.rotateLeft 
-		local turnRight = appPlayer.keyPress.rotateRight and not appPlayer.keyPressLast.rotateRight 
+		local turnLeft = appPlayer.keyPress.rotateLeft and not appPlayer.keyPressLast.rotateLeft
+		local turnRight = appPlayer.keyPress.rotateRight and not appPlayer.keyPressLast.rotateRight
 		if turnLeft or turnRight then
 			if turnLeft then
 				app.targetViewYaw = app.targetViewYaw + self.rotateViewAmount
 			end
 			if turnRight then
-				app.targetViewYaw = app.targetViewYaw - self.rotateViewAmount 
+				app.targetViewYaw = app.targetViewYaw - self.rotateViewAmount
 			end
 		end
 		if appPlayer.keyPress.invLeft and not appPlayer.keyPressLast.invLeft then
@@ -348,7 +348,7 @@ print'TUGGED -> FISH ON'
 print'YOU CAUGHT A FISH'
 			-- TODO add to inventory
 			self.fishing = nil
-			-- hmm, should fish be an obj? 
+			-- hmm, should fish be an obj?
 			-- i'm less and less thinking Objs and Items should be separate ...
 			self.map:newObj{
 				class = require 'farmgame.obj.item',
@@ -389,8 +389,8 @@ function Unit:addItem(cl, count)
 	count = count or 1
 	for i=1,self.numInvItems do
 		local itemInfo = self.items[i]
-		if itemInfo 
-		and itemInfo.class == cl 
+		if itemInfo
+		and itemInfo.class == cl
 		then
 			itemInfo.count = itemInfo.count + count
 			return true
@@ -462,7 +462,7 @@ function Unit:draw(...)
 	if self.attackEndTime > game.time then
 		local buf = app.swordSwingVtxBuf
 		local cpuBuf = buf.data	-- float[]
-		
+
 		local delta = (game.time - self.attackTime) / (self.attackEndTime - self.attackTime)
 		local dtheta = 150*math.pi/180
 		local ndivs = app.swordSwingNumDivs
@@ -481,7 +481,7 @@ function Unit:draw(...)
 		end
 		buf:bind()
 			:updateData()
-		
+
 		gl.glDepthMask(gl.GL_FALSE)
 		local shader = app.swordShader
 		shader:use()
@@ -498,7 +498,7 @@ function Unit:draw(...)
 
 	if self.fishing then
 		local frame = self.getFrame('item', 'fishingpole', 1)
-		
+
 		-- draw the fishing pole over the player
 		local sprite = app.spritesBufCPU:emplace_back()
 		sprite.atlasTcPos:set(frame.atlasTcPos:unpack())

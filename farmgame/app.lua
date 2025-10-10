@@ -168,6 +168,7 @@ glreport'here'
 	self.mousePos3D = vec3f()
 
 	self.view.fovY = 90
+	self.mvProjInvMat = self.view.mvProjMat:clone():inv4x4()
 
 	local sampler3Dprec = [[
 precision mediump sampler3D;
@@ -1005,15 +1006,15 @@ function App:event(event)
 		gl.glReadPixels(mx, my, 1, 1, gl.GL_DEPTH_COMPONENT, gl.GL_FLOAT, depthValuePtr)
 		local pix = depthValuePtr[0]
 		if pix ~= 1 then -- full depth means a cleared-depth value, means nothing was here
-			local mvProjInvMat = self.view.mvProjMat:inv4x4()
-			local projX, projY, projZ, projW = mvProjInvMat:mul4x4v4(
+			self.mvProjInvMat:inv4x4(self.view.mvProjMat)
+			local projX, projY, projZ, projW = self.mvProjInvMat:mul4x4v4(
 				mouse.pos.x * 2 - 1,
 				mouse.pos.y * 2 - 1,
 				pix * 2 - 1,
 				1)
 			self.mousePos3D = vec3f(projX, projY, projZ) / projW
 
-			local eyeX, eyeY, eyeZ, eyeW = mvProjInvMat:mul4x4v4(0, 0, -1, 1)
+			local eyeX, eyeY, eyeZ, eyeW = self.mvProjInvMat:mul4x4v4(0, 0, -1, 1)
 			local eye = vec3f(eyeX, eyeY, eyeZ) / eyeW
 			self.mouseDir3D = (self.mousePos3D - eye):normalize()
 
