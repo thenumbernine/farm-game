@@ -134,7 +134,7 @@ function PlayingMenu:updateGUI()
 		local bh = bw
 		local x = 0
 		local y = app.height - bh - 4
---		ig.igPushStyleVar_Vec2(ig.ImGuiStyleVar_ButtonTextAlign, ig.ImVec2(0,0))	-- one of these desn't work in cimgui 1.91.9
+		ig.igPushStyleVar_Vec2(ig.ImGuiStyleVar_ButtonTextAlign, ig.ImVec2(0,0))	-- one of these desn't work in cimgui 1.91.9
 
 		for iMinus1=0,maxItems-1 do
 			local i = iMinus1 + 1
@@ -150,7 +150,7 @@ function PlayingMenu:updateGUI()
 			local selected = appPlayer.selectedItem == i
 			if selected then
 				local selectColor = ig.ImVec4(0,0,1,.5)
---				ig.igPushStyleColor_Vec4(ig.ImGuiCol_Button, selectColor)	-- one of these desn't work in cimgui 1.91.9
+				ig.igPushStyleColor_Vec4(ig.ImGuiCol_Button, selectColor)	-- one of these desn't work in cimgui 1.91.9
 			end
 
 			-- TODO maybe instead, use igSetCursorPos and use a full-sized no-background window?
@@ -168,26 +168,22 @@ function PlayingMenu:updateGUI()
 				ig.ImGuiWindowFlags_NoNav	-- nav is bad for my app capturing sdl input
 			))
 			ig.igSetWindowFontScale(.5)
-			--[[
 			if selected then
 				ig.igPushStyleVar_Float(ig.ImGuiStyleVar_FrameBorderSize, 1)
 			end
-			--]]
 			ig.igPushID_Int(i)
 			if self:itemButton(itemInfo, bw, bh) then
 				appPlayer.selectedItem = i
 			end
 			ig.igPopID()
 
-			--[[
 			if selected then
 				ig.igPopStyleVar(1)
 			end
-			--]]
 			ig.igEnd()
 
 			if selected then
---				ig.igPopStyleColor(1)
+				ig.igPopStyleColor(1)
 			end
 
 			if iMinus1 % player.numSelectableItems == player.numSelectableItems-1 then
@@ -200,7 +196,7 @@ function PlayingMenu:updateGUI()
 				x = x + bw
 			end
 		end
---		ig.igPopStyleVar(1)
+		ig.igPopStyleVar(1)
 	end
 end
 

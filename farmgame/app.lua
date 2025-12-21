@@ -849,9 +849,9 @@ void main() {
 	}
 
 
-	local FBO = require 'gl.fbo'
+	local GLFramebuffer = require 'gl.framebuffer'
 	local Chunk = require 'farmgame.map'.Chunk
-	self.lumFBO = FBO{
+	self.lumFBO = GLFramebuffer{
 		width = Chunk.size.x,
 		height = Chunk.size.y,
 	}:unbind()
