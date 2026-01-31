@@ -78,7 +78,6 @@ deps = {
 	"gl",
 	"image",
 	"imgui",
-	"matrix",
 	"mesh",
 	"sdl",
 	"simplexnoise",

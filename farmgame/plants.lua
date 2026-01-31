@@ -7,8 +7,8 @@ local assert = require 'ext.assert'
 local string = require 'ext.string'
 local vec2f = require 'vec-ffi.vec2f'
 local vec3f = require 'vec-ffi.vec3f'
+local vec4x4f = require 'vec-ffi.vec4x4f'
 local CSV = require 'csv'
-local matrix_ffi = require 'matrix.ffi'
 local anim = require 'farmgame.anim'
 local Game = require 'farmgame.game'
 local Fruit = require 'farmgame.obj.fruit'
@@ -119,7 +119,7 @@ local plantTypes = plantcsv.rows:mapi(function(row,i)
 	plantType.growType = 'seeds'
 	plantType.cost = 10
 	
-	local colorMatrix = matrix_ffi({4,4},'float'):zeros()
+	local colorMatrix = vec4x4f()
 		:setRotate(
 			math.random()*2*math.pi,
 			1 + .2 * (math.random() - .5),

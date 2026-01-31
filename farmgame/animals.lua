@@ -1,6 +1,6 @@
 local table = require 'ext.table'
 local assert = require 'ext.assert'
-local matrix_ffi = require 'matrix.ffi'
+local vec4x4f = require 'vec-ffi.vec4x4f'
 
 local Atlas = require 'farmgame.atlas'
 local spriteNames = Atlas.spriteNames
@@ -11,7 +11,7 @@ local animals = spriteNames:filter(function(name)
 end):mapi(function(spriteName)
 	local animalType = {}
 	
-	local colorMatrix = matrix_ffi({4,4},'float'):zeros()
+	local colorMatrix = vec4x4f()
 		:setRotate(
 			.2 * (math.random() - .5)*2*math.pi,
 			1 + .2 * (math.random() - .5),

@@ -10,9 +10,9 @@ local ig = require 'imgui'
 local vec2f = require 'vec-ffi.vec2f'
 local vec3f = require 'vec-ffi.vec3f'
 local vec4f = require 'vec-ffi.vec4f'
+local vec4x4f = require 'vec-ffi.vec4x4f'	-- vec4x4f_t
 local quatd = require 'vec-ffi.quatd'
 local Image = require 'image'
-local matrix_ffi = require 'matrix.ffi'
 local gl = require 'gl'
 local GLProgram = require 'gl.program'
 local GLGeometry = require 'gl.geometry'
@@ -59,7 +59,7 @@ typedef struct {
 	float angle;
 	vec3f_t pos;
 	vec3f_t spritePosOffset;
-	vec4f_t colorMatrix[4];
+	vec4x4f_t colorMatrix;
 } sprite_t;
 ]]
 

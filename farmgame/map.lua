@@ -12,7 +12,7 @@ local vec3i = require 'vec-ffi.vec3i'
 local vec3f = require 'vec-ffi.vec3f'
 local vec2f = require 'vec-ffi.vec2f'
 local vec4ub = require 'vec-ffi.vec4ub'
-local matrix_ffi = require 'matrix.ffi'
+local vec4x4f = require 'vec-ffi.vec4x4f'
 local Image = require 'image'
 local gl = require 'gl'
 local GLArrayBuffer = require 'gl.arraybuffer'
@@ -1483,17 +1483,6 @@ function Map:getSaveData()
 					end
 				end
 
-				local mt = getmetatable(x)
-				-- matrix.ffi
-				if mt == matrix_ffi then
-					return 'matrix_ffi('
-						..tostring(x)
-							:gsub('%[', '{')
-							:gsub('%]', '}')
-							:gsub('\n', '')
-						..', '
-						..tolua(x.ctype)..')'
-				end
 				return tolua.defaultSerializeForType.table(state, x, ...)
 			end,
 			cdata = function(state, x, ...)
@@ -1511,6 +1500,7 @@ function Map:getSaveData()
 					'2b', '2d', '2f', '2i', '2s',        '2ub',
 					'3b', '3d', '3f', '3i', '3s', '3sz', '3ub',
 					'4b', '4d', '4f', '4i',              '4ub',
+					'4x4f',
 				} do
 					local name = 'vec'..s
 					if ft == require('vec-ffi.'..name) then

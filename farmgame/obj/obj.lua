@@ -6,7 +6,7 @@ local vec2f = require 'vec-ffi.vec2f'
 local vec3i = require 'vec-ffi.vec3i'
 local vec3f = require 'vec-ffi.vec3f'
 local box3f = require 'vec-ffi.box3f'
-local matrix_ffi = require 'matrix.ffi'
+local vec4x4f = require 'vec-ffi.vec4x4f'
 local gl = require 'gl'
 local glreport = require 'gl.report'
 local GLTex2D = require 'gl.tex2d'
@@ -58,9 +58,7 @@ Obj.disableBillboard = false
 -- yes for not-so-interactable sprites like plants
 Obj.useSeeThru = false
 
-Obj.colorMatrix = matrix_ffi({4,4}, 'float'):lambda(function(i,j)
-	return i==j and 1 or 0
-end)
+Obj.colorMatrix = vec4x4f():setIdent()
 
 -- once we set a light, set this field, and use it to determine where to recalculate light
 Obj.lastlightpos = nil
@@ -97,7 +95,7 @@ function Obj:init(args)
 	self.bbox = box3f(self.class.bbox)
 	if args.bbox then self.bbox = box3f(args.bbox) end
 
-	self.colorMatrix = matrix_ffi(assert(args.colorMatrix or self.class.colorMatrix), 'float')
+	self.colorMatrix = vec4x4f(assert(args.colorMatrix or self.class.colorMatrix))
 
 	self.sprite = args.sprite
 	self.seq = args.seq
@@ -571,10 +569,8 @@ end
 -- TODO use 8 points as well?
 local dirSeqSuffixes = {'_r', '_u', '_l', '_d'}
 
-local matrix_ffi = require 'matrix.ffi'
-local modelMat = matrix_ffi({4,4},'float'):zeros():setIdent()
-local identMat4 = matrix_ffi({4,4},'float'):lambda(function(i,j) return i==j and 1 or 0 end)
-Obj.identMat4 = identMat4
+local modelMat = vec4x4f():setIdent()
+Obj.identMat4 = vec4x4f():setIdent()
 
 -- static method, no class, convenient to have in the namespace
 function Obj.getFrame(spriteName, seqName, frameIndex, angle, app)
@@ -636,7 +632,7 @@ function Obj:drawSprite(frame)
 	sprite.pos:set(self.pos:unpack())
 	sprite.spritePosOffset:set(self.spritePosOffset:unpack())
 	-- col or row major?
-	ffi.copy(sprite.colorMatrix[0].s, self.colorMatrix.ptr, ffi.sizeof'float' * 16)
+	sprite.colorMatrix:copy(self.colorMatrix)
 end
 
 function Obj:drawMesh(frame)

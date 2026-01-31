@@ -517,7 +517,7 @@ function Unit:draw(...)
 		sprite.angle = 0
 		sprite.pos:set(self.pos:unpack())
 		sprite.spritePosOffset:set(0, 0, 0)
-		ffi.copy(sprite.colorMatrix[0].s, self.identMat4.ptr, ffi.sizeof'float' * 16)
+		sprite.colorMatrix:setIdent()
 	end
 end
 
