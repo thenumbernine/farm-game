@@ -657,9 +657,9 @@ function Obj:drawMesh(frame)
 	--]]
 	-- [[
 	shader:use()
-	gl.glUniformMatrix4fv(shader.uniforms.modelMatrix.loc, 1, gl.GL_FALSE, modelMat.ptr)
-	gl.glUniformMatrix4fv(shader.uniforms.viewMatrix.loc, 1, gl.GL_FALSE, view.mvMat.ptr)
-	gl.glUniformMatrix4fv(shader.uniforms.projectionMatrix.loc, 1, gl.GL_FALSE, view.projMat.ptr)
+	gl.glUniformMatrix4fv(shader.uniforms.modelMatrix.loc, 1, gl.GL_TRUE, modelMat.ptr)
+	gl.glUniformMatrix4fv(shader.uniforms.viewMatrix.loc, 1, gl.GL_TRUE, view.mvMat.ptr)
+	gl.glUniformMatrix4fv(shader.uniforms.projectionMatrix.loc, 1, gl.GL_TRUE, view.projMat.ptr)
 	--shader:useNone()	-- why does shader need to be :use()'d here?
 	--]]
 	frame.mesh:draw{

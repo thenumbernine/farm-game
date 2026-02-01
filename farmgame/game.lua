@@ -749,8 +749,8 @@ function Game:draw()
 	local shader = app.spriteShader
 	shader:use()
 	app.spriteSceneObj:enableAndSetAttrs()	-- enable vao
-	gl.glUniformMatrix4fv(shader.uniforms.viewMat.loc, 1, gl.GL_FALSE, view.mvMat.ptr)
-	gl.glUniformMatrix4fv(shader.uniforms.projMat.loc, 1, gl.GL_FALSE, view.projMat.ptr)
+	gl.glUniformMatrix4fv(shader.uniforms.viewMat.loc, 1, gl.GL_TRUE, view.mvMat.ptr)
+	gl.glUniformMatrix4fv(shader.uniforms.projMat.loc, 1, gl.GL_TRUE, view.projMat.ptr)
 	gl.glUniform3fv(shader.uniforms.playerViewPos.loc, 1, self.playerViewPos.s)
 
 	app.spriteAtlasTex:bind(0)

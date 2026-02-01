@@ -485,7 +485,7 @@ function Unit:draw(...)
 		gl.glDepthMask(gl.GL_FALSE)
 		local shader = app.swordShader
 		shader:use()
-		gl.glUniformMatrix4fv(shader.uniforms.mvProjMat.loc, 1, gl.GL_FALSE, game.app.view.mvProjMat.ptr)
+		gl.glUniformMatrix4fv(shader.uniforms.mvProjMat.loc, 1, gl.GL_TRUE, game.app.view.mvProjMat.ptr)
 		gl.glVertexAttrib4f(shader.attrs.color.loc, 1,1,.4,.7*(1-delta))
 		gl.glVertexAttribPointer(shader.attrs.vertex.loc, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, nil)
 		gl.glEnableVertexAttribArray(shader.attrs.vertex.loc)
