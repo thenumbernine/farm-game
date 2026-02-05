@@ -224,9 +224,9 @@ function Chunk:init(args)
 
 	-- geometry
 	local volume = self.volume
-	self.vtxs = CPUGPUBuf{type='vec3f_t', volume=volume}
-	self.texcoords = CPUGPUBuf{type='vec2f_t', volume=volume}
-	self.colors = CPUGPUBuf{type='vec4ub_t', volume=volume}
+	self.vtxs = CPUGPUBuf{type='vec3f', volume=volume}
+	self.texcoords = CPUGPUBuf{type='vec2f', volume=volume}
+	self.colors = CPUGPUBuf{type='vec4ub', volume=volume}
 
 	-- lighting on the GPU?
 	-- TODO keep track of this for cpu/gpu transfers? or something? idk?
@@ -969,8 +969,8 @@ end
 local lightFlagAllVec = vector'uint8_t'
 local lightFlagPrevVec = vector'uint8_t'
 local lightFlagNextVec = vector'uint8_t'
-local lightPrevPoss = vector'vec3i_t'
-local lightNextPoss = vector'vec3i_t'
+local lightPrevPoss = vector'vec3i'
+local lightNextPoss = vector'vec3i'
 
 -- update a region of light
 -- uses flood fill algorithm

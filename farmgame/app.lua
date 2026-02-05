@@ -10,7 +10,7 @@ local ig = require 'imgui'
 local vec2f = require 'vec-ffi.vec2f'
 local vec3f = require 'vec-ffi.vec3f'
 local vec4f = require 'vec-ffi.vec4f'
-local vec4x4f = require 'vec-ffi.vec4x4f'	-- vec4x4f_t
+local vec4x4f = require 'vec-ffi.vec4x4f'
 local quatd = require 'vec-ffi.quatd'
 local Image = require 'image'
 local gl = require 'gl'
@@ -50,16 +50,16 @@ typedef struct {
 	};
 
 	// ... or store these in an array, indexed by sprite frame, and just put the sprite frame here ...
-	vec2f_t atlasTcPos;
-	vec2f_t atlasTcSize;
+	vec2f atlasTcPos;
+	vec2f atlasTcSize;
 
-	vec3f_t drawCenter;
-	vec2f_t drawSize;
+	vec3f drawCenter;
+	vec2f drawSize;
 	float drawAngle;
 	float angle;
-	vec3f_t pos;
-	vec3f_t spritePosOffset;
-	vec4x4f_t colorMatrix;
+	vec3f pos;
+	vec3f spritePosOffset;
+	vec4x4f colorMatrix;
 } sprite_t;
 ]]
 
@@ -611,7 +611,7 @@ void main() {
 	}:useNone()
 
 	self.swordSwingNumDivs = 20
-	local cpuBuf = ffi.new('vec3f_t[?]', 2 * self.swordSwingNumDivs)
+	local cpuBuf = ffi.new('vec3f[?]', 2 * self.swordSwingNumDivs)
 	self.swordSwingVtxBuf = GLArrayBuffer{
 		size = ffi.sizeof(cpuBuf),
 		data = cpuBuf,
