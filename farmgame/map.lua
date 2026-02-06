@@ -124,55 +124,40 @@ function CPUGPUBuf:init(args)
 		local oldcopysize = sizeof * oldcap
 		local newcopysize = sizeof * newcap
 
-local glreport = require 'gl.report'
-glreport'here'
-
 		--[[
 		cpugpu.buf:bind(gl.GL_COPY_READ_BUFFER)
 		local newbuf = GLArrayBuffer()
-glreport'here'
 		newbuf:unbind()
-glreport'here'
 		newbuf:bind(gl.GL_COPY_WRITE_BUFFER)
-glreport'here'
 		gl.glBufferData(gl.GL_COPY_WRITE_BUFFER, newcopysize, nil, gl.GL_DYNAMIC_DRAW)
 		newbuf.size = newcopysize
 		newbuf.data = self.v
 		newbuf.usage = gl.GL_DYNAMIC_DRAW
-glreport'here'
 		gl.glCopyBufferSubData(
 			gl.GL_COPY_READ_BUFFER,		--GLenum readtarget,
 			gl.GL_COPY_WRITE_BUFFER,	--GLenum writetarget,
 			0,							--GLintptr readoffset,
 			0,							--GLintptr writeoffset,
 			oldcopysize)	--GLsizeiptr size)
-glreport'here'
 		GLArrayBuffer:unbind(gl.GL_COPY_READ_BUFFER)
-glreport'here'
 		GLArrayBuffer:unbind(gl.GL_COPY_WRITE_BUFFER)
-glreport'here'
 		cpugpu.buf = newbuf
 		--]]
 		--[[
 		cpugpu.buf:bind(gl.GL_COPY_READ_BUFFER)
-glreport'here'
 		local newbuf = GLArrayBuffer{
 			size = newcopysize,
 			data = self.v,
 			usage = gl.GL_DYNAMIC_DRAW,
 		}
-glreport'here'
 		gl.glCopyBufferSubData(
 			gl.GL_COPY_READ_BUFFER,		--GLenum readtarget,
 			newbuf.target,				--GLenum writetarget,
 			0,							--GLintptr readoffset,
 			0,							--GLintptr writeoffset,
 			oldcopysize)				--GLsizeiptr size)
-glreport'here'
 		GLArrayBuffer:unbind(gl.GL_COPY_READ_BUFFER)
-glreport'here'
 		newbuf:unbind()
-glreport'here'
 		cpugpu.buf = newbuf
 		--]]
 		-- [[

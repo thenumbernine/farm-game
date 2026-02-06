@@ -12,7 +12,6 @@ local vec4f = require 'vec-ffi.vec4f'
 local gl = require 'gl'
 local GLTex2D = require 'gl.tex2d'
 local GLProgram = require 'gl.program'
-local glreport = require 'gl.report'
 local ThreadManager = require 'threadmanager'
 local noise2d = require 'simplexnoise.2d'
 local noise3d = require 'simplexnoise.3d'
@@ -838,7 +837,6 @@ function Game:draw()
 		gl.glPointSize(1)
 	end
 --]]
-	glreport'here'
 end
 
 function Game:update(dt)

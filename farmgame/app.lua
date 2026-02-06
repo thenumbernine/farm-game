@@ -20,7 +20,6 @@ local GLSceneObject = require 'gl.sceneobject'
 local GLTex2D = require 'gl.tex2d'
 local GLTex3D = require 'gl.tex3d'
 local GLArrayBuffer = require 'gl.arraybuffer'
-local glreport = require 'gl.report'
 local Game = require 'farmgame.game'
 local getTime = require 'ext.timer'.getTime
 local OBJLoader = require 'mesh.objloader'
@@ -162,7 +161,6 @@ function App:initGL()
 	-- instead of proj * mv , imma separate into: proj view model
 	-- that means view.mvMat is really the view matrix
 	App.super.initGL(self)
-glreport'here'
 
 	self.mouseDir3D = vec3f(0,0,1)
 	self.mousePos3D = vec3f()
@@ -234,7 +232,6 @@ error("you're using .obj")
 			t = gl.GL_CLAMP_TO_EDGE,
 		},
 	}:unbind()
-glreport'here'
 
 	self.skyShader = GLProgram{
 		version = 'latest',
@@ -264,7 +261,6 @@ void main() {
 			inside = 0,
 		},
 	}:useNone()
-glreport'here'
 
 	self.skySceneObj = GLSceneObject{
 		geometry = self.quadGeom,
@@ -276,7 +272,6 @@ glreport'here'
 			self.skyTex,
 		},
 	}
-glreport'here'
 
 	self.spriteShader = GLProgram{
 		version = 'latest',
@@ -427,7 +422,6 @@ void main() {
 			},
 		},
 	}:useNone()
-glreport'here'
 
 
 	-- NOTICE these have a big perf hit when resizing ...
@@ -439,7 +433,6 @@ glreport'here'
 		data = self.spritesBufCPU.v,
 		usage = gl.GL_DYNAMIC_DRAW,
 	}:unbind()
-glreport'here'
 
 	--[[ hmm no resizing for now
 	-- TODO new system, this won't affect the class (and shouldn't since luajit ffi says don't touch cdata metatables...)
@@ -584,7 +577,6 @@ glreport'here'
 		},
 		texs = {},
 	}
-glreport'here'
 
 	self.meshShader = require 'mesh':makeShader()
 
