@@ -81,6 +81,7 @@ deps = {
 	"mesh",
 	"sdl",
 	"simplexnoise",
+	"stl",
 	"template",
 	"threadmanager",
 	"vec-ffi",

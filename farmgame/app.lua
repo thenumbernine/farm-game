@@ -425,7 +425,7 @@ void main() {
 
 
 	-- NOTICE these have a big perf hit when resizing ...
-	local vector = require 'ffi.cpp.vector-lua'
+	local vector = require 'stl.vector-lua'
 	self.spritesBufCPU = vector'sprite_t'
 	self.spritesBufCPU:reserve(60000)	-- TODO error on growing, like the map vectors, and TODO better vector<->GLArrayBuffer coupling + growing of GL buffers
 	self.spritesBufGPU = GLArrayBuffer{

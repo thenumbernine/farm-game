@@ -33,8 +33,8 @@ require 'gl.setup'(glfn)
 
 -- hack vector, instead of resizing by 32 bytes (slowly)
 -- how about increase by 20% then round up to nearest 32
--- Can't modify ffi.cpp.vector's .reserve() function because it's in the metatype ... I guess I could but you're not supposed to after it's been bound to the ctype ...
-local vectorbase = require 'ffi.cpp.vector-lua'
+-- Can't modify stl.vector's .reserve() function because it's in the metatype ... I guess I could but you're not supposed to after it's been bound to the ctype ...
+local vectorbase = require 'stl.vector-lua'
 function vectorbase:resize(newsize)
 	newsize = tonumber(newsize)
 	if newsize > self.capacity then
