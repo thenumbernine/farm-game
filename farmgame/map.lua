@@ -189,7 +189,7 @@ function Chunk:init(args)
 	self.pos = vec3i(assert(args.pos))
 
 	self.v = ffi.new('voxel_t[?]', self.volume)
-	ffi.fill(self.v, 0, ffi.sizeof'voxel_t' * self.volume)	-- 0 = empty
+	ffi.fill(self.v, ffi.sizeof'voxel_t' * self.volume, 0)	-- 0 = empty
 
 	self.surface = ffi.new('surface_t[?]', self.size.x * self.size.y)
 	-- TODO similar to CPUGPUBuf, but for textures?  just store tex.data buffer? idk ...
