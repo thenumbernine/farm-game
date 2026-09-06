@@ -18,7 +18,7 @@ spriteNames = table.keys(spriteNames)
 
 -- return all keys of a specific prefix
 local function getAllKeys(prefix)
-	return atlasKeys:filter(function(key)
+	return atlasKeys:filteri(function(key)
 		return key:sub(1,#prefix) == prefix
 	end)
 end

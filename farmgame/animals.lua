@@ -6,11 +6,11 @@ local Atlas = require 'farmgame.atlas'
 local spriteNames = Atlas.spriteNames
 local anim = require 'farmgame.anim'
 
-local animals = spriteNames:filter(function(name)
+local animals = spriteNames:filteri(function(name)
 	return name:match'^animal_'
 end):mapi(function(spriteName)
 	local animalType = {}
-	
+
 	local colorMatrix = vec4x4f()
 		:setRotate(
 			.2 * (math.random() - .5)*2*math.pi,
@@ -18,7 +18,7 @@ end):mapi(function(spriteName)
 			1 + .2 * (math.random() - .5),
 			1 + .2 * (math.random() - .5))
 	animalType.colorMatrix = colorMatrix
-	
+
 	animalType.name = spriteName:match'^animal_(.*)$'
 	animalType.sprite = spriteName
 	animalType.cost = 10
